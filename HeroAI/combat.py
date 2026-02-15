@@ -95,6 +95,11 @@ class CombatClass:
         self.toxic_chill = GLOBAL_CACHE.Skill.GetID("Toxic_Chill")
         self.discord = GLOBAL_CACHE.Skill.GetID("Discord")
         self.empathic_removal = GLOBAL_CACHE.Skill.GetID("Empathic_Removal")
+        self.infuse_health = GLOBAL_CACHE.Skill.GetID("Infuse_Health")
+        self.ether_renewal = GLOBAL_CACHE.Skill.GetID("Ether_Renewal")
+        self.aura_of_restoration = GLOBAL_CACHE.Skill.GetID("Aura_of_Restoration")
+        self.elemental_lord_luxon = GLOBAL_CACHE.Skill.GetID("Elemental_Lord_luxon")
+        self.elemental_lord_kurzick =GLOBAL_CACHE.Skill.GetID("Elemental_Lord_kurzick")
         self.iron_palm = GLOBAL_CACHE.Skill.GetID("Iron_Palm")
         self.melandrus_resilience = GLOBAL_CACHE.Skill.GetID("Melandrus_Resilience")
         self.necrosis = GLOBAL_CACHE.Skill.GetID("Necrosis")
@@ -650,6 +655,30 @@ class CombatClass:
                 ):
                 return False
 
+            if (self.skills[slot].skill_id == self.infuse_health):
+                if (Agent.IsEnchanted(Player.GetAgentID())):
+                    # todo is enchanted with the spells we want to have.
+                    buff_list = GetEffectAndBuffIds(Player.GetAgentID())
+                    ether_renewal = False
+                    elemental_lord_kurzick = False
+                    elemental_lord_luxon = False
+                    aura_of_restoration = False
+
+                    for buff in buff_list:
+                        skill_type, _ = GLOBAL_CACHE.Skill.GetType(buff)
+
+                        if (buff == self.aura_of_restoration):
+                            aura_of_restoration = True
+                        if (buff == self.ether_renewal):
+                            ether_renewal = True
+                        if (buff == self.elemental_lord_luxon):
+                            elemental_lord_luxon = True
+                        if (buff == self.elemental_lord_kurzick):
+                            elemental_lord_kurzick = True
+
+                    return ether_renewal or (aura_of_restoration and (elemental_lord_luxon or elemental_lord_kurzick))
+                else:
+                    return False
 
             return True  # if no unique property is configured, return True for all UniqueProperty
         

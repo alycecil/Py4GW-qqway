@@ -377,10 +377,11 @@ class MonkSkills:
         skill.SkillID = GLOBAL_CACHE.Skill.GetID("Infuse_Health")
         skill.SkillType = SkillType.Spell.value
         skill.TargetAllegiance = Skilltarget.OtherAlly.value
-        skill.Nature = SkillNature.CustomA.value
+        skill.Nature = SkillNature.CustomB.value
         skill.Conditions.LessLife = 0.75
-        skill.Conditions.SacrificeHealth = 0.20
+        skill.Conditions.SacrificeHealth = 0.30
         skill.Conditions.TargetingStrict = True
+        skill.Conditions.UniqueProperty = True
         skill_data[skill.SkillID] = skill
 
         skill = CustomSkill()
