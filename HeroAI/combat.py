@@ -701,6 +701,7 @@ class CombatClass:
         feature_count += (1 if Conditions.HasChant else 0)
         feature_count += (1 if Conditions.IsCasting else 0)
         feature_count += (1 if Conditions.IsKnockedDown else 0)
+        feature_count += (1 if Conditions.IsNotKnockedDown else 0)
         feature_count += (1 if Conditions.IsMoving else 0)
         feature_count += (1 if Conditions.IsAttacking else 0)
         feature_count += (1 if Conditions.IsHoldingItem else 0)
@@ -852,6 +853,10 @@ class CombatClass:
 
         if Conditions.IsKnockedDown:
             if Agent.IsKnockedDown(vTarget):
+                number_of_features += 1
+
+        if Conditions.IsNotKnockedDown:
+            if not Agent.IsKnockedDown(vTarget):
                 number_of_features += 1
                             
         if Conditions.IsMoving:
