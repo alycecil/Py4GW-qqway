@@ -676,7 +676,7 @@ class CombatClass:
                         if (buff == self.elemental_lord_kurzick):
                             elemental_lord_kurzick = True
 
-                    return ether_renewal or (aura_of_restoration and (elemental_lord_luxon or elemental_lord_kurzick))
+                    return ether_renewal and aura_of_restoration and (elemental_lord_luxon or elemental_lord_kurzick)
                 else:
                     return False
 
