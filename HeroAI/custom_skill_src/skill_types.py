@@ -33,6 +33,7 @@ class CastConditions:
         self.IsCasting = False
         self.CastingSkillList = []
         self.IsKnockedDown = False
+        self.IsNotKnockedDown = False
         self.IsMoving = False
         self.IsAttacking = False
         self.IsHoldingItem = False
