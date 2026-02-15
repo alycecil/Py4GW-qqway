@@ -57,7 +57,8 @@ class ElementalistSkills:
         skill.SkillID = GLOBAL_CACHE.Skill.GetID("Ether_Renewal")
         skill.SkillType = SkillType.Enchantment.value
         skill.TargetAllegiance = Skilltarget.Self.value
-        skill.Nature = SkillNature.CustomC.value
+        skill.Nature = SkillNature.CustomA.value
+        skill.Conditions.IsOutOfCombat = True
         skill_data[skill.SkillID] = skill
 
         skill = CustomSkill()
