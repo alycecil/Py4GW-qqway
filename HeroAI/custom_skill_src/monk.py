@@ -382,6 +382,7 @@ class MonkSkills:
         skill.Conditions.SacrificeHealth = 0.10
         skill.Conditions.TargetingStrict = True
         skill.Conditions.UniqueProperty = True
+        skill.Conditions.IsOutOfCombat = True
         skill_data[skill.SkillID] = skill
 
         skill = CustomSkill()
