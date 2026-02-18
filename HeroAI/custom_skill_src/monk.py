@@ -379,7 +379,7 @@ class MonkSkills:
         skill.TargetAllegiance = Skilltarget.OtherAlly.value
         skill.Nature = SkillNature.CustomB.value
         skill.Conditions.LessLife = 0.75
-        skill.Conditions.SacrificeHealth = 0.30
+        skill.Conditions.SacrificeHealth = 0.10
         skill.Conditions.TargetingStrict = True
         skill.Conditions.UniqueProperty = True
         skill_data[skill.SkillID] = skill
