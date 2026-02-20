@@ -255,7 +255,7 @@ class Polymock_Quests(Enum):
                                PolymockPieces.Mergoyle],
                            [PolymockPieces.Skale, PolymockPieces.Mergoyle, PolymockPieces.Gargoyle])
 
-    Plurgg = Polymock_Quest("Polymock: Defeat Plurgg", "Plurgg", 875, (16382, 17753), 6753,
+    Plurgg = Polymock_Quest("Polymock: Defeat Plurgg", "Plurgg", 875, (16382, 17753), 6804,
                             [PolymockPieces.Fire_Imp, PolymockPieces.Ice_Imp,
                                 PolymockPieces.Kappa],
                             [PolymockPieces.Skale, PolymockPieces.Fire_Imp, PolymockPieces.Gargoyle])
