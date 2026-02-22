@@ -116,7 +116,25 @@ class UI:
                     PyImGui.end_table() 
             else:                 
                 PyImGui.text_colored("No Quest Detected", (1.0, 0.0, 0.0, 1.0))
-                PyImGui.text_colored("Please grab your quests in Rata Sum!", (1.0, 0.0, 0.0, 1.0))      
+                PyImGui.text_colored("Please grab your quests in Rata Sum!", (1.0, 0.0, 0.0, 1.0))
+
+                if PyImGui.is_rect_visible(0, 20):
+                    PyImGui.text_colored("PyImGui.is_rect_visible(0, 20): Yes!", (1.0, 0.0, 0.0, 1.0))
+
+                if self.widget_state.quest:
+                    PyImGui.text_colored("Has Quest", (1.0, 0.0, 0.0, 1.0))
+                else:
+                    PyImGui.text_colored("Lost Quest", (1.0, 0.0, 0.0, 1.0))
+
+                PyImGui.text("QUEST ID")
+                PyImGui.table_next_column()
+                PyImGui.text_wrapped(str(GLOBAL_CACHE.Quest.GetActiveQuest()))
+
+                if self.widget_state.in_arena:
+                    PyImGui.text_colored("In an arena", (1.0, 0.0, 0.0, 1.0))
+                else:
+                    PyImGui.text_colored("Not in an arena", (1.0, 0.0, 0.0, 1.0))
+
                 
                 if current_map_id == data.Polymock_Registration[0]:
                     if PyImGui.button("Move to Master Hoff", width):

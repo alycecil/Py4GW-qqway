@@ -55,7 +55,8 @@ class WidgetState:
                 self.match_started = len(AgentArray.GetAgentArray()) == 9 or self.match_started
                 
                 target_id = self.GetAgentAtPosition()
-                quest = Polymock_Quests.get_quest_by_model_id(Agent.GetModelID(target_id))
+                model_id = Agent.GetModelID(target_id)
+                quest = Polymock_Quests.get_quest_by_model_id(model_id)
                 
                 if quest:                
                     self.quest = quest       
@@ -64,6 +65,8 @@ class WidgetState:
                         GLOBAL_CACHE.Quest.SetActiveQuest(self.quest.quest_id)   
                             
                     return
+                else:
+                    ConsoleLog("Polymock", "failed to find quest by model_id="+str(model_id))
         
         if not self.in_arena:
             self.match_started = False
