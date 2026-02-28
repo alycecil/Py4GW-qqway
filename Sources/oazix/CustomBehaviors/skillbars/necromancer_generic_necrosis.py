@@ -10,6 +10,7 @@ from Sources.oazix.CustomBehaviors.skills.common.breath_of_the_great_dwarf_utili
 from Sources.oazix.CustomBehaviors.skills.common.by_urals_hammer_utility import ByUralsHammerUtility
 from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_honor_utility import EbonBattleStandardOfHonorUtility
 from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_wisdom_utility import EbonBattleStandardOfWisdom
+from Sources.oazix.CustomBehaviors.skills.common.ebon_escape_utility import EbonEscapeUtility
 from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.common.great_dwarf_weapon_utility import GreatDwarfWeaponUtility
 from Sources.oazix.CustomBehaviors.skills.common.i_am_unstoppable_utility import IAmUnstoppableUtility
@@ -71,16 +72,26 @@ class NecromancerNecrosisSpammer_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.necrosis_utility: CustomSkillUtilityBase = NecrosisUtility(event_bus=self.event_bus, current_build=in_game_build)
         self.discord_utility: CustomSkillUtilityBase = DiscordUtility(event_bus=self.event_bus, current_build=in_game_build)
 
+        self.cultists_fervor: CustomSkillUtilityBase = KeepSelfEffectUpUtility(
+            event_bus=self.event_bus,
+            skill=CustomSkill("Cultists_Fervor"),
+            current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(90),
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]
+        )
+
+
         # MM skills
         self.animate_shambling_horror_utility: CustomSkillUtilityBase = MinionInvocationFromCorpseUtility(event_bus=self.event_bus, skill=CustomSkill("Animate_Shambling_Horror"), current_build=in_game_build, score_definition=ScoreStaticDefinition(62))
         self.animate_bone_fiend_utility: CustomSkillUtilityBase = MinionInvocationFromCorpseUtility(event_bus=self.event_bus, skill=CustomSkill("Animate_Bone_Fiend"), current_build=in_game_build, score_definition=ScoreStaticDefinition(61))
+        self.animate_bone_horror_utility: CustomSkillUtilityBase = MinionInvocationFromCorpseUtility(event_bus=self.event_bus, skill=CustomSkill("Animate_Bone_Horror"), current_build=in_game_build, score_definition=ScoreStaticDefinition(61))
         self.animate_vampiric_horror_utility: CustomSkillUtilityBase = MinionInvocationFromCorpseUtility(event_bus=self.event_bus, skill=CustomSkill("Animate_Vampiric_Horror"), current_build=in_game_build, score_definition=ScoreStaticDefinition(60))
         self.blood_of_the_master_utility: CustomSkillUtilityBase = BloodOfTheMasterUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(33))
 
         # optional
         self.great_dwarf_weapon_utility: CustomSkillUtilityBase = GreatDwarfWeaponUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(30))
         self.breath_of_the_great_dwarf_utility: CustomSkillUtilityBase = BreathOfTheGreatDwarfUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(9))
-
+        self.foul_feast_utility: CustomSkillUtilityBase = FoulFeastUtility(event_bus=self.event_bus, skill=CustomSkill("Foul_Feast"), current_build=in_game_build, mana_required_to_cast=15, score_definition=ScoreStaticDefinition(49)) # let's keep 15 mana to not be out of mana spamming it
 
         # interrupt
         self.cry_of_pain_utility: CustomSkillUtilityBase = CryOfPainUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(90))
@@ -117,20 +128,31 @@ class NecromancerNecrosisSpammer_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.by_urals_hammer_utility: CustomSkillUtilityBase = ByUralsHammerUtility(event_bus=self.event_bus, current_build=in_game_build)
         self.air_of_superiority_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Air_of_Superiority"), mana_required_to_cast=5, current_build=in_game_build, score_definition=ScoreStaticDefinition(50), allowed_states= [BehaviorState.IN_AGGRO])
 
+        self.ebon_escape_utility: EbonEscapeUtility(event_bus=self.event_bus, current_build=in_game_build)
+
+        self.finish_him_utility: CustomSkillUtilityBase = FinishHimUtility(
+            event_bus=self.event_bus,
+            current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(87),
+        )
+
     @property
     @override
     def custom_skills_in_behavior(self) -> list[CustomSkillUtilityBase]:
         return [
             self.necrosis_utility,
             self.discord_utility,
+            self.cultists_fervor,
 
             self.animate_bone_fiend_utility,
+            self.animate_bone_horror_utility,
             self.animate_vampiric_horror_utility,
             self.animate_shambling_horror_utility,
             self.blood_of_the_master_utility,
 
             self.great_dwarf_weapon_utility,
             self.breath_of_the_great_dwarf_utility,
+            self.foul_feast_utility,
 
             self.cry_of_pain_utility,
             self.cry_of_frustration_utility,
@@ -165,7 +187,9 @@ class NecromancerNecrosisSpammer_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.i_am_unstopabble,
             self.signet_of_lost_souls_utility,
             self.by_urals_hammer_utility,
-            self.air_of_superiority_utility
+            self.air_of_superiority_utility,
+            self.ebon_escape_utility,
+            self.finish_him_utility
         ]
 
     @property
