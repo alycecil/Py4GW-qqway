@@ -28,6 +28,7 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.shatter_hex_utility import Shat
 from Sources.oazix.CustomBehaviors.skills.mesmer.spiritual_pain_utility import SpiritualPainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.unnatural_signet_utility import UnnaturalSignetUtility
 from Sources.oazix.CustomBehaviors.skills.paragon.fall_back_utility import FallBackUtility
+from Sources.oazix.CustomBehaviors.skills.necromancer.necrosis_utility import NecrosisUtility
 
 class MesmerESurgery_UtilitySkillBar(CustomBehaviorBaseUtility):
 
@@ -59,6 +60,9 @@ class MesmerESurgery_UtilitySkillBar(CustomBehaviorBaseUtility):
         # utilities
         self.energy_tap_utility: CustomSkillUtilityBase = AutoCombatUtility(event_bus=self.event_bus, skill=CustomSkill("Energy_Tap"), current_build=in_game_build, score_definition=ScoreStaticDefinition(85))
         self.fall_back_utility: CustomSkillUtilityBase = FallBackUtility(event_bus=self.event_bus, current_build=in_game_build)
+
+        # necrosis
+        self.necrosis_utility: CustomSkillUtilityBase = NecrosisUtility(event_bus=self.event_bus, current_build=in_game_build)
         
         self.arcane_echo_utility: CustomSkillUtilityBase = ArcaneEchoUtility(
             event_bus=self.event_bus, 
@@ -122,6 +126,8 @@ class MesmerESurgery_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.breath_of_the_great_dwarf_utility,
             self.by_urals_hammer_utility,
             self.air_of_superiority_utility,
+
+            self.necrosis_utility
         ]
 
     @property
