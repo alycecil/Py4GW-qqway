@@ -223,7 +223,7 @@ class Resources:
             energy_cost = round((1 - (mysticism_level * 0.04)) * energy_cost)
             return energy_cost
 
-        if profession == "Ranger":
+        if profession == "Ranger" or skill_type == "Ritual":
             energy_cost = Routines.Checks.Skills.apply_expertise_reduction(energy_cost, get_attribute_level("Expertise"), skill.skill_id)
 
         return energy_cost
