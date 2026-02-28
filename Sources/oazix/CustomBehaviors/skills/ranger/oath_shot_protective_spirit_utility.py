@@ -22,7 +22,7 @@ class OathShotProtectiveSpiritUtility(CustomSkillUtilityBase):
         current_build: list[CustomSkill],
         owned_spirit_model_id: SpiritModelID,
         score_definition: ScoreStaticDefinition = ScoreStaticDefinition(60),
-        mana_required_to_cast: int = 0,
+        mana_required_to_cast: int = 8,
         allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
         ) -> None:
 
