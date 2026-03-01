@@ -50,7 +50,7 @@ class MindWrackUtility(CustomSkillUtilityBase):
         lock_key = self._get_lock_key(targets[0].agent_id)
         if CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(lock_key): return None
 
-        return self.score_definition.get_score(targets[0].enemy_quantity_within_range)
+        return self.score_definition.get_score() # targets[0].enemy_quantity_within_range
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
