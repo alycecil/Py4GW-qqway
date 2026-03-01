@@ -1,6 +1,7 @@
 from typing import Any, Generator, Callable, override
 
-from Py4GWCoreLib import GLOBAL_CACHE, Agent, Range
+from Py4GWCoreLib import GLOBAL_CACHE, Agent, Range, Routines, Player
+from Sources.Nikon_Scripts.BotUtilities import GameAreas
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
@@ -17,7 +18,7 @@ class NecrosisUtility(CustomSkillUtilityBase):
     def __init__(self,
                 event_bus: EventBus,
                 current_build: list[CustomSkill],
-                score_definition: ScoreStaticDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 20 if enemy_qte >= 3 else 45 if enemy_qte <= 2 else 70),
+                score_definition: ScoreStaticDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 20 if enemy_qte >= 3 else 45 if enemy_qte <= 1 else 70),
         ) -> None:
 
         super().__init__(
@@ -31,7 +32,11 @@ class NecrosisUtility(CustomSkillUtilityBase):
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
         if self.nature_has_been_attempted_last(previously_attempted_skills): return None
-        return self.score_definition.get_score()
+
+        player_pos = Player.GetXY()
+        enemy_array = Routines.Agents.GetFilteredEnemyArray(player_pos[0], player_pos[1], GameAreas.Earshot)
+
+        return self.score_definition.get_score(len(enemy_array))
         
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any | None, Any | None, BehaviorResult]:
