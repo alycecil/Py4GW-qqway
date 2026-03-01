@@ -26,7 +26,7 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.auspicious_incantation_utility 
 from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_frustration_utility import CryOfFrustrationUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_pain_utility import CryOfPainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.drain_enchantment_utility import DrainEnchantmentUtility
-from Sources.oazix.CustomBehaviors.skills.mesmer.ether_nightmare import EtherNightmareUtility
+from Sources.oazix.CustomBehaviors.skills.mesmer.ether_nightmare_utility import EtherNightmareUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.mistrust_utility import MistrustUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.power_drain_utility import PowerDrainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.shatter_enchantment_utility import ShatterEnchantmentUtility
@@ -39,7 +39,7 @@ from Sources.oazix.CustomBehaviors.skills.necromancer.blood_of_the_master import
 from Sources.oazix.CustomBehaviors.skills.necromancer.discord_utility import DiscordUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.foul_feast_utility import FoulFeastUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.necrosis_utility import NecrosisUtility
-from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_corruption import SignetOfCorruptionUtility
+from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_corruption_utility import SignetOfCorruptionUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_lost_souls_utility import SignetOfLostSoulsUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.suffering import SufferingUtility
 from Sources.oazix.CustomBehaviors.skills.paragon.fall_back_utility import FallBackUtility

@@ -21,7 +21,7 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.auspicious_incantation_utility 
 from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_frustration_utility import CryOfFrustrationUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_pain_utility import CryOfPainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.drain_enchantment_utility import DrainEnchantmentUtility
-from Sources.oazix.CustomBehaviors.skills.mesmer.ether_nightmare import EtherNightmareUtility
+from Sources.oazix.CustomBehaviors.skills.mesmer.ether_nightmare_utility import EtherNightmareUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.mistrust_utility import MistrustUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.power_drain_utility import PowerDrainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.shatter_enchantment_utility import ShatterEnchantmentUtility

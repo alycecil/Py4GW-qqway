@@ -32,7 +32,7 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.signet_under_keystone_utility i
 from Sources.oazix.CustomBehaviors.skills.mesmer.unnatural_signet_utility import UnnaturalSignetUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.wandering_eye_utility import WanderingEyeUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.necrosis_utility import NecrosisUtility
-from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_corruption import SignetOfCorruptionUtility
+from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_corruption_utility import SignetOfCorruptionUtility
 from Sources.oazix.CustomBehaviors.skills.paragon.fall_back_utility import FallBackUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.spiritual_pain_utility import SpiritualPainUtility
 

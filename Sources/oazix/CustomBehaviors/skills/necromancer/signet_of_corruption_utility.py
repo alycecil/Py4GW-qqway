@@ -33,6 +33,14 @@ class SignetOfCorruptionUtility(CustomSkillUtilityBase):
         
         self.score_definition: ScoreStaticDefinition = score_definition
 
+    def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
+        """Get attacking enemies ordered by cluster size."""
+        return custom_behavior_helpers.Targets.get_first_or_default_from_enemy_ordered_by_priority(
+            within_range=Range.Spellcast,
+            condition=lambda agent_id: Agent.IsHexed(agent_id) or Agent.IsConditioned(agent_id),
+            sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC,),
+            range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id))
+
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
         player_energy_percent = Agent.GetEnergy(Player.GetAgentID())
@@ -40,6 +48,10 @@ class SignetOfCorruptionUtility(CustomSkillUtilityBase):
         if player_energy_percent > 0.6:
             return None
         if self.nature_has_been_attempted_last(previously_attempted_skills): return None
+
+        targets = self._get_targets()
+        if len(targets) == 0: return None
+
         return self.score_definition.get_score()
 
     @override
@@ -47,12 +59,7 @@ class SignetOfCorruptionUtility(CustomSkillUtilityBase):
 
         action: Callable[[], Generator[Any, Any, BehaviorResult]] = lambda: (yield from custom_behavior_helpers.Actions.cast_skill_to_lambda(
             skill=self.custom_skill,
-            select_target=lambda: custom_behavior_helpers.Targets.get_first_or_default_from_enemy_ordered_by_priority(
-                within_range=Range.Spellcast,
-                condition=lambda agent_id: Agent.IsHexed(agent_id) or Agent.IsConditioned(agent_id),
-                sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.CASTER_THEN_MELEE),
-                range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id))
-        ))
+            select_target=lambda: self._get_targets()))
 
         result: BehaviorResult = yield from custom_behavior_helpers.Helpers.wait_for_or_until_completion(1500, action)
         return result
