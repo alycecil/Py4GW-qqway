@@ -38,7 +38,7 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
             sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_ASC, TargetingOrder.DISTANCE_ASC),
             range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id),
             condition=lambda agent_id: Agent.GetHealth(agent_id) > 0.2)
-    
+
     def _get_lock_key(self, agent_id: int) -> str:
         return f"EbonVanguardAssassinSupport_{agent_id}"
 
@@ -61,14 +61,13 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
         target = enemies[0]
 
         lock_key = self._get_lock_key(target.agent_id)
-        if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=3) == False: 
-            yield 
-            return BehaviorResult.ACTION_SKIPPED 
+        if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=3) == False:
+            yield
+            return BehaviorResult.ACTION_SKIPPED
         
         try:
             result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
         finally:
-            #CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
-            # we explicitly don't release the lock, and keep it for 2 seconds so the skill we be chain-casted
+            CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
             pass
         return result
