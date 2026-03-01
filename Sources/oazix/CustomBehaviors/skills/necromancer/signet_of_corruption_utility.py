@@ -18,7 +18,7 @@ class SignetOfCorruptionUtility(CustomSkillUtilityBase):
         event_bus: EventBus,
         current_build: list[CustomSkill],
         skill: CustomSkill,
-        score_definition: ScoreStaticDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 35 if enemy_qte >= 3 else 22 if enemy_qte <= 2 else 5),
+        score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 50 if enemy_qte >= 3 else 30 if enemy_qte <= 2 else 5),
         mana_required_to_cast: int = 0,
         allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO]
         ) -> None:
@@ -31,11 +31,11 @@ class SignetOfCorruptionUtility(CustomSkillUtilityBase):
             mana_required_to_cast=mana_required_to_cast,
             allowed_states=allowed_states)
         
-        self.score_definition: ScoreStaticDefinition = score_definition
+        self.score_definition: ScorePerAgentQuantityDefinition = score_definition
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
         """Get attacking enemies ordered by cluster size."""
-        return custom_behavior_helpers.Targets.get_first_or_default_from_enemy_ordered_by_priority(
+        return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
             within_range=Range.Spellcast,
             condition=lambda agent_id: Agent.IsHexed(agent_id) or Agent.IsConditioned(agent_id),
             sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC,),
@@ -52,15 +52,15 @@ class SignetOfCorruptionUtility(CustomSkillUtilityBase):
         targets = self._get_targets()
         if len(targets) == 0: return None
 
-        return self.score_definition.get_score()
+        return self.score_definition.get_score(targets[0].enemy_quantity_within_range)
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any | None, Any | None, BehaviorResult]:
 
-        action: Callable[[], Generator[Any, Any, BehaviorResult]] = lambda: (yield from custom_behavior_helpers.Actions.cast_skill_to_lambda(
-            skill=self.custom_skill,
-            select_target=lambda: self._get_targets()))
+        enemies = self._get_targets()
+        if len(enemies) == 0: return BehaviorResult.ACTION_SKIPPED
+        target = enemies[0]
 
-        result: BehaviorResult = yield from custom_behavior_helpers.Helpers.wait_for_or_until_completion(1500, action)
+        result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
         return result
 

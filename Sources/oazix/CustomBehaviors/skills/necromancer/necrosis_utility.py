@@ -18,7 +18,7 @@ class NecrosisUtility(CustomSkillUtilityBase):
     def __init__(self,
                 event_bus: EventBus,
                 current_build: list[CustomSkill],
-                score_definition: ScoreStaticDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 20 if enemy_qte >= 3 else 45 if enemy_qte <= 1 else 70),
+                score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 20 if enemy_qte >= 3 else 45 if enemy_qte <= 1 else 70),
         ) -> None:
 
         super().__init__(
@@ -27,7 +27,7 @@ class NecrosisUtility(CustomSkillUtilityBase):
             in_game_build=current_build,
             score_definition=score_definition)
         
-        self.score_definition: ScoreStaticDefinition = score_definition
+        self.score_definition: ScorePerAgentQuantityDefinition = score_definition
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
