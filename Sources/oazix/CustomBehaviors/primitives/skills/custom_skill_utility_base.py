@@ -1,4 +1,5 @@
 from abc import abstractmethod
+import traceback
 from collections.abc import Callable, Generator
 from typing import Any
 import time
@@ -111,6 +112,7 @@ class CustomSkillUtilityBase:
             return score
         except Exception as e:
             print(f'Evaluate Exception {self.custom_skill.skill_name}: {e}')
+            print(traceback.format_exc())
             return None
 
     def execute(self, state: BehaviorState) -> Generator[Any | None, Any | None, BehaviorResult]:
