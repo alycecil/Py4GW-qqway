@@ -23,6 +23,7 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_pain_utility import CryO
 from Sources.oazix.CustomBehaviors.skills.mesmer.drain_enchantment_utility import DrainEnchantmentUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.ineptitude_utility import IneptitudeUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.keystone_signet_utility import KeystoneSignetUtility
+from Sources.oazix.CustomBehaviors.skills.mesmer.leech_signet_utility import LeechSignetUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.mistrust_utility import MistrustUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.power_drain_utility import PowerDrainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.shatter_enchantment_utility import ShatterEnchantmentUtility
@@ -46,6 +47,7 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.cry_of_pain_utility: CustomSkillUtilityBase = CryOfPainUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(90))
         self.power_drain_utility: CustomSkillUtilityBase = PowerDrainUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(92))
         self.necrosis_utility: CustomSkillUtilityBase = NecrosisUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(80))
+        self.leech_signet_utility: CustomSkillUtilityBase = LeechSignetUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(89))
 
         self.Signet_of_Corruption_luxon_utility: CustomSkillUtilityBase = SignetOfCorruptionUtility(
             event_bus=self.event_bus,
@@ -95,6 +97,7 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.cry_of_pain_utility,
             self.necrosis_utility,
             self.power_drain_utility,
+            self.leech_signet_utility,
             self.wandering_eye_utility,
             self.arcane_conundrum_utility,
             self.drain_enchantment_utility,
