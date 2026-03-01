@@ -31,6 +31,7 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.signet_of_clumsiness_utility im
 from Sources.oazix.CustomBehaviors.skills.mesmer.signet_under_keystone_utility import SignetUnderKeystoneUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.unnatural_signet_utility import UnnaturalSignetUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.wandering_eye_utility import WanderingEyeUtility
+from Sources.oazix.CustomBehaviors.skills.necromancer.necrosis_utility import NecrosisUtility
 from Sources.oazix.CustomBehaviors.skills.paragon.fall_back_utility import FallBackUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.spiritual_pain_utility import SpiritualPainUtility
 
@@ -43,6 +44,7 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
         # interrupt
         self.cry_of_pain_utility: CustomSkillUtilityBase = CryOfPainUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(90))
         self.power_drain_utility: CustomSkillUtilityBase = PowerDrainUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(92))
+        self.necrosis_utility: CustomSkillUtilityBase = NecrosisUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(80))
 
 #         Cast Glyph of Lesser Energy↦Arcane Conundrum↦Cry of Pain on the largest group of foes, preferably hitting casters.
 #         Deal damage against balled up attacking foes utilizing Ineptitude, Wandering Eye and Signet of Clumsiness.
@@ -63,6 +65,7 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.i_am_unstopabble: CustomSkillUtilityBase = IAmUnstoppableUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(99))
         self.breath_of_the_great_dwarf_utility: CustomSkillUtilityBase = BreathOfTheGreatDwarfUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(9))
         self.by_urals_hammer_utility: CustomSkillUtilityBase = ByUralsHammerUtility(event_bus=self.event_bus, current_build=in_game_build)
+        self.air_of_superiority_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Air_of_Superiority"), mana_required_to_cast=5, current_build=in_game_build, score_definition=ScoreStaticDefinition(50), allowed_states= [BehaviorState.IN_AGGRO])
 
     @property
     @override
@@ -77,10 +80,12 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.fall_back_utility,
             self.ineptitude_utility,
             self.cry_of_pain_utility,
+            self.necrosis_utility,
             self.power_drain_utility,
             self.wandering_eye_utility,
             self.arcane_conundrum_utility,
             self.drain_enchantment_utility,
+            self.air_of_superiority_utility,
         ]
 
     @property
