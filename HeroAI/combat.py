@@ -573,7 +573,7 @@ class CombatClass:
                 self.skills[slot].skill_id == self.plague_signet or
                 self.skills[slot].skill_id == self.plague_touch
                 ):
-                return Agent.IsConditioned(Player.GetAgentID()) or Routines.Checks.Effects.HasBuff(Player.GetAgentID(), GLOBAL_CACHE.Skill.GetID("Cultists_Fervor").skill_id)
+                return Agent.IsConditioned(Player.GetAgentID()) or Routines.Checks.Effects.HasBuff(Player.GetAgentID(), GLOBAL_CACHE.Skill.GetID("Cultists_Fervor"))
 
             if (self.skills[slot].skill_id == self.golden_fang_strike or
                 self.skills[slot].skill_id == self.golden_fox_strike or

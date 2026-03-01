@@ -48,20 +48,11 @@ class PlagueSendingUtility(CustomSkillUtilityBase):
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
-        if not custom_behavior_helpers.Resources.player_can_sacrifice_health(percentage_to_sacrifice=33):
+        if not custom_behavior_helpers.Resources.player_can_sacrifice_health(percentage_to_sacrifice=10):
+            print("Cannot Sacrifice Health")
             return None
 
-        if Routines.Checks.Effects.HasBuff(Player.GetAgentID(), GLOBAL_CACHE.Skill.GetID("Cultists_Fervor").skill_id):
-            # find someone not bleeding to send to, Cultists_Fervor will give us bleeding.
-            targets = self._get_cultists_fervor_best_targets()
-            if len(targets) != 0: return self.score_definition.get_score(targets[0].enemy_quantity_within_range)
 
-
-        # Cultists_Fervor doesnt have anyone to cause bleeding to, are we at least conditioned already and have a reason to send?
-
-        #if nothing just be done
-        if not Agent.IsConditioned(Player.GetAgentID()):
-            return None
 
         # do we have something worth sending?
         scoreMult = 0.25
@@ -73,6 +64,22 @@ class PlagueSendingUtility(CustomSkillUtilityBase):
         if Agent.IsDeepWounded(Player.GetAgentID()):
             scoreMult += 1.25
 
+        if Routines.Checks.Effects.HasBuff(Player.GetAgentID(), GLOBAL_CACHE.Skill.GetID("Cultists_Fervor")):
+            # find someone not bleeding to send to, Cultists_Fervor will give us bleeding.
+            scoreMult += 0.5
+            targets = self._get_cultists_fervor_best_targets()
+            if len(targets) != 0:
+                print("Have a fervor best target")
+                return self.score_definition.get_score(targets[0].enemy_quantity_within_range) * scoreMult
+
+
+        # Cultists_Fervor doesnt have anyone to cause bleeding to, are we at least conditioned already and have a reason to send?
+
+        #if nothing just be done
+        if not Agent.IsConditioned(Player.GetAgentID()):
+            print("No Conditions to send")
+            return None
+
 
         targets = self._get_targets()
         if len(targets) == 0: return None
@@ -80,8 +87,9 @@ class PlagueSendingUtility(CustomSkillUtilityBase):
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
+        print("Do Plague Sending")
 
-        if Routines.Checks.Effects.HasBuff(Player.GetAgentID(), GLOBAL_CACHE.Skill.GetID("Cultists_Fervor").skill_id):
+        if Routines.Checks.Effects.HasBuff(Player.GetAgentID(), GLOBAL_CACHE.Skill.GetID("Cultists_Fervor")):
             enemies = self._get_cultists_fervor_best_targets()
             if len(enemies) != 0:
                 target = enemies[0]
