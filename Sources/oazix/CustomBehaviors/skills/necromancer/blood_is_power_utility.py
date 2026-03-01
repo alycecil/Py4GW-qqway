@@ -47,9 +47,9 @@ class BloodIsPowerUtility(CustomSkillUtilityBase):
         else:
             self.buff_configuration: CustomBuffMultipleTarget = CustomBuffMultipleTarget(self.event_bus, self.custom_skill, buff_configuration_per_profession= BuffConfigurationPerProfession.BUFF_CONFIGURATION_CASTERS)
 
-        self.sacrifice_life_limit_percent: float = float(PersistenceLocator().skills.read_or_default(self.custom_skill.skill_name, "sacrifice_life_limit_percent", str(sacrifice_life_limit_percent)))
-        self.sacrifice_life_limit_absolute: int = int(PersistenceLocator().skills.read_or_default(self.custom_skill.skill_name, "sacrifice_life_limit_absolute", str(sacrifice_life_limit_absolute)))
-        self.required_target_mana_lower_than_percent: float = float(PersistenceLocator().skills.read_or_default(self.custom_skill.skill_name, "required_target_mana_lower_than_percent", str(required_target_mana_lower_than_percent)))
+        self.sacrifice_life_limit_percent: float = sacrifice_life_limit_percent
+        self.sacrifice_life_limit_absolute: int = sacrifice_life_limit_absolute
+        self.required_target_mana_lower_than_percent: float = required_target_mana_lower_than_percent
 
     def _get_target(self) -> int | None:
  
