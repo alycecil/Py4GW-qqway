@@ -142,7 +142,7 @@ def main():
     game_throttle_timer.Reset()
     
     is_map_valid = Routines.Checks.Map.MapValid()
-    is_explorable = Map.IsExplorable()
+    is_explorable = Map.IsExplorable() or Map.IsOutpost()
     
     if not is_map_valid:
         widget_config.title_applied = False
