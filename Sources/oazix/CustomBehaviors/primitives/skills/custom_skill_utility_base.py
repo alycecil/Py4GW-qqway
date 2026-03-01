@@ -72,7 +72,7 @@ class CustomSkillUtilityBase:
             # print(f'I Am Not Enabled {self.custom_skill.skill_name}')
             return None
         if not self.are_common_pre_checks_valid(current_state):
-            if self.utility_skill_typology == UtilitySkillTypology.COMBAT:# and current_state in self.allowed_states:
+            if self.utility_skill_typology == UtilitySkillTypology.COMBAT and current_state == BehaviorState.IN_AGGRO and current_state in self.allowed_states:
                 print(f'PreCheck Reject {self.custom_skill.skill_name}')
             return None
         if self.utility_skill_typology == UtilitySkillTypology.COMBAT and not CustomBehaviorParty().get_party_is_combat_enabled():
@@ -103,7 +103,7 @@ class CustomSkillUtilityBase:
             score:float | None = self._evaluate(current_state, previously_attempted_skills)
 
             if score is None:
-                if self.utility_skill_typology == UtilitySkillTypology.COMBAT: print(f'Evaluate Reject {self.custom_skill.skill_name}')
+                if self.utility_skill_typology == UtilitySkillTypology.COMBAT and current_state == BehaviorState.IN_AGGRO and current_state in self.allowed_states: print(f'Evaluate Reject {self.custom_skill.skill_name}')
                 return None
             if 0 > score > 100: raise Exception(f"{self.custom_skill.skill_name} : score must be between 0 and 100, calculated {score}.")
 
