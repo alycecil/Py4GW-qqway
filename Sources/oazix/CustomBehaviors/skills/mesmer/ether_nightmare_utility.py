@@ -18,7 +18,7 @@ class EtherNightmareUtility(CustomSkillUtilityBase):
         event_bus: EventBus,
         skill: CustomSkill,
         current_build: list[CustomSkill],
-        score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 70 if enemy_qte >= 3 else 40 if enemy_qte <= 2 else 10),
+        score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 99 if enemy_qte >= 3 else 82),
         mana_required_to_cast: int = 18,
         allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]
         ) -> None:
