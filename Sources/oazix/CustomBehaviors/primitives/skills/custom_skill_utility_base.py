@@ -109,7 +109,8 @@ class CustomSkillUtilityBase:
                 return None
             if 0 > score > 100: raise Exception(f"{self.custom_skill.skill_name} : score must be between 0 and 100, calculated {score}.")
 
-            if self.utility_skill_typology == UtilitySkillTypology.COMBAT: print(f'Score {score} for {self.custom_skill.skill_name}')
+            if constants.DEBUG:
+                if self.utility_skill_typology == UtilitySkillTypology.COMBAT: print(f'Score {score} for {self.custom_skill.skill_name}')
 
             return score
         except Exception as e:
