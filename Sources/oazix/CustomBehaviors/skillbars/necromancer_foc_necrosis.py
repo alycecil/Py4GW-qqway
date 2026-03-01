@@ -21,6 +21,8 @@ from Sources.oazix.CustomBehaviors.skills.generic.generic_resurrection_utility i
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.minion_invocation_from_corpse_utility import MinionInvocationFromCorpseUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
+from Sources.oazix.CustomBehaviors.skills.mesmer.arcane_echo_utility import ArcaneEchoUtility
+from Sources.oazix.CustomBehaviors.skills.mesmer.auspicious_incantation_utility import AuspiciousIncantationUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_frustration_utility import CryOfFrustrationUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_pain_utility import CryOfPainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.drain_enchantment_utility import DrainEnchantmentUtility
@@ -86,7 +88,8 @@ class NecromancerNecrosisFoC_UtilitySkillBar(CustomBehaviorBaseUtility):
         # hex
         self.mistrust_utility: CustomSkillUtilityBase = MistrustUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 70 if enemy_qte >= 3 else 40 if enemy_qte <= 2 else 0), mana_required_to_cast=10)
         self.unnatural_signet_utility: CustomSkillUtilityBase = UnnaturalSignetUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 90 if enemy_qte >= 2 else 40 if enemy_qte <= 2 else 5))
-        self.ether_nightmare_utility: CustomSkillUtilityBase = EtherNightmareUtility(event_bus=self.event_bus, current_build=in_game_build)
+        self.ether_nightmare_lux_utility: CustomSkillUtilityBase = EtherNightmareUtility(event_bus=self.event_bus, current_build=in_game_build, skill=CustomSkill("Ether_Nightmare_luxon"))
+        self.ether_nightmare_kurz_utility: CustomSkillUtilityBase = EtherNightmareUtility(event_bus=self.event_bus, current_build=in_game_build, skill=CustomSkill("Ether_Nightmare_kurzick"))
         self.suffering_utility: CustomSkillUtilityBase = SufferingUtility(event_bus=self.event_bus, current_build=in_game_build)
 
         # condispam
@@ -117,6 +120,24 @@ class NecromancerNecrosisFoC_UtilitySkillBar(CustomBehaviorBaseUtility):
             skill=CustomSkill("Signet_of_Corruption_kurzick"),
             current_build=in_game_build, score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 35 if enemy_qte >= 3 else 22 if enemy_qte <= 2 else 5),
             mana_required_to_cast=0)
+
+        self.arcane_echo_utility: CustomSkillUtilityBase = ArcaneEchoUtility(
+            event_bus=self.event_bus,
+            current_build=in_game_build,
+            original_skill_to_copy= self.feast_of_corruption_utility,
+            new_copied_instance= RawAoeAttackUtility(
+                event_bus=self.event_bus,
+                skill=CustomSkill("Feast_of_Corruption"),
+                current_build=in_game_build,
+                score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 80 if enemy_qte >= 3 else 50 if enemy_qte <= 2 else 20),
+                mana_required_to_cast=12),
+            arcane_echo_score_definition=ScoreStaticDefinition(82))
+        self.auspicious_incantation_utility: CustomSkillUtilityBase = AuspiciousIncantationUtility(
+            event_bus=self.event_bus,
+            current_build=in_game_build,
+            original_skill_to_cast=self.arcane_echo_utility,
+            auspicious_score_definition=ScoreStaticDefinition(82)
+        )
 
         # utilities
         # todo low energy check
@@ -161,7 +182,8 @@ class NecromancerNecrosisFoC_UtilitySkillBar(CustomBehaviorBaseUtility):
 
             self.mistrust_utility,
             self.unnatural_signet_utility,
-            self.ether_nightmare_utility,
+            self.ether_nightmare_kurz_utility,
+            self.ether_nightmare_lux_utility,
             self.suffering_utility,
             self.shatter_hex_utility,
             self.shatter_enchantment_utility,
@@ -178,6 +200,8 @@ class NecromancerNecrosisFoC_UtilitySkillBar(CustomBehaviorBaseUtility):
 
             self.energy_tap_utility,
             self.fall_back_utility,
+            self.arcane_echo_utility,
+            self.auspicious_incantation_utility,
 
             self.ebon_battle_standard_of_honor_utility,
             self.ebon_vanguard_assassin_support,
@@ -194,5 +218,6 @@ class NecromancerNecrosisFoC_UtilitySkillBar(CustomBehaviorBaseUtility):
     @override
     def skills_required_in_behavior(self) -> list[CustomSkill]:
         return [
-            self.feast_of_corruption_utility.custom_skill,
+            self.necrosis_utility.custom_skill,
+            self.signet_of_lost_souls_utility.custom_skill,
         ]
