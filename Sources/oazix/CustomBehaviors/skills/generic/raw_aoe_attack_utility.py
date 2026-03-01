@@ -18,7 +18,8 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
     current_build: list[CustomSkill],
     score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 66 if enemy_qte >= 3 else 51 if enemy_qte <= 2 else 26),
     mana_required_to_cast: int = 12,
-    allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO]
+    allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
+    within_range: Range = Range.Spellcast,
     ) -> None:
 
         super().__init__(
@@ -30,10 +31,11 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
             allowed_states=allowed_states)
         
         self.score_definition: ScorePerAgentQuantityDefinition = score_definition
+        self.within_range = within_range
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
         return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
-            within_range=Range.Spellcast,
+            within_range=self.within_range,
             sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_DESC),
             range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id))
 
