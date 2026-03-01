@@ -15,8 +15,8 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base i
 class PlagueSendingUtility(CustomSkillUtilityBase):
     def __init__(self,
     event_bus: EventBus,
-    skill: CustomSkill,
     current_build: list[CustomSkill],
+    skill: CustomSkill = CustomSkill("Plague_Sending"),
     score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 48 if enemy_qte >= 3 else 32 if enemy_qte <= 2 else 24),
     mana_required_to_cast: int = 12,
     allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO]
