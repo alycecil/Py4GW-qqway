@@ -3,6 +3,7 @@ import pathlib
 import sys
 
 import Py4GW
+from HeroAI.ui import is_left_mouse_clicked, commands, gray_color
 from Py4GWCoreLib import ImGui, Map, PyImGui, Routines, Color
 from Py4GWCoreLib.Py4GWcorelib import ThrottledTimer
 from Py4GWCoreLib.UIManager import UIManager
@@ -13,6 +14,14 @@ from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party impo
 from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_shared_memory import CustomBehaviorWidgetMemoryManager
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.primitives.widget_monitor import WidgetMonitor
+from Py4GWCoreLib import Player
+from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
+from Py4GWCoreLib.GlobalCache.SharedMemory import SharedMessageStruct
+from Py4GWCoreLib.Py4GWcorelib import ThrottledTimer
+from Py4GWCoreLib.ImGui_src.WindowModule import WindowModule
+
+from HeroAI.cache_data import CacheData
+from HeroAI.settings import Settings
 
 # Iterate through all modules in sys.modules (already imported modules)
 # Iterate over all imported modules and reload them
@@ -50,9 +59,50 @@ widget_monitor = WidgetMonitor()
 widget_window_size:tuple[float, float] = (0,0)
 widget_window_pos:tuple[float, float] = (0,0)
 
+
+def draw_dialog_overlay():
+    global frame_coords, dialog_open, dialog_coords
+
+    account_email = Player.GetAccountEmail()
+    own_data = GLOBAL_CACHE.ShMem.GetAccountDataFromEmail(account_email)
+    if own_data is None:
+        print("no cache data")
+        return
+
+    dialog_open = UIManager.IsNPCDialogVisible()
+    frame_coords = UIManager.GetDialogButtonFrames() if dialog_open else []
+
+    if not frame_coords or not dialog_open:
+        # print("no dialog data")
+        return
+
+    pyimgui_io = PyImGui.get_io()
+    mouse_pos = (pyimgui_io.mouse_pos_x, pyimgui_io.mouse_pos_y)
+
+    # if Console.is_window_active():
+    sorted_frames = sorted(frame_coords, key=lambda x: (x[1][1], x[1][0]))  # Sort by Y, then X
+
+    # print("dialog open")
+    for i, (frame_id, frame) in enumerate(sorted_frames):
+        if ImGui.is_mouse_in_rect((frame[0], frame[1], frame[2] - frame[0], frame[3] - frame[1]), mouse_pos):
+            if is_left_mouse_clicked() and pyimgui_io.key_ctrl:
+                accounts = [acc for acc in GLOBAL_CACHE.ShMem.GetAllAccountData() if acc.AccountEmail != account_email]
+                commands.send_dialog(accounts, i + 1)
+                return
+            else:
+                ImGui.begin_tooltip()
+                ImGui.text_colored(f"Ctrl + Click to select on all accounts.", gray_color.color_tuple, 12)
+                ImGui.end_tooltip()
+        else:
+            # print("no dialog")
+            pass
+
+    pass
+
 def gui():
     # PyImGui.set_next_window_size(260, 650)
     # PyImGui.set_next_window_size(460, 800)
+    draw_dialog_overlay()
 
     global party_forced_state_combo, monitor, widget_window_size, widget_window_pos
     
@@ -142,7 +192,11 @@ def main():
     if map_change_throttler.IsExpired():
         show_ui = not UIManager.IsWorldMapShowing() and not Map.IsInCinematic() and not Map.Pregame.InCharacterSelectScreen() and Py4GW.Console.is_window_active()
         if show_ui:
-            gui()
+            try:
+                gui()
+            except Exception as e:
+                print(f'GUI Exception: {e}')
+
 
         daemon()
 
