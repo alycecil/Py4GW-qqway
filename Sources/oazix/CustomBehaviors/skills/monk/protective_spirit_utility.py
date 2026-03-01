@@ -45,9 +45,9 @@ class ProtectiveSpiritUtility(CustomSkillUtilityBase):
         targets: list[custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
             within_range=Range.Spellcast.value * 1.2,
             condition=lambda agent_id: (
-                Agent.GetHealth(agent_id) < 0.9 and
-                not Routines.Checks.Effects.HasBuff(agent_id, self.custom_skill.skill_id) and
-                self.buff_configuration.get_agent_id_predicate()(agent_id)
+                    0.1 < Agent.GetHealth(agent_id) < 0.9 and
+                    not Routines.Checks.Effects.HasBuff(agent_id, self.custom_skill.skill_id) and
+                    self.buff_configuration.get_agent_id_predicate()(agent_id)
             ),
             sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC))
         return targets

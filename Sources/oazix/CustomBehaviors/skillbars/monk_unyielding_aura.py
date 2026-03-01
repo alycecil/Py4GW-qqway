@@ -1,5 +1,6 @@
 from typing import override
 
+from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_health_gravity_definition import ScorePerHealthGravityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
@@ -34,6 +35,8 @@ class MonkUnyieldingAura_UtilitySkillBar(CustomBehaviorBaseUtility):
 
         self.patient_spirit_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Patient_Spirit"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(8))
         self.healing_burst_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Healing_Burst"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(7))
+        self.Signet_of_Rejuvenation_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Signet_of_Rejuvenation"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(6))
+        self.Signet_of_Devotion_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Signet_of_Devotion"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(5))
 
         self.seed_of_life_utility: CustomSkillUtilityBase = SeedOfLifeUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(1))
        
@@ -50,6 +53,15 @@ class MonkUnyieldingAura_UtilitySkillBar(CustomBehaviorBaseUtility):
                                                              target_utilities=[self.seed_of_life_utility, self.selfless_spirit_luxon_utility, self.selfless_spirit_kurzick_utility], current_build=in_game_build, score_definition=ScoreStaticDefinition(99))
         self.dwarven_stability_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, current_build=in_game_build, skill=CustomSkill("Dwarven_Stability"), score_definition=ScoreStaticDefinition(95))
 
+        self.Divine_Spirit_utility: CustomSkillUtilityBase = PreparationUtility(
+            event_bus=self.event_bus,
+            prep_skill=CustomSkill("Divine_Spirit"),
+            target_utilities=[self.protective_spirit_utility, self.seed_of_life_utility, self.cure_hex_utility, self.dismiss_condition_utility, self.healing_burst_utility],
+            current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(55),
+            mana_required_to_cast=15,
+            allowed_states=[BehaviorState.IN_AGGRO]
+        )
         # common
         self.i_am_unstopabble: CustomSkillUtilityBase = IAmUnstoppableUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(99))
         self.fall_back_utility: CustomSkillUtilityBase = FallBackUtility(event_bus=self.event_bus, current_build=in_game_build)
@@ -79,6 +91,10 @@ class MonkUnyieldingAura_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.selfless_spirit_luxon_utility,
             self.selfless_spirit_kurzick_utility,
             self.dwarven_stability_utility,
+
+            self.Divine_Spirit_utility,
+            self.Signet_of_Rejuvenation_utility,
+            self.Signet_of_Devotion_utility,
         ]
 
     @property
