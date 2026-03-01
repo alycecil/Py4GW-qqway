@@ -39,6 +39,7 @@ from Sources.oazix.CustomBehaviors.skills.necromancer.blood_of_the_master import
 from Sources.oazix.CustomBehaviors.skills.necromancer.discord_utility import DiscordUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.foul_feast_utility import FoulFeastUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.necrosis_utility import NecrosisUtility
+from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_corruption import SignetOfCorruptionUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_lost_souls_utility import SignetOfLostSoulsUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.suffering import SufferingUtility
 from Sources.oazix.CustomBehaviors.skills.paragon.fall_back_utility import FallBackUtility
@@ -109,17 +110,14 @@ class NecromancerNecrosisFoC_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.spiritual_pain_utility: CustomSkillUtilityBase = SpiritualPainUtility(event_bus=self.event_bus, current_build=in_game_build, mana_required_to_cast=10)
         self.feast_of_corruption_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Feast_of_Corruption"), current_build=in_game_build, mana_required_to_cast=15)
 
-        # todo low energy check
-        self.Signet_of_Corruption_luxon_utility: CustomSkillUtilityBase = RawAoeAttackUtility(
+        self.Signet_of_Corruption_luxon_utility: CustomSkillUtilityBase = SignetOfCorruptionUtility(
             event_bus=self.event_bus,
             skill=CustomSkill("Signet_of_Corruption_luxon"),
-            current_build=in_game_build, score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 35 if enemy_qte >= 3 else 22 if enemy_qte <= 2 else 5),
-            mana_required_to_cast=0)
-        self.Signet_of_Corruption_kurzick_utility: CustomSkillUtilityBase = RawAoeAttackUtility(
+            current_build=in_game_build)
+        self.Signet_of_Corruption_kurzick_utility: CustomSkillUtilityBase = SignetOfCorruptionUtility(
             event_bus=self.event_bus,
             skill=CustomSkill("Signet_of_Corruption_kurzick"),
-            current_build=in_game_build, score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 35 if enemy_qte >= 3 else 22 if enemy_qte <= 2 else 5),
-            mana_required_to_cast=0)
+            current_build=in_game_build)
 
         self.arcane_echo_utility: CustomSkillUtilityBase = ArcaneEchoUtility(
             event_bus=self.event_bus,
@@ -218,6 +216,7 @@ class NecromancerNecrosisFoC_UtilitySkillBar(CustomBehaviorBaseUtility):
     @override
     def skills_required_in_behavior(self) -> list[CustomSkill]:
         return [
+            self.feast_of_corruption_utility.custom_skill,
             self.necrosis_utility.custom_skill,
             self.signet_of_lost_souls_utility.custom_skill,
         ]
