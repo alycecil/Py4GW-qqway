@@ -1,6 +1,7 @@
 from typing import List, Any, Generator, Callable, override
 
 from Py4GWCoreLib import GLOBAL_CACHE, Agent, Range
+from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
@@ -11,6 +12,7 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_de
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
+from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_pain_utility import CryOfPainUtility
 
 
 class EtherNightmareUtility(CustomSkillUtilityBase):
@@ -62,10 +64,11 @@ class EtherNightmareUtility(CustomSkillUtilityBase):
 
         lock_key = self._get_lock_key(target.agent_id)
         if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key) == False: 
-            return BehaviorResult.ACTION_SKIPPED 
+            return BehaviorResult.ACTION_SKIPPED
 
         try:
             result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
         finally:
+            CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(CryOfPainUtility.get_cryway_spike_target_lock_key(agent_id=target.agent_id), timeout_seconds=10)
             CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
         return result

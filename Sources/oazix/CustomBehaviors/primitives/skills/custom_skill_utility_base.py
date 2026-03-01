@@ -121,8 +121,13 @@ class CustomSkillUtilityBase:
     def execute(self, state: BehaviorState) -> Generator[Any | None, Any | None, BehaviorResult]:
         if constants.DEBUG: print(f"Executing {self.custom_skill.skill_name}")
 
-        gen:Generator[Any | None, Any | None, BehaviorResult] = self._execute(state)
-        result:BehaviorResult = yield from gen
+        try:
+            gen:Generator[Any | None, Any | None, BehaviorResult] = self._execute(state)
+            result:BehaviorResult = yield from gen
+        except Exception as e:
+            print(f'execute Exception {self.custom_skill.skill_name}: {e}')
+            print(traceback.format_exc())
+            return BehaviorResult.ACTION_SKIPPED
 
         return result
 
