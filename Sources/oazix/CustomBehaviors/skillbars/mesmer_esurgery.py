@@ -21,6 +21,7 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.auspicious_incantation_utility 
 from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_frustration_utility import CryOfFrustrationUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_pain_utility import CryOfPainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.drain_enchantment_utility import DrainEnchantmentUtility
+from Sources.oazix.CustomBehaviors.skills.mesmer.ether_nightmare import EtherNightmareUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.mistrust_utility import MistrustUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.power_drain_utility import PowerDrainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.shatter_enchantment_utility import ShatterEnchantmentUtility
@@ -44,6 +45,8 @@ class MesmerESurgery_UtilitySkillBar(CustomBehaviorBaseUtility):
         # hex
         self.mistrust_utility: CustomSkillUtilityBase = MistrustUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 70 if enemy_qte >= 3 else 40 if enemy_qte <= 2 else 0), mana_required_to_cast=10)
         self.unnatural_signet_utility: CustomSkillUtilityBase = UnnaturalSignetUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 90 if enemy_qte >= 2 else 40 if enemy_qte <= 2 else 0))
+        self.ether_nightmare_lux_utility: CustomSkillUtilityBase = EtherNightmareUtility(event_bus=self.event_bus, current_build=in_game_build, skill=CustomSkill("Ether_Nightmare_luxon"))
+        self.ether_nightmare_kurz_utility: CustomSkillUtilityBase = EtherNightmareUtility(event_bus=self.event_bus, current_build=in_game_build, skill=CustomSkill("Ether_Nightmare_kurzick"))
 
         #shatter/drain
         self.shatter_hex_utility: CustomSkillUtilityBase = ShatterHexUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 95 if enemy_qte >= 2 else 20))
@@ -104,6 +107,8 @@ class MesmerESurgery_UtilitySkillBar(CustomBehaviorBaseUtility):
 
             self.mistrust_utility,
             self.unnatural_signet_utility,
+            self.ether_nightmare_kurz_utility,
+            self.ether_nightmare_lux_utility,
 
             self.energy_surge_utility,
             self.overload_utility,
