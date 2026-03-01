@@ -68,7 +68,7 @@ class NecromancerCultistOfNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
             skill=CustomSkill("Cultists_Fervor"),
             current_build=in_game_build,
             score_definition=ScoreStaticDefinition(90),
-            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO])
 
 
         # MM skills
