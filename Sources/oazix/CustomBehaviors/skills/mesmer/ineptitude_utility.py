@@ -39,10 +39,10 @@ class IneptitudeUtility(CustomSkillUtilityBase):
         return f"Ineptitude_{agent_id}"
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
-        """Get melee enemies ordered by cluster size and distance."""
+        """Get martial enemies ordered by cluster size and distance."""
         return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
                     within_range=Range.Spellcast,
-                    condition=lambda agent_id: Agent.IsMelee(agent_id),
+                    condition=lambda agent_id: Agent.IsMartial(agent_id),
                     sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.DISTANCE_ASC),
                     range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id))
 
