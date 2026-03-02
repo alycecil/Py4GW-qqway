@@ -40,6 +40,7 @@ from Sources.oazix.CustomBehaviors.skills.necromancer.blood_is_power_utility imp
 from Sources.oazix.CustomBehaviors.skills.necromancer.blood_of_the_master import BloodOfTheMasterUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.discord_utility import DiscordUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.foul_feast_utility import FoulFeastUtility
+from Sources.oazix.CustomBehaviors.skills.necromancer.icy_veins_utility import IcyVeins_NearDeathUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.necrosis_utility import NecrosisUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.putrid_bile_utility import PutridBile_NearDeathUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.putrid_explosion_utility import PutridExplosionUtility
@@ -105,12 +106,9 @@ class NecromancerIcyVeinsNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.chaos_storm_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Chaos_Storm"), current_build=in_game_build, mana_required_to_cast=15)
         self.wastrels_demise_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Wastrels_Demise"), current_build=in_game_build, mana_required_to_cast=15)
         self.spiritual_pain_utility: CustomSkillUtilityBase = SpiritualPainUtility(event_bus=self.event_bus, current_build=in_game_build, mana_required_to_cast=10)
-        self.Icy_Veins_utility: CustomSkillUtilityBase = PutridBile_NearDeathUtility(
+        self.Icy_Veins_utility: CustomSkillUtilityBase = IcyVeins_NearDeathUtility(
             event_bus=self.event_bus,
-            current_build=in_game_build,
-            skill=CustomSkill("Icy_Veins"),
-            required_hp_fraction=0.85,
-            score_definition=ScoreStaticDefinition(29)
+            current_build=in_game_build
         )
 
         self.Signet_of_Corruption_luxon_utility: CustomSkillUtilityBase = SignetOfCorruptionUtility(
