@@ -21,6 +21,7 @@ from Sources.oazix.CustomBehaviors.skills.generic.generic_resurrection_utility i
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.minion_invocation_from_corpse_utility import MinionInvocationFromCorpseUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
+from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_attack_utility import RawSimpleAttackUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.arcane_echo_utility import ArcaneEchoUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.auspicious_incantation_utility import AuspiciousIncantationUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_frustration_utility import CryOfFrustrationUtility
@@ -40,6 +41,8 @@ from Sources.oazix.CustomBehaviors.skills.necromancer.blood_of_the_master import
 from Sources.oazix.CustomBehaviors.skills.necromancer.discord_utility import DiscordUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.foul_feast_utility import FoulFeastUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.necrosis_utility import NecrosisUtility
+from Sources.oazix.CustomBehaviors.skills.necromancer.putrid_bile_utility import PutridBile_NearDeathUtility
+from Sources.oazix.CustomBehaviors.skills.necromancer.putrid_explosion_utility import PutridExplosionUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_corruption_utility import SignetOfCorruptionUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_lost_souls_utility import SignetOfLostSoulsUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.suffering import SufferingUtility
@@ -102,8 +105,13 @@ class NecromancerIcyVeinsNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.chaos_storm_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Chaos_Storm"), current_build=in_game_build, mana_required_to_cast=15)
         self.wastrels_demise_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Wastrels_Demise"), current_build=in_game_build, mana_required_to_cast=15)
         self.spiritual_pain_utility: CustomSkillUtilityBase = SpiritualPainUtility(event_bus=self.event_bus, current_build=in_game_build, mana_required_to_cast=10)
-        self.Icy_Veins_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Icy_Veins"), current_build=in_game_build, mana_required_to_cast=15,
-                                                                             score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 90 if enemy_qte >= 3 else 70 if enemy_qte <= 2 else 50))
+        self.Icy_Veins_utility: CustomSkillUtilityBase = PutridBile_NearDeathUtility(
+            event_bus=self.event_bus,
+            current_build=in_game_build,
+            skill=CustomSkill("Icy_Veins"),
+            required_hp_fraction=0.85,
+            score_definition=ScoreStaticDefinition(29)
+        )
 
         self.Signet_of_Corruption_luxon_utility: CustomSkillUtilityBase = SignetOfCorruptionUtility(
             event_bus=self.event_bus,
@@ -133,6 +141,25 @@ class NecromancerIcyVeinsNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
         )
 
         # utilities
+        self.masochism_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(
+            event_bus=self.event_bus,
+            skill=CustomSkill("Masochism"),
+            current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(92),
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
+        )
+        self.putrid_bile_utility: CustomSkillUtilityBase = PutridBile_NearDeathUtility(
+            event_bus=self.event_bus,
+            current_build=in_game_build
+        )
+        self.putrid_explosion_utility: CustomSkillUtilityBase = PutridExplosionUtility(
+            event_bus=self.event_bus,
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(
+                lambda enemy_qte: 80 if enemy_qte >= 2 else 35
+            ),
+            mana_required_to_cast=5,
+        )
         # todo low energy check
         self.energy_tap_utility: CustomSkillUtilityBase = AutoCombatUtility(event_bus=self.event_bus, skill=CustomSkill("Energy_Tap"), current_build=in_game_build, score_definition=ScoreStaticDefinition(85))
         self.fall_back_utility: CustomSkillUtilityBase = FallBackUtility(event_bus=self.event_bus, current_build=in_game_build)
@@ -155,6 +182,9 @@ class NecromancerIcyVeinsNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
     @override
     def custom_skills_in_behavior(self) -> list[CustomSkillUtilityBase]:
         return [
+            self.Icy_Veins_utility,
+            self.putrid_bile_utility,
+
             self.necrosis_utility,
             self.discord_utility,
 
@@ -202,6 +232,9 @@ class NecromancerIcyVeinsNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.air_of_superiority_utility,
             self.ebon_escape_utility,
             self.finish_him_utility,
+
+            self.putrid_explosion_utility,
+            self.masochism_utility,
         ]
 
     @property
