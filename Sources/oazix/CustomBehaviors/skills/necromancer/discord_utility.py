@@ -18,7 +18,7 @@ class DiscordUtility(CustomSkillUtilityBase):
     def __init__(self,
                 event_bus: EventBus,
                 current_build: list[CustomSkill],
-                score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 20 if enemy_qte >= 3 else 45 if enemy_qte <= 2 else 70),
+                score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 20 if enemy_qte >= 3 else 45 if enemy_qte >= 2 else 70),
         ) -> None:
 
         super().__init__(
