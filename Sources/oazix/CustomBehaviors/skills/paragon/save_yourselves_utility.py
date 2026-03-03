@@ -20,6 +20,7 @@ class SaveYourSelfLuxonUtility(CustomSkillUtilityBase):
             self,
             event_bus: EventBus,
             current_build: list[CustomSkill],
+            mana_required_to_cast: float = 0,
             skill: CustomSkill = CustomSkill("Save_Yourselves_luxon"),
             score_definition: ScoreStaticDefinition = ScoreStaticDefinition(90),
             allowed_states: list[BehaviorState] = [BehaviorState.CLOSE_TO_AGGRO, BehaviorState.IN_AGGRO]
@@ -28,6 +29,7 @@ class SaveYourSelfLuxonUtility(CustomSkillUtilityBase):
         super().__init__(
             event_bus=event_bus,
             skill=skill,
+            mana_required_to_cast=mana_required_to_cast,
             in_game_build=current_build,
             score_definition=score_definition,
             allowed_states=allowed_states)
@@ -55,6 +57,7 @@ class SaveYourSelfLuxonUtility(CustomSkillUtilityBase):
         CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
         return result
 
+
 class SaveYourSelfKurzUtility(SaveYourSelfLuxonUtility):
     def __init__(
             self,
@@ -71,3 +74,22 @@ class SaveYourSelfKurzUtility(SaveYourSelfLuxonUtility):
             current_build=current_build,
             score_definition=score_definition,
             allowed_states=allowed_states)
+
+
+class TheresNothingToFearUtility(SaveYourSelfLuxonUtility):
+    def __init__(
+            self,
+            event_bus: EventBus,
+            current_build: list[CustomSkill],
+            skill: CustomSkill = CustomSkill("Theres_Nothing_to_Fear"),
+            score_definition: ScoreStaticDefinition = ScoreStaticDefinition(90),
+            allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO]
+    ) -> None:
+
+        super().__init__(
+            event_bus=event_bus,
+            skill=skill,
+            current_build=current_build,
+            score_definition=score_definition,
+            allowed_states=allowed_states,
+            mana_required_to_cast=15)
