@@ -8,6 +8,8 @@ from HeroAI.cache_data import CacheData
 from HeroAI.settings import Settings
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 
+from HeroAI.ui import draw_hero_panel, draw_dialog_overlay
+
 class HeroAiWrapping:
     _instance = None  # Singleton instance
 
@@ -152,7 +154,6 @@ class HeroAiWrapping:
 
     def _render_gui(self, settings, cached_data, accounts, messages):
         """Handle GUI rendering for HeroAI panels"""
-        from HeroAI.ui import draw_hero_panel, draw_dialog_overlay
 
         # Create windows and draw hero panels for each account
         for account in accounts:
