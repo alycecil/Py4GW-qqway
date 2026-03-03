@@ -2,6 +2,7 @@ from typing import Any, Generator, Callable, override
 
 from Py4GWCoreLib import GLOBAL_CACHE, Agent, Range, Routines, Player
 from Sources.Nikon_Scripts.BotUtilities import GameAreas
+from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
@@ -12,6 +13,7 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_de
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
+
 
 class LightOfDeldrimorUtility(CustomSkillUtilityBase):
 
@@ -32,6 +34,7 @@ class LightOfDeldrimorUtility(CustomSkillUtilityBase):
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
+        """This evaluated the number of enemies in the blast radius and uses ScorePerAgentQuantityDefinition to escalate the want to use this skill"""
         # if self.nature_has_been_attempted_last(previously_attempted_skills): return None
 
         player_pos = Player.GetXY()
@@ -40,9 +43,10 @@ class LightOfDeldrimorUtility(CustomSkillUtilityBase):
         agent_quantity = len(enemy_array)
         score = self.score_definition.get_score(agent_quantity)
 
-        if self.last_agent_quantity != agent_quantity:
-            print(f"You have {agent_quantity} enemies to blast score={score}")
-            self.last_agent_quantity = agent_quantity
+        if constants.DEBUG:
+            if self.last_agent_quantity != agent_quantity:
+                print(f"You have {agent_quantity} enemies to blast score={score}")
+                self.last_agent_quantity = agent_quantity
 
         return score
         
