@@ -43,7 +43,7 @@ class SignetOfAggressionUtility(CustomSkillUtilityBase):
         has_buff = self._HasShoutBuff(agent_id=Player.GetAgentID())
         is_moving = Agent.IsMoving(Player.GetAgentID())
         
-        if has_buff and is_moving: return self.score_definition.get_score()
+        if has_buff and not is_moving: return self.score_definition.get_score()
         return None
 
     @override
@@ -58,6 +58,10 @@ class SignetOfAggressionUtility(CustomSkillUtilityBase):
 
         for buff in buff_list:
             skill_type, _ = GLOBAL_CACHE.Skill.GetType(buff)
+
+            if skill_type == SkillType.Shout.value:
+                return True
+
             if skill_type == SkillType.Chant.value:
                 return True
 
