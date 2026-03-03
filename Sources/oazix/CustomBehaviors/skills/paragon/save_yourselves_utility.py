@@ -39,9 +39,8 @@ class SaveYourSelfLuxonUtility(CustomSkillUtilityBase):
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
         has_buff = Routines.Checks.Effects.HasBuff(Player.GetAgentID(), self.custom_skill.skill_id)
-        is_moving = Agent.IsMoving(Player.GetAgentID())
         
-        if not has_buff and is_moving: return self.score_definition.get_score()
+        if not has_buff: return self.score_definition.get_score()
         return None
 
     @override
@@ -49,7 +48,7 @@ class SaveYourSelfLuxonUtility(CustomSkillUtilityBase):
 
         lock_key = f"Save_yourselves_utility"
 
-        if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key) == False:
+        if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=6) == False:
             yield
             return BehaviorResult.ACTION_SKIPPED
 

@@ -37,7 +37,8 @@ class WatchYourselfPowerbatteryUtility(SaveYourSelfLuxonUtility):
 
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
         super___evaluate = super()._evaluate(current_state, previously_attempted_skills)
-
+        if super___evaluate is None:
+            return None
         player_energy_percent = Agent.GetEnergy(Player.GetAgentID())
         mult = 1.0
 
