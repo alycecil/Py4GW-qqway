@@ -18,7 +18,7 @@ class SignetOfCorruptionUtility(CustomSkillUtilityBase):
         event_bus: EventBus,
         current_build: list[CustomSkill],
         skill: CustomSkill,
-        score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 50 if enemy_qte >= 3 else 30 if enemy_qte <= 2 else 5),
+        score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 50 if enemy_qte >= 3 else 30 if enemy_qte >= 2 else 10),
         mana_required_to_cast: int = 0,
         allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO]
         ) -> None:
