@@ -59,6 +59,9 @@ widget_monitor = WidgetMonitor()
 widget_window_size:tuple[float, float] = (0,0)
 widget_window_pos:tuple[float, float] = (0,0)
 
+MODULE_NAME = "Custom Behaviors: Utility AI"
+MODULE_ICON = "Textures/Module_Icons/Custom Behaviors.png"
+
 
 def draw_dialog_overlay():
     global frame_coords, dialog_open, dialog_coords
