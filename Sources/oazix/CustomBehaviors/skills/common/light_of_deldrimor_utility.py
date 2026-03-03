@@ -18,7 +18,7 @@ class LightOfDeldrimorUtility(CustomSkillUtilityBase):
     def __init__(self,
                 event_bus: EventBus,
                 current_build: list[CustomSkill],
-                score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 70 if enemy_qte >= 3 else 45 if enemy_qte <= 1 else 25),
+                score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 81 if enemy_qte >= 6 else 71 if enemy_qte >= 4 else 45 if enemy_qte >= 2 else 10 if enemy_qte >= 1 else 0),
         ) -> None:
 
         super().__init__(
@@ -45,5 +45,5 @@ class LightOfDeldrimorUtility(CustomSkillUtilityBase):
             skill=self.custom_skill
         ))
 
-        result: BehaviorResult = yield from custom_behavior_helpers.Helpers.wait_for_or_until_completion(1250, action)
+        result: BehaviorResult = yield from custom_behavior_helpers.Helpers.wait_for_or_until_completion(1000, action)
         return result
