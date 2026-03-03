@@ -18,7 +18,7 @@ class LightOfDeldrimorUtility(CustomSkillUtilityBase):
     def __init__(self,
                 event_bus: EventBus,
                 current_build: list[CustomSkill],
-                score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 81 if enemy_qte >= 6 else 71 if enemy_qte >= 4 else 45 if enemy_qte >= 2 else 10 if enemy_qte >= 1 else 0),
+                score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 90 if enemy_qte >= 4 else 71 if enemy_qte >= 3 else 45 if enemy_qte >= 2 else 15 if enemy_qte >= 1 else 0),
         ) -> None:
 
         super().__init__(
@@ -28,15 +28,23 @@ class LightOfDeldrimorUtility(CustomSkillUtilityBase):
             score_definition=score_definition)
         
         self.score_definition: ScorePerAgentQuantityDefinition = score_definition
+        self.last_agent_quantity: int = 0
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
-        if self.nature_has_been_attempted_last(previously_attempted_skills): return None
+        # if self.nature_has_been_attempted_last(previously_attempted_skills): return None
 
         player_pos = Player.GetXY()
         enemy_array = Routines.Agents.GetFilteredEnemyArray(player_pos[0], player_pos[1], GameAreas.Area)
 
-        return self.score_definition.get_score(len(enemy_array))
+        agent_quantity = len(enemy_array)
+        score = self.score_definition.get_score(agent_quantity)
+
+        if self.last_agent_quantity != agent_quantity:
+            print(f"You have {agent_quantity} enemies to blast score={score}")
+            self.last_agent_quantity = agent_quantity
+
+        return score
         
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any | None, Any | None, BehaviorResult]:
@@ -45,5 +53,5 @@ class LightOfDeldrimorUtility(CustomSkillUtilityBase):
             skill=self.custom_skill
         ))
 
-        result: BehaviorResult = yield from custom_behavior_helpers.Helpers.wait_for_or_until_completion(1000, action)
+        result: BehaviorResult = yield from custom_behavior_helpers.Helpers.wait_for_or_until_completion(750, action)
         return result
