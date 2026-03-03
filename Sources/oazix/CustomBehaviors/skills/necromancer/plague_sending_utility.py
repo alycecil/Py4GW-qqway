@@ -2,6 +2,7 @@ from typing import List, Any, Generator, Callable, override
 
 from Py4GWCoreLib import GLOBAL_CACHE, Routines, Range, Agent, Player
 from Sources.Nikon_Scripts.BotUtilities import GameAreas
+from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
@@ -69,7 +70,7 @@ class PlagueSendingUtility(CustomSkillUtilityBase):
             scoreMult += 0.5
             targets = self._get_cultists_fervor_best_targets()
             if len(targets) != 0:
-                print("Have a fervor best target")
+                if constants.DEBUG: print("Have a fervor best target")
                 return self.score_definition.get_score(targets[0].enemy_quantity_within_range) * scoreMult
 
 
