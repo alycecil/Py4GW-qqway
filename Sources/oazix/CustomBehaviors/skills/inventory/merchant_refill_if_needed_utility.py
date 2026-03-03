@@ -57,10 +57,10 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         }
 
         self.visit_duration_in_seconds_config:dict[MerchantType, int] = {
-            MerchantType.MERCHANT: 5,
-            MerchantType.RUNE_TRADER: 5,
+            MerchantType.MERCHANT: 25,
+            MerchantType.RUNE_TRADER: 15,
             MerchantType.RARE_MATERIAL_TRADER: 10,
-            MerchantType.CRAFTING_MATERIAL_TRADER: 3,
+            MerchantType.CRAFTING_MATERIAL_TRADER: 13,
         }
 
         self.npc_visited:dict[MerchantType, bool] = {
