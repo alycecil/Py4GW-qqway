@@ -19,7 +19,7 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
         current_build: list[CustomSkill],
         score_definition: ScoreStaticDefinition = ScoreStaticDefinition(40),
         mana_required_to_cast: int = 20,
-        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO]
+        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]
         ) -> None:
 
         super().__init__(
