@@ -40,6 +40,7 @@ class IcyVeins_NearDeathUtility(CustomSkillUtilityBase):
 
         return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority(
             within_range=Range.Spellcast,
+            condition=lambda agent_id: not Agent.IsSpirit(agent_id),
             sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC),
         )
 

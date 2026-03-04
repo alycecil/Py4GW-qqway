@@ -71,7 +71,7 @@ def bot_routine(bot: Botting) -> None:
     bot.Templates.Multibox_Aggressive()
     bot.Templates.Routines.PrepareForFarm(map_id_to_travel=OUTPOST_TO_TRAVEL)
     
-    bot.Party.SetHardMode(True)
+    # bot.Party.SetHardMode(True)
     bot.Move.XYAndExitMap(-5490, 13672, 200) # Mount Qinkai
     bot.Wait.ForTime(4000)
     
@@ -84,16 +84,16 @@ def bot_routine(bot: Botting) -> None:
         bot.Multibox.SendDialogToTarget(0x84) # This will bribe the priest in case kurzick is greater or equal than luxon
     bot.Multibox.SendDialogToTarget(0x86) #Get Bounty
     bot.States.AddHeader("Start Combat") #3
-    bot.Multibox.UseAllConsumables()
-    bot.States.AddManagedCoroutine("Upkeep Multibox Consumables", lambda: _upkeep_multibox_consumables(bot))
+    # bot.Multibox.UseAllConsumables()
+    # bot.States.AddManagedCoroutine("Upkeep Multibox Consumables", lambda: _upkeep_multibox_consumables(bot))
     
     bot.Move.FollowAutoPath(Vanquish_Path, "Kill Route")
     bot.Wait.UntilOutOfCombat()
 
     bot.Multibox.ResignParty()
     bot.Wait.UntilOnOutpost()
-    bot.Templates.Routines.PrepareForFarm(map_id_to_travel=CAVALON)
-    bot.Multibox.DonateFaction()
+    # bot.Templates.Routines.PrepareForFarm(map_id_to_travel=CAVALON)
+    # bot.Multibox.DonateFaction()
     bot.Wait.ForTime(30000)
     bot.States.JumpToStepName("[H]VQ Mount Qinkai_1")
     
@@ -106,34 +106,35 @@ def _upkeep_multibox_consumables(bot :"Botting"):
         
         if Routines.Checks.Map.IsOutpost():
             continue
-        
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Essence_Of_Celerity.value, 
-                                            GLOBAL_CACHE.Skill.GetID("Essence_of_Celerity_item_effect"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Grail_Of_Might.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Grail_of_Might_item_effect"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Armor_Of_Salvation.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Armor_of_Salvation_item_effect"), 0, 0))
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Birthday_Cupcake.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Birthday_Cupcake_skill"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Golden_Egg.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Golden_Egg_skill"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Candy_Corn.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Candy_Corn_skill"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Candy_Apple.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Candy_Apple_skill"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Slice_Of_Pumpkin_Pie.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Pie_Induced_Ecstasy"), 0, 0))    
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Drake_Kabob.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Drake_Skin"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Bowl_Of_Skalefin_Soup.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Skale_Vigor"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Pahnai_Salad.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Pahnai_Salad_item_effect"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.War_Supplies.value, 
-                                                                GLOBAL_CACHE.Skill.GetID("Well_Supplied"), 0, 0))
-        for i in range(1, 5): 
-            GLOBAL_CACHE.Inventory.UseItem(ModelID.Honeycomb.value)
-            yield from bot.Wait._coro_for_time(250)
+
+        pass
+        # yield from bot.helpers.Multibox._use_consumable_message((ModelID.Essence_Of_Celerity.value,
+        #                                     GLOBAL_CACHE.Skill.GetID("Essence_of_Celerity_item_effect"), 0, 0))
+        # yield from bot.helpers.Multibox._use_consumable_message((ModelID.Grail_Of_Might.value,
+        #                                         GLOBAL_CACHE.Skill.GetID("Grail_of_Might_item_effect"), 0, 0))
+        # yield from bot.helpers.Multibox._use_consumable_message((ModelID.Armor_Of_Salvation.value,
+        #                                         GLOBAL_CACHE.Skill.GetID("Armor_of_Salvation_item_effect"), 0, 0))
+        # yield from bot.helpers.Multibox._use_consumable_message((ModelID.Birthday_Cupcake.value,
+        #                                         GLOBAL_CACHE.Skill.GetID("Birthday_Cupcake_skill"), 0, 0))
+        # yield from bot.helpers.Multibox._use_consumable_message((ModelID.Golden_Egg.value,
+        #                                         GLOBAL_CACHE.Skill.GetID("Golden_Egg_skill"), 0, 0))
+        # yield from bot.helpers.Multibox._use_consumable_message((ModelID.Candy_Corn.value,
+        #                                         GLOBAL_CACHE.Skill.GetID("Candy_Corn_skill"), 0, 0))
+        # yield from bot.helpers.Multibox._use_consumable_message((ModelID.Candy_Apple.value,
+        #                                         GLOBAL_CACHE.Skill.GetID("Candy_Apple_skill"), 0, 0))
+        # yield from bot.helpers.Multibox._use_consumable_message((ModelID.Slice_Of_Pumpkin_Pie.value,
+        #                                         GLOBAL_CACHE.Skill.GetID("Pie_Induced_Ecstasy"), 0, 0))
+        # yield from bot.helpers.Multibox._use_consumable_message((ModelID.Drake_Kabob.value,
+        #                                         GLOBAL_CACHE.Skill.GetID("Drake_Skin"), 0, 0))
+        # yield from bot.helpers.Multibox._use_consumable_message((ModelID.Bowl_Of_Skalefin_Soup.value,
+        #                                         GLOBAL_CACHE.Skill.GetID("Skale_Vigor"), 0, 0))
+        # yield from bot.helpers.Multibox._use_consumable_message((ModelID.Pahnai_Salad.value,
+        #                                         GLOBAL_CACHE.Skill.GetID("Pahnai_Salad_item_effect"), 0, 0))
+        # yield from bot.helpers.Multibox._use_consumable_message((ModelID.War_Supplies.value,
+        #                                                         GLOBAL_CACHE.Skill.GetID("Well_Supplied"), 0, 0))
+        # for i in range(1, 5):
+        #     GLOBAL_CACHE.Inventory.UseItem(ModelID.Honeycomb.value)
+        #     yield from bot.Wait._coro_for_time(250)
             
 
 def _reverse_path():

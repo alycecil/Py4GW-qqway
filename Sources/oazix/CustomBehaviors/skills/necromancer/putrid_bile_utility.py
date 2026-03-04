@@ -55,7 +55,7 @@ class PutridBile_NearDeathUtility(CustomSkillUtilityBase):
         """
         def condition(agent_id: int) -> bool:
             hp = Agent.GetHealth(agent_id)
-            return hp is not None and 0.0 < hp < self.REQUIRED_TARGET_HP_FRACTION
+            return hp is not None and 0.0 < hp < self.REQUIRED_TARGET_HP_FRACTION and not Agent.IsSpirit(agent_id)
 
         return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority(
             within_range=Range.Spellcast,

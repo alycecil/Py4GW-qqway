@@ -36,13 +36,14 @@ class PlagueSendingUtility(CustomSkillUtilityBase):
     def _get_cultists_fervor_best_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
         return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
             within_range=Range.Spellcast,
-            condition=lambda agent_id: not Agent.IsBleeding(agent_id),
+            condition=lambda agent_id: not Agent.IsBleeding(agent_id) and not Agent.IsSpirit(agent_id),
             sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_ASC),
             range_to_count_enemies=GameAreas.Adjacent)
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
         return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
             within_range=Range.Spellcast,
+            condition=lambda agent_id: not Agent.IsSpirit(agent_id),
             sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_ASC),
             range_to_count_enemies=GameAreas.Adjacent)
 
@@ -78,7 +79,7 @@ class PlagueSendingUtility(CustomSkillUtilityBase):
 
         #if nothing just be done
         if not Agent.IsConditioned(Player.GetAgentID()):
-            print("No Conditions to send")
+            if constants.DEBUG: print("No Conditions to send")
             return None
 
 
@@ -88,7 +89,7 @@ class PlagueSendingUtility(CustomSkillUtilityBase):
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
-        print("Do Plague Sending")
+        if constants.DEBUG: print("Do Plague Sending")
 
         if Routines.Checks.Effects.HasBuff(Player.GetAgentID(), GLOBAL_CACHE.Skill.GetID("Cultists_Fervor")):
             enemies = self._get_cultists_fervor_best_targets()
