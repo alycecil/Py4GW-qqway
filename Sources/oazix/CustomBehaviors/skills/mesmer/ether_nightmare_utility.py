@@ -67,7 +67,7 @@ class EtherNightmareUtility(CustomSkillUtilityBase):
             return BehaviorResult.ACTION_SKIPPED
 
         try:
-            result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
+            result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id, call_target=True)
         finally:
             CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(CryOfPainUtility.get_cryway_spike_target_lock_key(agent_id=target.agent_id), timeout_seconds=10)
             CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
