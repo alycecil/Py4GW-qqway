@@ -1,4 +1,14 @@
-# Py4GW
+# Py4GW Cryway Custom Behaviours 
+Py4GW is a pretty cool framework that lets you do a lot of scripting for multiboxers far beyond what was available with gwa2. I am very happy to come back to the game after ytears and have a nice base tool to build on. 
+
+This will be a mostly compatible fork of Py4GW, with most of the changes being to mutliboxing skill defines. the builds are all built around cryway which despite the changes over time is still my favorite team builds to play this game with. If you love caster teams of necros and mesmers all in caster roles, cryway is the build for you.
+
+## Alys cry of pain was nerfed in 2009... what are you doing?
+Yes, yes and yes mesmer and nerco hero ways are still the op path. What if I tell you, discord way and offensive mesmer way are just degredations of cryway. You can have the wide aoe of mesmer ways and the solid single target spike of discord way with less stringent requirements then discord? Thats right we get to play fun bars like ebon vanguard assassin support or ymlad! or air of superiority, cry of pain or technobabble or light of deldrimor, cry of frustration, energy surge, necrosis, then whatever ever, spiritual pain, and rupts you want on our spikers and for primary nercos we can bring EoE like effects with an icy veins character that can still spike with necrosis?  And if youre not a fan of mesmers, Echoing Feast of Corruption spikers work great too instead/in addition to energy surge. 
+
+ymlad! and necrosis get around spell protection as they are a shout and skill respectively which makes a lot of the more obnoxious mobs into just more fodder.
+
+# Py4GW 
 
 **Py4GW** is a Python library designed to enhance the Guild Wars experience by providing tools for automation, scripting, and in-game interactions.
 ---
