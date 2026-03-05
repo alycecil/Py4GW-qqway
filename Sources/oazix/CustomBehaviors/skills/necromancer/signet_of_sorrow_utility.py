@@ -56,6 +56,8 @@ class SignetOfSorrowUtility(CustomSkillUtilityBase):
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
         targets = self._get_targets()
 
+        # todo actually see if nearby dead
+
         if len(targets) == 0: return 9
 
         return self.score_definition.get_score(targets[0].enemy_quantity_within_range)
