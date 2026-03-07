@@ -6,6 +6,7 @@ from Py4GWCoreLib.py4gwcorelib_src.AutoInventoryHandler import AutoInventoryHand
 from Py4GWCoreLib.py4gwcorelib_src.Color import Color, ColorPalette
 from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
 from Py4GWCoreLib.enums_src.Texture_enums import get_texture_for_model
+from typing import Any, Generator, cast
 
 
 from dataclasses import dataclass, field
@@ -107,6 +108,14 @@ class DepositSettings:
     
     def add_config_vars(self, ini_key: str):
         IniManager().add_bool(key=ini_key, section="Deposit", var_name="use_ctrl_click", name="use_ctrl_click", default=self.use_ctrl_click)
+
+
+@dataclass
+class InventoryWindowSettings:
+    enable_i_window: bool = True
+
+    def add_config_vars(self, ini_key: str):
+        IniManager().add_bool(key=ini_key, section="InventoryWindow", var_name="enable_i_window", name="enable_i_window", default=self.enable_i_window)
 
         
 @dataclass
@@ -279,28 +288,562 @@ def _id_all(cfg: IdentificationSettings):
     GLOBAL_CACHE.Coroutines.append(routine)
     
 #region salvage_helpers
-def _salvage_items(rarity: str):
-    from Py4GWCoreLib.Routines import Routines
+def _get_inventory_item_ids() -> list[int]:
+    from Py4GWCoreLib import ItemArray
+    from Py4GWCoreLib.enums_src.Item_enums import Bags
+
+    bag_list = ItemArray.CreateBagList(Bags.Backpack, Bags.BeltPouch, Bags.Bag1, Bags.Bag2)
+    return ItemArray.GetItemArray(bag_list)
+
+
+
+def _get_item_id_at_bag_slot(bag_id: int, slot: int) -> int:
+    from Py4GWCoreLib import Item, ItemArray
+
+    item_array = ItemArray.GetItemArray(ItemArray.CreateBagList(bag_id))
+    for item_id in item_array:
+        if int(Item.GetSlot(item_id)) == slot:
+            return item_id
+    return 0
+
+
+
+def _get_salvageable_items_for_rarities(
+    rarities: list[str],
+    allow_unidentified_nonwhite: bool = False,
+) -> list[int]:
+    from Py4GWCoreLib import Item, ItemArray
+    from Py4GWCoreLib.enums_src.Item_enums import Bags
+
+    salvageable_items: list[int] = []
+    rarity_filter = set(rarities)
+
+    for bag_id in range(Bags.Backpack, Bags.Bag2 + 1):
+        item_array = ItemArray.GetItemArray(ItemArray.CreateBagList(bag_id))
+        for item_id in item_array:
+            item_instance = Item.item_instance(item_id)
+            rarity = item_instance.rarity.name
+
+            if rarity not in rarity_filter:
+                continue
+            if not item_instance.is_identified:
+                if not (allow_unidentified_nonwhite and rarity != "White"):
+                    continue
+            if not item_instance.is_salvageable:
+                continue
+
+            salvageable_items.append(item_id)
+
+    return salvageable_items
+
+
+
+def _allows_unidentified_nonwhite_salvage(selected_kit: ItemSlotData | None) -> bool:
+    from Py4GWCoreLib.enums_src.Model_enums import ModelID
+
+    if selected_kit is None:
+        return False
+
+    return selected_kit.ModelID in {
+        ModelID.Expert_Salvage_Kit,
+        ModelID.Superior_Salvage_Kit,
+    }
+
+
+
+def _is_supported_salvage_kit_item(item_id: int, inventory_item_ids: set[int] | None = None) -> bool:
+    from Py4GWCoreLib import Item
+    from Py4GWCoreLib.enums_src.Model_enums import ModelID
+
+    if item_id == 0:
+        return False
+    if inventory_item_ids is not None and item_id not in inventory_item_ids:
+        return False
+
+    return (
+        Item.Usage.IsSalvageKit(item_id)
+        and Item.Usage.GetUses(item_id) > 0
+        and int(Item.GetModelID(item_id)) in {
+            ModelID.Salvage_Kit,
+            ModelID.Expert_Salvage_Kit,
+            ModelID.Superior_Salvage_Kit,
+        }
+    )
+
+
+
+def _get_supported_salvage_kit_id(selected_kit: ItemSlotData | None = None) -> int:
+    from Py4GWCoreLib import Item
     from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
-    salvageable_items = Routines.Items.GetSalvageableItems([rarity], [])
-    routine = Routines.Yield.Items.SalvageItems(salvageable_items, log=True)
+
+    inventory_item_ids = _get_inventory_item_ids()
+    inventory_item_id_set = set(inventory_item_ids)
+
+    if selected_kit is not None:
+        selected_kit_item_id = _get_item_id_at_bag_slot(selected_kit.BagID, selected_kit.Slot)
+        if (
+            _is_supported_salvage_kit_item(selected_kit_item_id, inventory_item_id_set)
+            and int(Item.GetModelID(selected_kit_item_id)) == selected_kit.ModelID
+        ):
+            return selected_kit_item_id
+
+    lesser_kit_item_id = GLOBAL_CACHE.Inventory.GetFirstSalvageKit()
+    if _is_supported_salvage_kit_item(lesser_kit_item_id, inventory_item_id_set):
+        return lesser_kit_item_id
+
+    supported_kits = [
+        item_id
+        for item_id in inventory_item_ids
+        if _is_supported_salvage_kit_item(item_id, inventory_item_id_set)
+    ]
+    if not supported_kits:
+        return 0
+
+    return min(supported_kits, key=lambda item_id: Item.Usage.GetUses(item_id))
+
+
+
+def _call_inventory_bool_method(inventory_instance: Any, method_name: str) -> bool:
+    inventory_method = getattr(inventory_instance, method_name, None)
+    if not callable(inventory_method):
+        return False
+    return bool(inventory_method())
+
+
+
+def _finish_inventory_salvage(inventory_instance: Any) -> None:
+    finish_salvage = getattr(inventory_instance, "FinishSalvage", None)
+    if callable(finish_salvage):
+        finish_salvage()
+
+
+
+def _wait_for_salvage_session_idle(inventory_instance, timeout_ms: int = 1500, poll_ms: int = 50):
+    from Py4GWCoreLib.Routines import Routines
+
+    supports_state_tracking = (
+        inventory_instance is not None
+        and hasattr(inventory_instance, "IsSalvaging")
+        and hasattr(inventory_instance, "IsSalvageTransactionDone")
+    )
+    if not supports_state_tracking:
+        return True
+
+    waited_ms = 0
+    while waited_ms < max(0, timeout_ms):
+        if not _call_inventory_bool_method(inventory_instance, "IsSalvaging") and not _call_inventory_bool_method(inventory_instance, "IsSalvageTransactionDone"):
+            return True
+        yield from Routines.Yield.wait(max(1, poll_ms))
+        waited_ms += max(1, poll_ms)
+    return False
+
+
+
+def _get_post_salvage_status(item_id: int, item_instance, allowed_rarities: set[str] | None = None) -> str:
+    current_inventory_item_ids = set(_get_inventory_item_ids())
+    if item_id not in current_inventory_item_ids:
+        return "salvaged"
+
+    item_instance.GetContext()
+    current_rarity = item_instance.rarity.name
+    if allowed_rarities is not None and current_rarity not in allowed_rarities:
+        return "processed"
+    if not item_instance.is_salvageable:
+        return "processed"
+
+    return "retry"
+
+
+
+def _normalize_salvage_dialog_strategy(strategy: int) -> int:
+    if strategy == 1:
+        return 1
+    if strategy == 2:
+        return 1
+    return 0
+
+
+
+def _get_salvage_dialog_auto_settings() -> tuple[bool, int, bool, bool]:
+    widget_instance = globals().get("InventoryPlusWidgetInstance")
+    auto_inventory_handler = getattr(widget_instance, "auto_inventory_handler", None)
+
+    auto_handle = bool(getattr(auto_inventory_handler, "salvage_dialog_auto_handle", False))
+    strategy = _normalize_salvage_dialog_strategy(int(getattr(auto_inventory_handler, "salvage_dialog_strategy", 0)))
+    auto_confirm_materials_warning = bool(getattr(auto_inventory_handler, "salvage_dialog_auto_confirm_materials", False))
+    debug_enabled = bool(getattr(auto_inventory_handler, "salvage_dialog_debug", False))
+
+    return auto_handle, strategy, auto_confirm_materials_warning, debug_enabled
+
+
+
+def _salvage_single_item_with_supported_kit(item_id: int, label: str, selected_kit: ItemSlotData | None = None, allowed_rarities: set[str] | None = None):
+    import PyInventory
+    import PyItem
+    from Py4GWCoreLib.Py4GWcorelib import ActionQueueManager, ConsoleLog, Console
+    from Py4GWCoreLib import Item
+    from Py4GWCoreLib.enums_src.Model_enums import ModelID
+    from Py4GWCoreLib.Inventory import Inventory
+    from Py4GWCoreLib.Routines import Routines
+
+    queue_wait_timeout_ms = 5000
+    salvage_wait_timeout_ms = 10000
+    salvage_poll_ms = 50
+    salvage_dialog_auto_handle, salvage_dialog_strategy, salvage_dialog_auto_confirm_materials, salvage_dialog_debug = _get_salvage_dialog_auto_settings()
+
+    if item_id not in set(_get_inventory_item_ids()):
+        return "missing_item"
+
+    salvage_kit_item_id = _get_supported_salvage_kit_id(selected_kit)
+    if salvage_kit_item_id == 0:
+        ConsoleLog("SalvageItems", "No salvage kits found.", Console.MessageType.Warning)
+        return "no_kit"
+
+    item_instance = PyItem.PyItem(item_id)
+    item_instance.GetContext()
+    starting_quantity = item_instance.quantity
+    if starting_quantity == 0:
+        return "missing_item"
+
+    _, rarity = Item.Rarity.GetRarity(item_id)
+    Inventory._salvage_choice_debug_log(
+        salvage_dialog_debug,
+        "SalvageItems",
+        f"begin item item_id={item_id} label='{label}' rarity={rarity} qty={starting_quantity} kit={salvage_kit_item_id} auto_handle={salvage_dialog_auto_handle} auto_confirm_warning={salvage_dialog_auto_confirm_materials}.",
+    )
+    if allowed_rarities is not None and rarity not in allowed_rarities:
+        return "filtered_out"
+    if not item_instance.is_salvageable:
+        return "filtered_out"
+
+    require_materials_confirmation = rarity == "Purple" or rarity == "Gold"
+    advanced_kit_tracking = int(Item.GetModelID(salvage_kit_item_id)) in {
+        ModelID.Expert_Salvage_Kit,
+        ModelID.Superior_Salvage_Kit,
+    }
+    manual_choice_required = require_materials_confirmation and advanced_kit_tracking
+
+    inventory_instance = PyInventory.PyInventory() if advanced_kit_tracking else None
+    supports_state_tracking = (
+        inventory_instance is not None
+        and hasattr(inventory_instance, "IsSalvaging")
+        and hasattr(inventory_instance, "IsSalvageTransactionDone")
+    )
+    supports_finish_salvage = inventory_instance is not None and hasattr(inventory_instance, "FinishSalvage")
+
+    if advanced_kit_tracking and inventory_instance is not None:
+        try:
+            inventory_instance.Salvage(salvage_kit_item_id, item_id)
+            yield from Routines.Yield.wait(salvage_poll_ms)
+        except Exception:
+            ConsoleLog("SalvageItems", f"Advanced salvage start failed (item_id={item_id}).", Console.MessageType.Warning)
+            return "failed"
+    else:
+        ActionQueueManager().AddAction("SALVAGE", Inventory.SalvageItem, item_id, salvage_kit_item_id)
+        queue_drained = yield from Routines.Yield.Items._wait_for_empty_queue("SALVAGE", timeout_ms=queue_wait_timeout_ms)
+        if not queue_drained:
+            ConsoleLog("SalvageItems", f"Timed out waiting for salvage queue after starting salvage (item_id={item_id}).", Console.MessageType.Warning)
+            return "failed"
+
+    if require_materials_confirmation and not manual_choice_required:
+        found_confirm_window = yield from Routines.Yield.Items._wait_for_salvage_materials_window(
+            timeout_ms=1500,
+            poll_ms=salvage_poll_ms,
+            initial_wait_ms=150,
+        )
+        if not found_confirm_window:
+            ConsoleLog("SalvageItems", f"Timed out waiting for salvage confirmation window (item_id={item_id}).", Console.MessageType.Warning)
+            return "failed"
+
+        ActionQueueManager().AddAction("SALVAGE", Inventory.AcceptSalvageMaterialsWindow)
+        queue_drained = yield from Routines.Yield.Items._wait_for_empty_queue("SALVAGE", timeout_ms=queue_wait_timeout_ms)
+        if not queue_drained:
+            ConsoleLog("SalvageItems", f"Timed out waiting for salvage queue after confirmation (item_id={item_id}).", Console.MessageType.Warning)
+            return "failed"
+
+    result_wait_timeout_ms = 30000 if advanced_kit_tracking else salvage_wait_timeout_ms
+    saw_salvage_state = False
+    item_progressed = False
+    waited_ms = 0
+    handled_salvage_dialog = False
+    handled_dialog_settle_ms = 0
+    handled_dialog_post_check_ms = max(250, salvage_poll_ms * 6)
+
+    while waited_ms < result_wait_timeout_ms:
+        try:
+            if salvage_dialog_auto_handle:
+                dialog_status = yield from Inventory.HandleSalvageChoiceDialog(
+                    auto_handle=True,
+                    strategy=salvage_dialog_strategy,
+                    auto_confirm_materials_warning=salvage_dialog_auto_confirm_materials,
+                    queue_name="SALVAGE",
+                    log_module="SalvageItems",
+                    queue_wait_timeout_ms=queue_wait_timeout_ms,
+                    poll_ms=salvage_poll_ms,
+                    close_timeout_ms=1500,
+                    debug_enabled=salvage_dialog_debug,
+                    item_id=item_id,
+                )
+                if dialog_status == "handled":
+                    handled_salvage_dialog = True
+                    handled_dialog_settle_ms = 0
+                    waited_ms = 0
+                    continue
+                if dialog_status not in {"not_visible", "disabled", "confirm_pending"}:
+                    ConsoleLog(
+                        "SalvageItems",
+                        f"Stopping salvage because the salvage choice dialog could not be handled safely (item_id={item_id}, status={dialog_status}).",
+                        Console.MessageType.Warning,
+                    )
+                    return "popup_failed"
+
+            yield from Routines.Yield.wait(salvage_poll_ms)
+            waited_ms += salvage_poll_ms
+            if handled_salvage_dialog:
+                handled_dialog_settle_ms += salvage_poll_ms
+
+            is_salvaging = False
+            transaction_done = False
+            if advanced_kit_tracking and supports_state_tracking and inventory_instance is not None:
+                is_salvaging = _call_inventory_bool_method(inventory_instance, "IsSalvaging")
+                transaction_done = _call_inventory_bool_method(inventory_instance, "IsSalvageTransactionDone")
+                if is_salvaging or transaction_done:
+                    saw_salvage_state = True
+
+            current_inventory_item_ids = set(_get_inventory_item_ids())
+            if item_id not in current_inventory_item_ids:
+                if not advanced_kit_tracking:
+                    return "salvaged"
+                item_progressed = True
+            else:
+                item_instance.GetContext()
+                if item_instance.quantity < starting_quantity:
+                    if not advanced_kit_tracking:
+                        return "salvaged"
+                    item_progressed = True
+
+            if handled_salvage_dialog and not supports_state_tracking and handled_dialog_settle_ms >= handled_dialog_post_check_ms:
+                post_status = "salvaged" if item_progressed else _get_post_salvage_status(item_id, item_instance, allowed_rarities)
+                Inventory._salvage_choice_debug_log(
+                    salvage_dialog_debug,
+                    "SalvageItems",
+                    f"re-evaluate item item_id={item_id} after handled dialog settle={handled_dialog_settle_ms}ms status={post_status}.",
+                )
+                return post_status
+
+            if advanced_kit_tracking and inventory_instance is not None:
+                if transaction_done or (item_progressed and not is_salvaging):
+                    if (transaction_done or saw_salvage_state) and supports_finish_salvage:
+                        _finish_inventory_salvage(inventory_instance)
+                        yield from _wait_for_salvage_session_idle(
+                            inventory_instance,
+                            timeout_ms=max(1500, salvage_poll_ms * 10),
+                            poll_ms=salvage_poll_ms,
+                        )
+                        yield from Routines.Yield.wait(salvage_poll_ms * 2)
+
+                    if item_progressed:
+                        return "salvaged"
+
+                    return _get_post_salvage_status(item_id, item_instance, allowed_rarities)
+
+                if saw_salvage_state and not is_salvaging:
+                    return _get_post_salvage_status(item_id, item_instance, allowed_rarities)
+        except Exception:
+            ConsoleLog("SalvageItems", f"Salvage loop failed (item_id={item_id}).", Console.MessageType.Warning)
+            return "failed"
+
+    if manual_choice_required:
+        Inventory._salvage_choice_debug_log(
+            salvage_dialog_debug,
+            "SalvageItems",
+            f"manual timeout item_id={item_id} item_progressed={item_progressed} saw_salvage_state={saw_salvage_state} supports_state_tracking={supports_state_tracking} supports_finish_salvage={supports_finish_salvage}.",
+        )
+        ConsoleLog("SalvageItems", f"Timed out waiting for manual salvage completion (item_id={item_id}).", Console.MessageType.Warning)
+        return "manual_timeout"
+
+    ConsoleLog("SalvageItems", f"Timed out waiting for salvage result (item_id={item_id}).", Console.MessageType.Warning)
+    return "failed"
+
+
+
+def _run_salvage_routine(item_ids: list[int], label: str, rarities: list[str] | None = None, selected_kit: ItemSlotData | None = None):
+    from Py4GWCoreLib.Py4GWcorelib import ConsoleLog, Console
+    from Py4GWCoreLib.Routines import Routines
+
+    item_ids = list(dict.fromkeys(item_ids))
+    allow_unidentified_nonwhite = _allows_unidentified_nonwhite_salvage(selected_kit)
+
+    salvaged_count = 0
+    failed_item_ids: set[int] = set()
+    aborted = False
+
+    if rarities is None:
+        for item_id in item_ids:
+            while True:
+                status = yield from _salvage_single_item_with_supported_kit(item_id, label, selected_kit=selected_kit)
+                if status in {"salvaged", "processed"}:
+                    salvaged_count += 1
+                    break
+                if status == "retry":
+                    yield from Routines.Yield.wait(150)
+                    continue
+                if status in {"missing_item", "filtered_out"}:
+                    break
+                if status in {"no_kit", "manual_timeout", "popup_failed"}:
+                    aborted = True
+                    break
+                failed_item_ids.add(item_id)
+                break
+            if aborted:
+                break
+    else:
+        allowed_rarities = set(rarities)
+        while True:
+            matching_items = [
+                item_id
+                for item_id in _get_salvageable_items_for_rarities(
+                    rarities,
+                    allow_unidentified_nonwhite=allow_unidentified_nonwhite,
+                )
+                if item_id not in failed_item_ids
+            ]
+            if not matching_items:
+                break
+
+            item_id = matching_items[0]
+            while True:
+                status = yield from _salvage_single_item_with_supported_kit(
+                    item_id,
+                    label,
+                    selected_kit=selected_kit,
+                    allowed_rarities=allowed_rarities,
+                )
+                if status in {"salvaged", "processed"}:
+                    salvaged_count += 1
+                    break
+                if status == "retry":
+                    yield from Routines.Yield.wait(150)
+                    continue
+                if status in {"missing_item", "filtered_out"}:
+                    break
+                if status in {"no_kit", "manual_timeout", "popup_failed"}:
+                    aborted = True
+                    break
+                failed_item_ids.add(item_id)
+                break
+            if aborted:
+                break
+
+    if salvaged_count > 0:
+        ConsoleLog("SalvageItems", f"Salvaged {salvaged_count} items.", Console.MessageType.Info)
+
+    return salvaged_count
+
+
+
+def _queue_salvage_routine(item_ids: list[int], label: str, rarities: list[str] | None = None, selected_kit: ItemSlotData | None = None):
+    from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
+
+    routine = cast(Generator[Any, None, None], _run_salvage_routine(item_ids, label, rarities=rarities, selected_kit=selected_kit))
     GLOBAL_CACHE.Coroutines.append(routine)
-    
-def _salvage_whites():
-    _salvage_items("White")
-    
-def _salvage_blues():
-    _salvage_items("Blue")
-    
-def _salvage_purples():
-    _salvage_items("Purple")
-    
-def _salvage_golds():
-    _salvage_items("Gold")
-    
-def _salvage_all(cfg: SalvageSettings):
+
+
+# ---------------------------------------------------------------------------
+# NEW: Stack salvage — repeatedly salvage the same bag+slot until depleted
+# ---------------------------------------------------------------------------
+
+def _run_salvage_stack_routine(bag_id: int, slot: int, label: str, selected_kit: ItemSlotData | None = None):
+    """Coroutine: salvage every item in a stacked slot (same bag+slot) until gone."""
+    from Py4GWCoreLib.Py4GWcorelib import ConsoleLog, Console
     from Py4GWCoreLib.Routines import Routines
+
+    salvaged_count = 0
+    aborted = False
+    max_iterations = 250  # safety cap — no real stack exceeds this
+
+    for _ in range(max_iterations):
+        # Re-resolve the item at this slot each iteration (quantity decreases or item vanishes)
+        item_id = _get_item_id_at_bag_slot(bag_id, slot)
+        if item_id == 0:
+            break  # stack fully consumed
+
+        while True:
+            status = yield from _salvage_single_item_with_supported_kit(item_id, label, selected_kit=selected_kit)
+            if status in {"salvaged", "processed"}:
+                salvaged_count += 1
+                break
+            if status == "retry":
+                yield from Routines.Yield.wait(150)
+                continue
+            if status in {"missing_item", "filtered_out"}:
+                # Item gone or became unsalvageable — stop
+                aborted = True
+                break
+            if status in {"no_kit", "manual_timeout", "popup_failed"}:
+                aborted = True
+                break
+            # Any other failure: stop to avoid infinite loop
+            aborted = True
+            break
+
+        if aborted:
+            break
+
+    if salvaged_count > 0:
+        ConsoleLog("SalvageItems", f"Salvaged stack: {salvaged_count} items from bag {bag_id} slot {slot}.", Console.MessageType.Info)
+
+    return salvaged_count
+
+
+def _queue_salvage_stack(item: ItemSlotData, selected_kit: ItemSlotData | None = None):
+    """Queue a full-stack salvage coroutine for a single inventory slot."""
     from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
+
+    routine = cast(
+        Generator[Any, None, None],
+        _run_salvage_stack_routine(item.BagID, item.Slot, f"Salvage Stack [{item.Rarity}]", selected_kit=selected_kit),
+    )
+    GLOBAL_CACHE.Coroutines.append(routine)
+
+
+# ---------------------------------------------------------------------------
+
+def _salvage_items(rarity: str, selected_kit: ItemSlotData | None = None):
+    salvageable_items = _get_salvageable_items_for_rarities(
+        [rarity],
+        allow_unidentified_nonwhite=_allows_unidentified_nonwhite_salvage(selected_kit),
+    )
+    _queue_salvage_routine(
+        salvageable_items,
+        label=f"Salvage {rarity}",
+        rarities=[rarity],
+        selected_kit=selected_kit,
+    )
+
+
+
+def _salvage_whites(selected_kit: ItemSlotData | None = None):
+    _salvage_items("White", selected_kit=selected_kit)
+
+
+
+def _salvage_blues(selected_kit: ItemSlotData | None = None):
+    _salvage_items("Blue", selected_kit=selected_kit)
+
+
+
+def _salvage_purples(selected_kit: ItemSlotData | None = None):
+    _salvage_items("Purple", selected_kit=selected_kit)
+
+
+
+def _salvage_golds(selected_kit: ItemSlotData | None = None):
+    _salvage_items("Gold", selected_kit=selected_kit)
+
+
+
+def _salvage_all(cfg: SalvageSettings, selected_kit: ItemSlotData | None = None):
     rarities = []
     if cfg.salvage_all_whites:
         rarities.append("White")
@@ -312,12 +855,19 @@ def _salvage_all(cfg: SalvageSettings):
         rarities.append("Purple")
     if cfg.salvage_all_golds:
         rarities.append("Gold")
-    all_items = Routines.Items.GetSalvageableItems(rarities, [])
-    routine = Routines.Yield.Items.SalvageItems(all_items, log=True)
-    GLOBAL_CACHE.Coroutines.append(routine)
-    
 
-    
+    all_items = _get_salvageable_items_for_rarities(
+        rarities,
+        allow_unidentified_nonwhite=_allows_unidentified_nonwhite_salvage(selected_kit),
+    )
+    _queue_salvage_routine(
+        all_items,
+        label="Salvage All",
+        rarities=rarities,
+        selected_kit=selected_kit,
+    )
+
+
 class InventoryPlusWidget:
     def __init__(self):
         from Py4GWCoreLib.UIManager import FrameInfo
@@ -333,10 +883,12 @@ class InventoryPlusWidget:
         self.salvage_settings = SalvageSettings()
         self.colorize_settings = ColorizeSettings()
         self.deposit_settings = DepositSettings()
+        self.inventory_window_settings = InventoryWindowSettings()
         
         self.InventorySlots: list[FrameInfo] = []
         self.hovered_item: ItemSlotData | None = None
         self.selected_item: ItemSlotData | None = None
+        self._i_window_was_forced_closed: bool = False
         # The I-window wraps bag slots in extra containers, so remember the working prefix after the first hit.
         self.i_inventory_slot_prefix_cache: list[tuple[int, ...]] = []
         self.pop_up_open: bool = False
@@ -445,6 +997,7 @@ class InventoryPlusWidget:
         self.salvage_settings.add_config_vars(self.ini_key)
         self.colorize_settings.add_config_vars(self.ini_key)
         self.deposit_settings.add_config_vars(self.ini_key)
+        self.inventory_window_settings.add_config_vars(self.ini_key)
         
     def _add_auto_handler_config_vars(self):
         _section = "AutoManager"
@@ -465,6 +1018,11 @@ class InventoryPlusWidget:
         IniManager().add_bool(key=self.ini_key, section=_section, var_name="salvage_blues", name="salvage_blues", default=True)
         IniManager().add_bool(key=self.ini_key, section=_section, var_name="salvage_purples", name="salvage_purples", default=True)
         IniManager().add_bool(key=self.ini_key, section=_section, var_name="salvage_golds", name="salvage_golds", default=False)
+        IniManager().add_bool(key=self.ini_key, section=_section, var_name="salvage_dialog_auto_handle", name="salvage_dialog_auto_handle", default=False)
+        IniManager().add_bool(key=self.ini_key, section=_section, var_name="salvage_dialog_auto_confirm_materials", name="salvage_dialog_auto_confirm_materials", default=False)
+        IniManager().add_bool(key=self.ini_key, section=_section, var_name="salvage_dialog_debug", name="salvage_dialog_debug", default=False)
+        IniManager().add_int(key=self.ini_key, section=_section, var_name="salvage_dialog_strategy", name="salvage_dialog_strategy", default=0)
+        IniManager().add_int(key=self.ini_key, section=_section, var_name="salvage_dialog_fallback_index", name="salvage_dialog_fallback_index", default=1)
         IniManager().add_str(key=self.ini_key, section=_section, var_name="item_type_blacklist", name="item_type_blacklist", default="")
         IniManager().add_str(key=self.ini_key, section=_section, var_name="salvage_blacklist", name="salvage_blacklist", default="")
         
@@ -483,6 +1041,50 @@ class InventoryPlusWidget:
         IniManager().add_str(key=self.ini_key, section=_section, var_name="deposit_event_items_blacklist", name="deposit_event_items_blacklist", default="")
         IniManager().add_str(key=self.ini_key, section=_section, var_name="deposit_dyes_blacklist", name="deposit_dyes_blacklist", default="")
         IniManager().add_str(key=self.ini_key, section=_section, var_name="deposit_model_blacklist", name="deposit_model_blacklist", default="")
+
+    def _set_colorize_enabled(self, enabled: bool) -> None:
+        self.colorize_settings.enable_colorize = enabled
+        IniManager().set(key=self.ini_key, section="Colorize", var_name="enable_colorize", value=enabled)
+
+    def _toggle_colorize_enabled(self) -> None:
+        self._set_colorize_enabled(not self.colorize_settings.enable_colorize)
+
+    def _set_auto_inventory_enabled(self, enabled: bool) -> None:
+        self.auto_inventory_handler.module_active = enabled
+        IniManager().set(key=self.ini_key, section="AutoManager", var_name="module_active", value=enabled)
+
+    def _toggle_auto_inventory_enabled(self) -> None:
+        self._set_auto_inventory_enabled(not self.auto_inventory_handler.module_active)
+
+    def _set_i_window_enabled(self, enabled: bool) -> None:
+        from Py4GWCoreLib.UIManager import UIManager, WindowID
+
+        self.inventory_window_settings.enable_i_window = enabled
+        if enabled:
+            if self._i_window_was_forced_closed:
+                UIManager.SetWindowVisible(WindowID.WindowID_Inventory, True)
+            self._i_window_was_forced_closed = False
+        else:
+            self.selected_item = None
+            if UIManager.IsWindowVisible(WindowID.WindowID_Inventory):
+                UIManager.SetWindowVisible(WindowID.WindowID_Inventory, False)
+                self._i_window_was_forced_closed = True
+            else:
+                self._i_window_was_forced_closed = False
+        IniManager().set(key=self.ini_key, section="InventoryWindow", var_name="enable_i_window", value=enabled)
+
+    def _toggle_i_window_enabled(self) -> None:
+        self._set_i_window_enabled(not self.inventory_window_settings.enable_i_window)
+
+    def _enforce_i_window_setting(self) -> None:
+        from Py4GWCoreLib.UIManager import UIManager, WindowID
+
+        if self.inventory_window_settings.enable_i_window:
+            return
+
+        if UIManager.IsWindowVisible(WindowID.WindowID_Inventory):
+            UIManager.SetWindowVisible(WindowID.WindowID_Inventory, False)
+            self._i_window_was_forced_closed = True
      
     def load_settings(self):
         def _parse_color(value: str, default_color: Color) -> Color:
@@ -570,6 +1172,9 @@ class InventoryPlusWidget:
         
         cfg = self.deposit_settings
         cfg.use_ctrl_click = IniManager().getBool(key=self.ini_key, section="Deposit", var_name="use_ctrl_click", default=cfg.use_ctrl_click)
+
+        cfg = self.inventory_window_settings
+        cfg.enable_i_window = IniManager().getBool(key=self.ini_key, section="InventoryWindow", var_name="enable_i_window", default=cfg.enable_i_window)
     
     def load_auto_handler_settings(self):
         self.auto_inventory_handler.module_active = IniManager().getBool(key=self.ini_key, section="AutoManager", var_name="module_active", default=False)
@@ -585,6 +1190,12 @@ class InventoryPlusWidget:
         self.auto_inventory_handler.salvage_blues = IniManager().getBool(key=self.ini_key, section="AutoSalvage", var_name="salvage_blues", default=True)
         self.auto_inventory_handler.salvage_purples = IniManager().getBool(key=self.ini_key, section="AutoSalvage", var_name="salvage_purples", default=True)
         self.auto_inventory_handler.salvage_golds = IniManager().getBool(key=self.ini_key, section="AutoSalvage", var_name="salvage_golds", default=False)
+        self.auto_inventory_handler.salvage_dialog_auto_handle = IniManager().getBool(key=self.ini_key, section="AutoSalvage", var_name="salvage_dialog_auto_handle", default=False)
+        self.auto_inventory_handler.salvage_dialog_auto_confirm_materials = IniManager().getBool(key=self.ini_key, section="AutoSalvage", var_name="salvage_dialog_auto_confirm_materials", default=False)
+        self.auto_inventory_handler.salvage_dialog_debug = IniManager().getBool(key=self.ini_key, section="AutoSalvage", var_name="salvage_dialog_debug", default=False)
+        salvage_dialog_strategy = IniManager().getInt(key=self.ini_key, section="AutoSalvage", var_name="salvage_dialog_strategy", default=0)
+        self.auto_inventory_handler.salvage_dialog_strategy = _normalize_salvage_dialog_strategy(salvage_dialog_strategy)
+        self.auto_inventory_handler.salvage_dialog_fallback_index = max(1, IniManager().getInt(key=self.ini_key, section="AutoSalvage", var_name="salvage_dialog_fallback_index", default=1))
         
         self.auto_inventory_handler.deposit_trophies = IniManager().getBool(key=self.ini_key, section="AutoDeposit", var_name="deposit_trophies", default=True)
         self.auto_inventory_handler.deposit_materials = IniManager().getBool(key=self.ini_key, section="AutoDeposit", var_name="deposit_materials", default=True)
@@ -664,14 +1275,28 @@ class InventoryPlusWidget:
                 routine = Routines.Yield.Items.IdentifyItems([selected_item.ItemID], log=True)
                 GLOBAL_CACHE.Coroutines.append(routine)
                 PyImGui.close_current_popup()
-                
-        if  (selected_item and 
-            (selected_item.IsIdentified or selected_item.Rarity != "White") and 
+
+        if (selected_item and
+            (selected_item.IsIdentified or selected_item.Rarity != "White") and
             Routines.Checks.Items.IsSalvageable(selected_item.ItemID)):
-            if PyImGui.menu_item("Salvage"):
-                routine = Routines.Yield.Items.SalvageItems([selected_item.ItemID], log=True)
-                GLOBAL_CACHE.Coroutines.append(routine)
-                PyImGui.close_current_popup()
+            # ---------------------------------------------------------------
+            # Stack-aware salvage menu entries
+            # ---------------------------------------------------------------
+            if selected_item.Quantity > 1:
+                # Single salvage (consume one item from the stack)
+                if PyImGui.menu_item("Salvage (\u00d71)"):
+                    _queue_salvage_routine([selected_item.ItemID], label="Salvage Single")
+                    PyImGui.close_current_popup()
+                # Full-stack salvage (loop until slot is empty)
+                if PyImGui.menu_item(f"Salvage All (stack off {selected_item.Quantity})"):
+                    _queue_salvage_stack(selected_item)
+                    PyImGui.close_current_popup()
+            else:
+                # Original behaviour for non-stacked items
+                if PyImGui.menu_item("Salvage"):
+                    _queue_salvage_routine([selected_item.ItemID], label="Salvage Single")
+                    PyImGui.close_current_popup()
+            # ---------------------------------------------------------------
         
         if selected_item:
             if PyImGui.menu_item("Deposit"):
@@ -685,12 +1310,16 @@ class InventoryPlusWidget:
             PyImGui.separator()
         label = "Disable Colorize" if self.colorize_settings.enable_colorize else "Enable Colorize"
         if PyImGui.menu_item(label):
-            self.colorize_settings.enable_colorize = not self.colorize_settings.enable_colorize   
+            self._toggle_colorize_enabled()
+            PyImGui.close_current_popup()
+        label = "Disable 'I' Window" if self.inventory_window_settings.enable_i_window else "Enable 'I' Window"
+        if PyImGui.menu_item(label):
+            self._toggle_i_window_enabled()
             PyImGui.close_current_popup()
         PyImGui.separator()
         label = "Disable Auto Inventory" if self.auto_inventory_handler.module_active else "Enable Auto Inventory"
         if PyImGui.menu_item(label):
-            self.auto_inventory_handler.module_active = not self.auto_inventory_handler.module_active
+            self._toggle_auto_inventory_enabled()
             PyImGui.close_current_popup()
         if PyImGui.menu_item("Config Window"):
             self.show_config_window = True
@@ -757,7 +1386,7 @@ class InventoryPlusWidget:
         if cfg.salvage_whites:
             PyImGui.push_style_color(PyImGui.ImGuiCol.Text, ColorPalette.GetColor("GW_White").to_tuple_normalized())
             if PyImGui.menu_item("Salvage White Items"):
-                _salvage_whites()
+                _salvage_whites(selected_item)
                 PyImGui.close_current_popup()
             PyImGui.pop_style_color(1)
             salv_shown = True
@@ -765,7 +1394,7 @@ class InventoryPlusWidget:
         if cfg.salvage_blues:
             PyImGui.push_style_color(PyImGui.ImGuiCol.Text, ColorPalette.GetColor("GW_Blue").to_tuple_normalized())
             if PyImGui.menu_item("Salvage Blue Items"):
-                _salvage_blues()
+                _salvage_blues(selected_item)
                 PyImGui.close_current_popup()
             PyImGui.pop_style_color(1)
             salv_shown = True
@@ -773,7 +1402,7 @@ class InventoryPlusWidget:
         if cfg.salvage_purples:
             PyImGui.push_style_color(PyImGui.ImGuiCol.Text, ColorPalette.GetColor("GW_Purple").to_tuple_normalized())
             if PyImGui.menu_item("Salvage Purple Items"):
-                _salvage_purples()
+                _salvage_purples(selected_item)
                 PyImGui.close_current_popup()
             PyImGui.pop_style_color(1)
             salv_shown = True
@@ -781,14 +1410,14 @@ class InventoryPlusWidget:
         if cfg.salvage_golds:
             PyImGui.push_style_color(PyImGui.ImGuiCol.Text, ColorPalette.GetColor("GW_Gold").to_tuple_normalized())
             if PyImGui.menu_item("Salvage Gold Items"):
-                _salvage_golds()
+                _salvage_golds(selected_item)
                 PyImGui.close_current_popup()
             PyImGui.pop_style_color(1)
             salv_shown = True
             
         if cfg.show_salvage_all:
             if PyImGui.menu_item("Salvage All Items"):
-                _salvage_all(self.salvage_settings)
+                _salvage_all(self.salvage_settings, selected_item)
                 PyImGui.close_current_popup()
             salv_shown = True
             
@@ -809,7 +1438,7 @@ class InventoryPlusWidget:
 
         context = InventoryInteractionContext(
             f9_visible=UIManager.IsWindowVisible(WindowID.WindowID_InventoryBags),
-            i_visible=UIManager.IsWindowVisible(WindowID.WindowID_Inventory),
+            i_visible=self.inventory_window_settings.enable_i_window and UIManager.IsWindowVisible(WindowID.WindowID_Inventory),
         )
         if not context.f9_visible and not context.i_visible:
             return context
@@ -880,9 +1509,20 @@ class InventoryPlusWidget:
         if i_bags_bar_frame.FrameExists():
             _, _, _, context.i_bags_bar_bottom = i_bags_bar_frame.GetCoords()
 
+        # Resolve a single working slot prefix for the current I-layout frame.
+        # If no regular inventory prefix is valid (e.g., unsupported tabs), skip I-slot mapping this frame.
+        resolved_prefix = self._resolve_i_regular_bag_prefix(context)
+        if resolved_prefix is None:
+            return
+
         for bag_id in range(Bags.Backpack, Bags.Bag2 + 1):
             for slot in range(context.bag_sizes.get(bag_id, 0)):
-                slot_frame_id = self._resolve_i_slot_frame_id(context, bag_id, slot)
+                slot_frame_id = self._resolve_i_slot_frame_id(
+                    context,
+                    bag_id,
+                    slot,
+                    prefix=resolved_prefix,
+                )
                 if slot_frame_id != 0:
                     context.i_slot_frame_ids[(bag_id, slot)] = slot_frame_id
 
@@ -960,16 +1600,52 @@ class InventoryPlusWidget:
                 seen.add(prefix)
                 yield list(prefix)
 
-    def _resolve_i_slot_frame_id(self, context: InventoryInteractionContext, bag_id: int, slot: int) -> int:
+    def _resolve_i_regular_bag_prefix(self, context: InventoryInteractionContext) -> tuple[int, ...] | None:
+        from Py4GWCoreLib.enums_src.Item_enums import Bags
+
+        if context.i_inventory_frame_id == 0:
+            return None
+
+        probe_slots: list[tuple[int, int]] = []
+        for bag_id in range(Bags.Backpack, Bags.Bag2 + 1):
+            if context.bag_sizes.get(bag_id, 0) <= 0:
+                continue
+            probe_slots.append((bag_id, 0))
+
+        if not probe_slots:
+            return None
+
+        for prefix in self._iter_i_slot_offset_prefixes():
+            prefix_key = tuple(prefix)
+            for bag_id, slot in probe_slots:
+                if self._resolve_i_slot_frame_id(context, bag_id, slot, prefix=prefix_key) == 0:
+                    continue
+                self._remember_i_inventory_slot_prefix(prefix_key)
+                return prefix_key
+
+        return None
+
+    def _resolve_i_slot_frame_id(
+        self,
+        context: InventoryInteractionContext,
+        bag_id: int,
+        slot: int,
+        prefix: tuple[int, ...] | None = None,
+    ) -> int:
         from Py4GWCoreLib.UIManager import UIManager
 
         if context.i_inventory_frame_id == 0:
             return 0
 
-        for prefix in self._iter_i_slot_offset_prefixes():
+        if prefix is None:
+            prefixes = self._iter_i_slot_offset_prefixes()
+        else:
+            prefixes = [list(prefix)]
+
+        for candidate_prefix in prefixes:
             slot_frame_id = UIManager.GetChildFrameID(
                 self.I_INVENTORY_FRAME_HASH,
-                [*prefix, bag_id - 1, slot + 2],
+                [*candidate_prefix, bag_id - 1, slot + 2],
             )
             if slot_frame_id == 0 or not UIManager.FrameExists(slot_frame_id):
                 continue
@@ -978,7 +1654,8 @@ class InventoryPlusWidget:
             if context.i_bags_bar_bottom and top < context.i_bags_bar_bottom - 2:
                 continue
 
-            self._remember_i_inventory_slot_prefix(prefix)
+            if prefix is None:
+                self._remember_i_inventory_slot_prefix(candidate_prefix)
             return slot_frame_id
 
         return 0
@@ -1069,6 +1746,8 @@ class InventoryPlusWidget:
         from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
         from Py4GWCoreLib.enums_src.IO_enums import MouseButton
         from Py4GWCoreLib.enums_src.Model_enums import ModelID
+
+        self._enforce_i_window_setting()
 
         # Build shared inventory state first so slot colors and click targeting stay in sync.
         context = self._build_inventory_interaction_context()
@@ -1564,9 +2243,8 @@ class InventoryPlusWidget:
         GW_GREEN = ColorPalette.GetColor("GW_Green")
         
         def ini_colored_checkbox(label: str,section: str, var_name: str,cfg_obj,color: Color,default: bool) -> bool:
-            # --- load from ini ---
             cfg_attr = var_name
-            val = IniManager().getBool(key=self.ini_key,section=section,var_name=var_name,default=default)
+            val = bool(getattr(cfg_obj, cfg_attr, default))
             PyImGui.push_style_color(PyImGui.ImGuiCol.Text,color.to_tuple_normalized())
             new_val = PyImGui.checkbox(label, val)
             PyImGui.pop_style_color(1)
@@ -1608,6 +2286,22 @@ class InventoryPlusWidget:
             PyImGui.end_child()
             PyImGui.separator()
             if PyImGui.begin_tab_bar("InventoryPlusConfigTabs"):
+                window_cfg = self.inventory_window_settings
+                if PyImGui.begin_tab_item("Windows"):
+                    PyImGui.push_style_color(PyImGui.ImGuiCol.Text, GW_WHITE.to_tuple_normalized())
+                    new_enable_i_window = PyImGui.checkbox("Enable 'I' Inventory Window", window_cfg.enable_i_window)
+                    PyImGui.pop_style_color(1)
+                    if new_enable_i_window != window_cfg.enable_i_window:
+                        self._set_i_window_enabled(new_enable_i_window)
+
+                    if window_cfg.enable_i_window:
+                        PyImGui.text_wrapped("When enabled, InventoryPlus handles slot highlighting and context actions for the game's 'I' inventory window.")
+                    else:
+                        color = ColorPalette.GetColor("dark_red")
+                        PyImGui.text_colored("Disabled: InventoryPlus forces the game's 'I' inventory window closed.", color.to_tuple_normalized())
+                        PyImGui.text_colored("I-window slot mapping, coloring, and click handling are skipped.", color.to_tuple_normalized())
+                    PyImGui.end_tab_item()
+
                 cfg = self.identification_settings
                 if PyImGui.begin_tab_item("Identification"):
                     if PyImGui.collapsing_header("Identification Menu Options:"):
@@ -1657,7 +2351,7 @@ class InventoryPlusWidget:
                     if PyImGui.collapsing_header("Salvage Menu Options:"):
                         color = ColorPalette.GetColor("dark_red")
                         PyImGui.text_colored("These settings periodically salvage items for materials based on the options below.", color.to_tuple_normalized())
-                        PyImGui.text_colored("This script does not handle mods yet.", color.to_tuple_normalized())
+                        PyImGui.text_colored("Upgrade/component salvage prompts can be auto-handled in the dialog section below.", color.to_tuple_normalized())
                         PyImGui.separator()
                         cfg.salvage_whites = ini_colored_checkbox(label="Show Salvage Whites in Menu",section="Salvage",var_name="salvage_whites",cfg_obj=cfg,color=GW_WHITE,default=cfg.salvage_whites)
                         cfg.salvage_blues = ini_colored_checkbox(label="Show Salvage Blues in Menu",section="Salvage",var_name="salvage_blues",cfg_obj=cfg,color=GW_BLUE,default=cfg.salvage_blues)
@@ -1701,6 +2395,34 @@ class InventoryPlusWidget:
                         self.auto_inventory_handler.salvage_blues = ini_colored_checkbox("Automatically Salvage Blues", "AutoSalvage", "salvage_blues", self.auto_inventory_handler, GW_BLUE, default=self.auto_inventory_handler.salvage_blues)
                         self.auto_inventory_handler.salvage_purples = ini_colored_checkbox("Automatically Salvage Purples", "AutoSalvage", "salvage_purples", self.auto_inventory_handler, GW_PURPLE, default=self.auto_inventory_handler.salvage_purples)
                         self.auto_inventory_handler.salvage_golds = ini_colored_checkbox("Automatically Salvage Golds", "AutoSalvage", "salvage_golds", self.auto_inventory_handler, GW_GOLD, default=self.auto_inventory_handler.salvage_golds)
+
+                    if PyImGui.collapsing_header("Upgrade/Component Dialog:"):
+                        color = ColorPalette.GetColor("dark_red")
+                        PyImGui.text_colored("Handles the salvage popup that appears when upgrades or components can be salvaged.", color.to_tuple_normalized())
+                        PyImGui.text_colored("If text cannot be read reliably, InventoryPlus falls back to the visible order under child[5].", color.to_tuple_normalized())
+                        self.auto_inventory_handler.salvage_dialog_auto_handle = ini_colored_checkbox("Auto Handle Salvage Choice Dialog", "AutoSalvage", "salvage_dialog_auto_handle", self.auto_inventory_handler, GW_WHITE, default=self.auto_inventory_handler.salvage_dialog_auto_handle)
+                        self.auto_inventory_handler.salvage_dialog_auto_confirm_materials = ini_colored_checkbox("Auto Confirm Crafting Materials Warning", "AutoSalvage", "salvage_dialog_auto_confirm_materials", self.auto_inventory_handler, GW_WHITE, default=self.auto_inventory_handler.salvage_dialog_auto_confirm_materials)
+                        self.auto_inventory_handler.salvage_dialog_debug = ini_colored_checkbox("Debug Salvage Choice Dialog", "AutoSalvage", "salvage_dialog_debug", self.auto_inventory_handler, GW_WHITE, default=self.auto_inventory_handler.salvage_dialog_debug)
+                        PyImGui.text_wrapped("The crafting materials warning destroys upgrades. Leave auto-confirm off if you want to approve that prompt manually.")
+                        if self.auto_inventory_handler.salvage_dialog_auto_handle:
+                            salvage_dialog_strategy_labels = [
+                                "Prefer Crafting Materials",
+                                "Prefer Upgrades/Components",
+                            ]
+                            current_dialog_strategy = _normalize_salvage_dialog_strategy(int(self.auto_inventory_handler.salvage_dialog_strategy))
+                            if current_dialog_strategy != int(self.auto_inventory_handler.salvage_dialog_strategy):
+                                self.auto_inventory_handler.salvage_dialog_strategy = current_dialog_strategy
+                                IniManager().set(key=self.ini_key, section="AutoSalvage", var_name="salvage_dialog_strategy", value=current_dialog_strategy)
+                            new_dialog_strategy = PyImGui.combo("Salvage Choice Strategy", current_dialog_strategy, salvage_dialog_strategy_labels)
+                            if new_dialog_strategy != current_dialog_strategy:
+                                self.auto_inventory_handler.salvage_dialog_strategy = new_dialog_strategy
+                                IniManager().set(key=self.ini_key, section="AutoSalvage", var_name="salvage_dialog_strategy", value=new_dialog_strategy)
+                                current_dialog_strategy = new_dialog_strategy
+
+                            if current_dialog_strategy == 0:
+                                PyImGui.text_wrapped("Crafting Materials prefers a materials text match when available, otherwise the last visible option.")
+                            else:
+                                PyImGui.text_wrapped("Upgrades/Components prefers a non-material text match when available, otherwise the first visible option.")
                     PyImGui.end_tab_item()
                 if PyImGui.begin_tab_item("Deposit"):
                     from Py4GWCoreLib.ImGui_src.IconsFontAwesome5 import IconsFontAwesome5
@@ -1776,7 +2498,11 @@ class InventoryPlusWidget:
                     PyImGui.end_tab_item()
                 if PyImGui.begin_tab_item("Colorize"):
                     cfg = self.colorize_settings
-                    cfg.enable_colorize = ini_colored_checkbox(label="Enable Item Colorize",section="Colorize",var_name="enable_colorize",cfg_obj=cfg,color=GW_WHITE,default=cfg.enable_colorize)
+                    PyImGui.push_style_color(PyImGui.ImGuiCol.Text, GW_WHITE.to_tuple_normalized())
+                    new_enable_colorize = PyImGui.checkbox("Enable Item Colorize", cfg.enable_colorize)
+                    PyImGui.pop_style_color(1)
+                    if new_enable_colorize != cfg.enable_colorize:
+                        self._set_colorize_enabled(new_enable_colorize)
                     PyImGui.separator()
                     cfg.color_whites = ini_colored_checkbox(label="Color White Items",section="Colorize",var_name="color_whites",cfg_obj=cfg,color=GW_WHITE,default=cfg.color_whites)
                     cfg.color_blues = ini_colored_checkbox(label="Color Blue Items",section="Colorize",var_name="color_blues",cfg_obj=cfg,color=GW_BLUE,default=cfg.color_blues)
@@ -1843,11 +2569,10 @@ class InventoryPlusWidget:
                     PyImGui.text_wrapped("Automatic Identification, Salvaging and Deposit is handled here.")
                     PyImGui.text_wrapped("This feature is used by Bots and other scripts to automatically manage your inventory.")
                     PyImGui.text_wrapped("Enable the options in the Identification and Salvage tabs to activate automatic handling for those item rarities.")
-                    old_val = IniManager().getBool(key=self.ini_key, section="AutoManager", var_name="module_active", default=self.auto_inventory_handler.module_active)
+                    old_val = self.auto_inventory_handler.module_active
                     new_val = PyImGui.checkbox("Enable Auto Inventory Handler", old_val)
                     if new_val != old_val:
-                        self.auto_inventory_handler.module_active = new_val
-                        IniManager().set(key=self.ini_key, section="AutoManager", var_name="module_active", value=new_val) 
+                        self._set_auto_inventory_enabled(new_val)
               
                     old_val = IniManager().getInt(key=self.ini_key, section="AutoManager", var_name="lookup_time", default=self.auto_inventory_handler._LOOKUP_TIME)
                     new_val = PyImGui.input_int("Inventory Check Interval (ms)", old_val)
@@ -1909,5 +2634,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
