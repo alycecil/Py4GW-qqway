@@ -312,7 +312,7 @@ class Agents:
         corpse_array = AgentArray.Filter.ByCondition(corpse_array, lambda agent_id: Agent.IsDead(agent_id))
         corpse_array = AgentArray.Filter.ByCondition(corpse_array, lambda agent_id: _AllowedAlliegance(agent_id))
         return corpse_array
-    
+
     @staticmethod
     def GetNearestCorpse(max_distance=4500.0):
         from ..AgentArray import AgentArray

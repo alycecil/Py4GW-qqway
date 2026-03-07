@@ -146,6 +146,7 @@ class CustomBehaviorLoader:
                     matches.append(MatchResult(build_size=build_size, matching_count=matching_count, instance=instance, is_matched_with_current_build=False))
 
             except Exception as e:
+                # if there are errors on buildign out a skill bar class load the other classes but log the errors that prevented this one from loading
                 print(f"Exception loading subclass: {e}")
 
 
