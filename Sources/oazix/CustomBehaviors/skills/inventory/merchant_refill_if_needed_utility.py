@@ -1,6 +1,8 @@
+import json
 from enum import Enum
 import random
 from re import DEBUG
+from types import SimpleNamespace
 from typing import Any, Generator, override
 
 import PyImGui
@@ -9,6 +11,7 @@ from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, ItemArray, Routines, Range, M
 from Py4GWCoreLib.Pathing import AutoPathing
 from Py4GWCoreLib.Py4GWcorelib import Utils
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
+from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_message import EventMessage
@@ -29,12 +32,14 @@ class MerchantType(Enum):
     RARE_MATERIAL_TRADER = 3
     CRAFTING_MATERIAL_TRADER = 4
 
+
 class InventoryConfig:
-    def __init__(self):
-        self.leave_free_slots = 3
-        self.keep_id_kit = 2
-        self.keep_salvage_kit = 5
-        self.keep_expert_salvage_kit = 1
+    def __init__(self, leave_free_slots = 3, keep_id_kit = 2, keep_salvage_kit = 5, keep_expert_salvage_kit = 1):
+        self.leave_free_slots = leave_free_slots
+        self.keep_id_kit = keep_id_kit
+        self.keep_salvage_kit = keep_salvage_kit
+        self.keep_expert_salvage_kit = keep_expert_salvage_kit
+
 
 class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
     def __init__(self,
@@ -63,6 +68,12 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
             MerchantType.RARE_MATERIAL_TRADER: False,
             MerchantType.CRAFTING_MATERIAL_TRADER: False,
         }
+        # this needs some indirection for primitives to enum
+        # data: str | None = PersistenceLocator().skills.read(self.custom_skill.skill_name, "should_visit_npc_config")
+        # if data is not None:
+        #     self.should_visit_npc_config: dict[MerchantType, bool] = string_to_dict(data, self.should_visit_npc_config)
+        # else:
+        #     self.should_visit_npc_config: dict[MerchantType, bool] = self.should_visit_npc_config
 
         self.visit_duration_in_seconds_config:dict[MerchantType, int] = {
             MerchantType.MERCHANT: 25,
@@ -80,8 +91,13 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
 
         self.event_bus.subscribe(EventType.MAP_CHANGED, self.map_changed, subscriber_name=self.custom_skill.skill_name)
 
-        self.inventory_config = InventoryConfig()
-    
+        data: str | None = PersistenceLocator().skills.read(self.custom_skill.skill_name, "inventory_config")
+        if data is not None:
+            self.inventory_config: InventoryConfig = string_to_dict(data)
+        else:
+            self.inventory_config: InventoryConfig = InventoryConfig()
+
+
     def map_changed(self, message: EventMessage) -> Generator[Any, Any, Any]:
         self.npc_visited[MerchantType.MERCHANT] = False
         self.npc_visited[MerchantType.RUNE_TRADER] = False
@@ -145,16 +161,29 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
     def GetIDKitsToBuy(self):
         count_of_id_kits = Inventory.GetModelCount(ModelID.Superior_Identification_Kit) #5899 model for ID kit
         id_kits_to_buy = self.inventory_config.keep_id_kit - count_of_id_kits
-        return id_kits_to_buy
+        if id_kits_to_buy > 0:
+            print(f"I need to buy {id_kits_to_buy} id kits")
+            return id_kits_to_buy
+        print("I have enough id kits")
+        return 0
 
     def GetSalvageKitsToBuy(self):
         count_of_salvage_kits = Inventory.GetModelCount(ModelID.Salvage_Kit) #2992 model for salvage kit
         salvage_kits_to_buy = self.inventory_config.keep_salvage_kit - count_of_salvage_kits
+
+        if salvage_kits_to_buy > 0:
+            print(f"I need to buy {salvage_kits_to_buy} salvage kits")
+            return salvage_kits_to_buy
+        print("I have enough salvage kits")
         return salvage_kits_to_buy
 
     def GetExpertSalvageKitsToBuy(self):
         count_of_salvage_kits = Inventory.GetModelCount(ModelID.Expert_Salvage_Kit) #2991 model for expert salvage kit
         salvage_kits_to_buy = self.inventory_config.keep_expert_salvage_kit - count_of_salvage_kits
+        if salvage_kits_to_buy > 0:
+            print(f"I need to buy {salvage_kits_to_buy} expert salvage kits")
+            return salvage_kits_to_buy
+        print("I have enough expert salvage kits")
         return salvage_kits_to_buy
 
     def _visit(self, merchant_type: MerchantType) -> Generator[Any, None, None]:
@@ -183,13 +212,36 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         print(f"Merchant reached.")
         Player.Interact(target_agent_id, call_target=True)
 
-        yield from Routines.Yield.Merchant.BuyIDKits(self.GetIDKitsToBuy(), constants.DEBUG)
-        yield from Routines.Yield.Merchant.BuySalvageKits(self.GetSalvageKitsToBuy(), constants.DEBUG)
-        yield from Routines.Yield.Merchant.BuySalvageKits(self.GetExpertSalvageKitsToBuy(), constants.DEBUG)
+        if merchant_type == MerchantType.MERCHANT:
+            yield from Routines.Yield.Merchant.BuyIDKits(self.GetIDKitsToBuy(), constants.DEBUG)
+            yield from Routines.Yield.Merchant.BuySalvageKits(self.GetSalvageKitsToBuy(), constants.DEBUG)
+            yield from Routines.Yield.Merchant.BuySalvageKits(self.GetExpertSalvageKitsToBuy(), constants.DEBUG, ModelID.Expert_Salvage_Kit)
 
         visit_duration_in_seconds = self.visit_duration_in_seconds_config[merchant_type]
         yield from custom_behavior_helpers.Helpers.wait_for(visit_duration_in_seconds * 1000)
         self.npc_visited[merchant_type] = True
+
+    @override
+    def has_persistence(self) -> bool:
+        return True
+
+    @override
+    def persist_configuration_for_account(self):
+        # PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "should_visit_npc_config", dict_to_string(self.should_visit_npc_config))
+        PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "inventory_config", dict_to_string(self.inventory_config.__dict__))
+        print("configuration saved for account")
+
+    @override
+    def persist_configuration_as_global(self):
+        # PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "should_visit_npc_config", dict_to_string(self.should_visit_npc_config))
+        PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "inventory_config", dict_to_string(self.inventory_config.__dict__))
+        print("configuration saved as global")
+
+    @override
+    def delete_persisted_configuration(self):
+        PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "should_visit_npc_config")
+        PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "inventory_config")
+        print("configuration deleted")
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
@@ -300,3 +352,28 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
                     PyImGui.bullet_text(f"{merchant_type.name}: (ID: {agent_id}, dist: {distance:.0f})")
                 else:
                     PyImGui.bullet_text(f"{merchant_type.name}: Not found")
+
+
+# TODO move to common lib
+def dict_to_string(data):
+    """
+    Convert to a JSON string.
+    Ensures non-ASCII characters are preserved.
+    """
+    return json.dumps(data, ensure_ascii=False)
+
+
+def string_to_dict(data_str, default_value=None, object_hook=lambda d: SimpleNamespace(**d)):
+    """
+    Convert a JSON string back
+    Includes error handling for invalid JSON.
+    """
+    if not isinstance(data_str, str):
+        print("Input must be a string.")
+        return default_value
+    try:
+        result = json.loads(data_str, object_hook=object_hook)
+        return result
+    except json.JSONDecodeError as e:
+        print(f"Invalid JSON string: {e}")
+        return default_value
