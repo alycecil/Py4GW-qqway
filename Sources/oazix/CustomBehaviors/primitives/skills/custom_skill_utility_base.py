@@ -88,7 +88,7 @@ class CustomSkillUtilityBase:
             return None
 
         if self.custom_skill.skill_slot == 0 and self.custom_skill.skill_id != 0:
-            print(f'PreCheck Reject {self.custom_skill.skill_name} was missing its skill slot, reloading.')
+            if constants.DEBUG: print(f'PreCheck Reject {self.custom_skill.skill_name} was missing its skill slot, reloading.')
             self.custom_skill.skill_slot = GLOBAL_CACHE.SkillBar.GetSlotBySkillID(self.custom_skill.skill_id) if self.custom_skill.skill_id != 0 else 0
 
         if not self.are_common_pre_checks_valid(current_state):
