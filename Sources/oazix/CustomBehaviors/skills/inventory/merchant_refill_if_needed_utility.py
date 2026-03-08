@@ -5,9 +5,10 @@ from typing import Any, Generator, override
 
 import PyImGui
 
-from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, ItemArray, Routines, Range, Map, Agent, Player
+from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, ItemArray, Routines, Range, Map, Agent, Player, Inventory
 from Py4GWCoreLib.Pathing import AutoPathing
 from Py4GWCoreLib.Py4GWcorelib import Utils
+from Py4GWCoreLib.enums_src.Model_enums import ModelID
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_message import EventMessage
@@ -27,6 +28,13 @@ class MerchantType(Enum):
     RUNE_TRADER = 2
     RARE_MATERIAL_TRADER = 3
     CRAFTING_MATERIAL_TRADER = 4
+
+class InventoryConfig:
+    def __init__(self):
+        self.leave_free_slots = 3
+        self.keep_id_kit = 2
+        self.keep_salvage_kit = 5
+        self.keep_expert_salvage_kit = 1
 
 class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
     def __init__(self,
@@ -51,9 +59,9 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
 
         self.should_visit_npc_config:dict[MerchantType, bool] = {
             MerchantType.MERCHANT: True,
-            MerchantType.RUNE_TRADER: True,
-            MerchantType.RARE_MATERIAL_TRADER: True,
-            MerchantType.CRAFTING_MATERIAL_TRADER: True,
+            MerchantType.RUNE_TRADER: False,
+            MerchantType.RARE_MATERIAL_TRADER: False,
+            MerchantType.CRAFTING_MATERIAL_TRADER: False,
         }
 
         self.visit_duration_in_seconds_config:dict[MerchantType, int] = {
@@ -71,6 +79,8 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         }
 
         self.event_bus.subscribe(EventType.MAP_CHANGED, self.map_changed, subscriber_name=self.custom_skill.skill_name)
+
+        self.inventory_config = InventoryConfig()
     
     def map_changed(self, message: EventMessage) -> Generator[Any, Any, Any]:
         self.npc_visited[MerchantType.MERCHANT] = False
@@ -132,6 +142,21 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         if self.should_visit_npc_config[MerchantType.CRAFTING_MATERIAL_TRADER] and not self.npc_visited[MerchantType.CRAFTING_MATERIAL_TRADER]: return self.score_definition.get_score()
         return None
 
+    def GetIDKitsToBuy(self):
+        count_of_id_kits = Inventory.GetModelCount(ModelID.Superior_Identification_Kit) #5899 model for ID kit
+        id_kits_to_buy = self.inventory_config.keep_id_kit - count_of_id_kits
+        return id_kits_to_buy
+
+    def GetSalvageKitsToBuy(self):
+        count_of_salvage_kits = Inventory.GetModelCount(ModelID.Salvage_Kit) #2992 model for salvage kit
+        salvage_kits_to_buy = self.inventory_config.keep_salvage_kit - count_of_salvage_kits
+        return salvage_kits_to_buy
+
+    def GetExpertSalvageKitsToBuy(self):
+        count_of_salvage_kits = Inventory.GetModelCount(ModelID.Expert_Salvage_Kit) #2991 model for expert salvage kit
+        salvage_kits_to_buy = self.inventory_config.keep_expert_salvage_kit - count_of_salvage_kits
+        return salvage_kits_to_buy
+
     def _visit(self, merchant_type: MerchantType) -> Generator[Any, None, None]:
 
         if not self.should_visit_npc_config[merchant_type]: return
@@ -157,6 +182,11 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
 
         print(f"Merchant reached.")
         Player.Interact(target_agent_id, call_target=True)
+
+        yield from Routines.Yield.Merchant.BuyIDKits(self.GetIDKitsToBuy(), constants.DEBUG)
+        yield from Routines.Yield.Merchant.BuySalvageKits(self.GetSalvageKitsToBuy(), constants.DEBUG)
+        yield from Routines.Yield.Merchant.BuySalvageKits(self.GetExpertSalvageKitsToBuy(), constants.DEBUG)
+
         visit_duration_in_seconds = self.visit_duration_in_seconds_config[merchant_type]
         yield from custom_behavior_helpers.Helpers.wait_for(visit_duration_in_seconds * 1000)
         self.npc_visited[merchant_type] = True
@@ -212,6 +242,18 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
                 PyImGui.end_table()
 
             PyImGui.spacing()
+
+            # Dailies Section
+            if PyImGui.tree_node("Dailies"):
+                for label, attr in [
+                    ("Keep ID Kits", "keep_id_kit"),
+                    ("Keep Salvage Kits", "keep_salvage_kit"),
+                    ("Keep Expert Salvage Kits", "keep_expert_salvage_kit"),
+                    ("Leave Empty Inventory Slots", "leave_free_slots")
+                ]:
+                    setattr(self.inventory_config, attr,
+                            PyImGui.input_int(label, getattr(self.inventory_config, attr)))
+                PyImGui.tree_pop()
 
             # Status section
             PyImGui.text_colored("Visit Status:", (1.0, 1.0, 0.0, 1.0))  # Yellow
