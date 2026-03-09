@@ -20,6 +20,7 @@ class _States:
             name=header_name,
             coroutine_fn=lambda: Routines.Yield.wait(100)
         )
+        return header_name
         
     @_yield_step(label="JumpToStepName", counter_key="JUMP_TO_STEP_NAME")
     def jump_to_step_name(self, step_name: str) -> Generator[Any, Any, None]:

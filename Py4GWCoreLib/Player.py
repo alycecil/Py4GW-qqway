@@ -590,7 +590,7 @@ class Player:
 
     #region Methods
     @staticmethod
-    def ChangeTarget(agent_id):
+    def ChangeTarget(agent_id, queue_name="ACTION"):
         """
         Purpose: Change the player's target.
         Args:
@@ -600,11 +600,11 @@ class Player:
         def _do_action():
             Player.player_instance().ChangeTarget(agent_id)
         #ActionQueueManager().AddAction("ACTION",PlayerMethods.ChangeTarget,agent_id)
-        ActionQueueManager().AddAction("ACTION",_do_action)
+        ActionQueueManager().AddAction(queue_name, _do_action)
         
                
     @staticmethod
-    def Interact(agent_id, call_target=False):
+    def Interact(agent_id, call_target=False, queue_name="ACTION"):
         """
         Purpose: Interact with an agent.
         Args:
@@ -615,7 +615,7 @@ class Player:
         def _do_action():
             Player.player_instance().InteractAgent(agent_id, call_target)
 
-        ActionQueueManager().AddAction("ACTION",_do_action)
+        ActionQueueManager().AddAction(queue_name, _do_action)
         
         #ActionQueueManager().AddAction("ACTION",
         #PlayerMethods.InteractAgent,agent_id, call_target)

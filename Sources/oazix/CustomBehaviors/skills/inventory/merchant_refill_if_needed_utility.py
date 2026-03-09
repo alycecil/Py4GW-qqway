@@ -18,6 +18,7 @@ from Sources.oazix.CustomBehaviors.primitives.bus.event_message import EventMess
 from Sources.oazix.CustomBehaviors.primitives.bus.event_type import EventType
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
+from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
 from Sources.oazix.CustomBehaviors.primitives.scores.comon_score import CommonScore
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
@@ -31,6 +32,7 @@ class MerchantType(Enum):
     RUNE_TRADER = 2
     RARE_MATERIAL_TRADER = 3
     CRAFTING_MATERIAL_TRADER = 4
+    XUNLAI_CHEST = 5
 
 
 class InventoryConfig:
@@ -63,6 +65,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         self.should_visit_crafting_material_trader:bool = False
 
         self.should_visit_npc_config:dict[MerchantType, bool] = {
+            MerchantType.XUNLAI_CHEST: True,
             MerchantType.MERCHANT: True,
             MerchantType.RUNE_TRADER: False,
             MerchantType.RARE_MATERIAL_TRADER: False,
@@ -80,9 +83,11 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
             MerchantType.RUNE_TRADER: 15,
             MerchantType.RARE_MATERIAL_TRADER: 10,
             MerchantType.CRAFTING_MATERIAL_TRADER: 13,
+            MerchantType.XUNLAI_CHEST: 1,
         }
 
         self.npc_visited:dict[MerchantType, bool] = {
+            MerchantType.XUNLAI_CHEST: False,
             MerchantType.MERCHANT: False,
             MerchantType.RUNE_TRADER: False,
             MerchantType.RARE_MATERIAL_TRADER: False,
@@ -99,6 +104,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
 
 
     def map_changed(self, message: EventMessage) -> Generator[Any, Any, Any]:
+        self.npc_visited[MerchantType.XUNLAI_CHEST] = False
         self.npc_visited[MerchantType.MERCHANT] = False
         self.npc_visited[MerchantType.RUNE_TRADER] = False
         self.npc_visited[MerchantType.RARE_MATERIAL_TRADER] = False
@@ -117,7 +123,12 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         merchant_tags = ['Merchant', 'Marchand', 'Kauffrau']
         agent_name = Agent.GetNameByID(agent_id)
         return any(merchant_tag in agent_name for merchant_tag in merchant_tags)
-    
+
+    def _is_xunlai_chest(self, agent_id: int) -> bool:
+        merchant_tags = ['Xunlai Chest']
+        agent_name = Agent.GetNameByID(agent_id)
+        return any(merchant_tag in agent_name for merchant_tag in merchant_tags)
+
     def _is_rune_trader_agent(self, agent_id: int) -> bool:
         merchant_tags = ['Rune Trader']
         agent_name = Agent.GetNameByID(agent_id)
@@ -138,6 +149,8 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         agent_ids = AgentArray.Filter.ByDistance(agent_ids, Player.GetXY(), Range.Compass.value)
         agent_ids = AgentArray.Filter.ByCondition(agent_ids, lambda agent_id: Agent.IsAlive(agent_id) and Agent.IsValid(agent_id))
 
+        if merchant_type == MerchantType.XUNLAI_CHEST:
+            agent_ids = AgentArray.Filter.ByCondition(agent_ids, self._is_xunlai_chest)
         if merchant_type == MerchantType.MERCHANT:
             agent_ids = AgentArray.Filter.ByCondition(agent_ids, self._is_merchant_agent)
         if merchant_type == MerchantType.RUNE_TRADER:
@@ -149,22 +162,52 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
 
         if len(agent_ids) == 0: return None
         return agent_ids[0]
-        
+
+    def hasItemsToMerch(self) -> bool:
+        return False
+
+    def _needsToVisit(self, merchant_type: MerchantType) -> bool:
+        if merchant_type == MerchantType.MERCHANT:
+            if (self.GetExpertSalvageKitsToBuy() > 0
+                    or self.GetSalvageKitsToBuy() > 0
+                    or self.GetIDKitsToBuy() > 0
+                    or self.hasItemsToMerch()):
+                if constants.DEBUG: print("I need to visit the Merchant")
+                return True
+        else:
+            # TODO specific logic for other vendors
+            return True
+
+        # Fall though if no hits
+        return False
+
+    def needsToVisit(self, merchant_type: MerchantType) -> bool:
+        if (self.should_visit_npc_config[merchant_type]
+                and not self.npc_visited[merchant_type]):
+            return self._needsToVisit(merchant_type)
+
+        return False
+
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
-        if self.should_visit_npc_config[MerchantType.MERCHANT] and not self.npc_visited[MerchantType.MERCHANT]: return self.score_definition.get_score()
-        if self.should_visit_npc_config[MerchantType.RUNE_TRADER] and not self.npc_visited[MerchantType.RUNE_TRADER]: return self.score_definition.get_score()
-        if self.should_visit_npc_config[MerchantType.RARE_MATERIAL_TRADER] and not self.npc_visited[MerchantType.RARE_MATERIAL_TRADER]: return self.score_definition.get_score()
-        if self.should_visit_npc_config[MerchantType.CRAFTING_MATERIAL_TRADER] and not self.npc_visited[MerchantType.CRAFTING_MATERIAL_TRADER]: return self.score_definition.get_score()
+        # Xunlai intentionally not in list for scoring.
+        if self.needsToVisit(MerchantType.MERCHANT):
+            return self.score_definition.get_score()
+        if self.needsToVisit(MerchantType.RUNE_TRADER):
+            return self.score_definition.get_score()
+        if self.needsToVisit(MerchantType.RARE_MATERIAL_TRADER):
+            return self.score_definition.get_score()
+        if self.needsToVisit(MerchantType.CRAFTING_MATERIAL_TRADER):
+            return self.score_definition.get_score()
         return None
 
     def GetIDKitsToBuy(self):
         count_of_id_kits = Inventory.GetModelCount(ModelID.Superior_Identification_Kit) #5899 model for ID kit
         id_kits_to_buy = self.inventory_config.keep_id_kit - count_of_id_kits
         if id_kits_to_buy > 0:
-            print(f"I need to buy {id_kits_to_buy} id kits")
+            if constants.DEBUG: print(f"I need to buy {id_kits_to_buy} id kits")
             return id_kits_to_buy
-        print("I have enough id kits")
+        if constants.DEBUG: print("I have enough id kits")
         return 0
 
     def GetSalvageKitsToBuy(self):
@@ -172,18 +215,18 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         salvage_kits_to_buy = self.inventory_config.keep_salvage_kit - count_of_salvage_kits
 
         if salvage_kits_to_buy > 0:
-            print(f"I need to buy {salvage_kits_to_buy} salvage kits")
+            if constants.DEBUG: print(f"I need to buy {salvage_kits_to_buy} salvage kits")
             return salvage_kits_to_buy
-        print("I have enough salvage kits")
+        if constants.DEBUG: print("I have enough salvage kits")
         return salvage_kits_to_buy
 
     def GetExpertSalvageKitsToBuy(self):
         count_of_salvage_kits = Inventory.GetModelCount(ModelID.Expert_Salvage_Kit) #2991 model for expert salvage kit
         salvage_kits_to_buy = self.inventory_config.keep_expert_salvage_kit - count_of_salvage_kits
         if salvage_kits_to_buy > 0:
-            print(f"I need to buy {salvage_kits_to_buy} expert salvage kits")
+            if constants.DEBUG: print(f"I need to buy {salvage_kits_to_buy} expert salvage kits")
             return salvage_kits_to_buy
-        print("I have enough expert salvage kits")
+        if constants.DEBUG: print("I have enough expert salvage kits")
         return salvage_kits_to_buy
 
     def _visit(self, merchant_type: MerchantType) -> Generator[Any, None, None]:
@@ -195,6 +238,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         if target_agent_id is None: return
 
         print(f"Visiting {merchant_type.name}...")
+        if constants.DEBUG: Player.ChangeTarget(target_agent_id)
         target_position : tuple[float, float] = Agent.GetXY(target_agent_id)
         if Utils.Distance(target_position, Player.GetXY()) > 150:
             path3d = yield from AutoPathing().get_path_to(target_position[0], target_position[1], smooth_by_los=True, margin=100.0, step_dist=300.0)
@@ -209,17 +253,58 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
                     progress_callback=lambda progress: print(f"FollowPath merchant_refill_if_needed_utility: progress: {progress}") if constants.DEBUG else None,
                     custom_pause_fn=lambda: False)
 
-        print(f"Merchant reached.")
-        Player.Interact(target_agent_id, call_target=True)
-
-        if merchant_type == MerchantType.MERCHANT:
-            yield from Routines.Yield.Merchant.BuyIDKits(self.GetIDKitsToBuy(), constants.DEBUG)
-            yield from Routines.Yield.Merchant.BuySalvageKits(self.GetSalvageKitsToBuy(), constants.DEBUG)
-            yield from Routines.Yield.Merchant.BuySalvageKits(self.GetExpertSalvageKitsToBuy(), constants.DEBUG, ModelID.Expert_Salvage_Kit)
+        print(f"Merchant {merchant_type.name} reached.")
+        yield from self.interact_with_merchant(merchant_type, target_agent_id)
 
         visit_duration_in_seconds = self.visit_duration_in_seconds_config[merchant_type]
+        print(f"Merchant {merchant_type.name} waiting at for {visit_duration_in_seconds}s.")
         yield from custom_behavior_helpers.Helpers.wait_for(visit_duration_in_seconds * 1000)
+
+        print(f"Merchant {merchant_type.name} wait complete.")
         self.npc_visited[merchant_type] = True
+
+    def interact_with_merchant(self, merchant_type, target_agent_id):
+
+        from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
+        ActionQueueManager().ResetQueue("MERCHANT")
+
+        lock_key = f"merchant_user_{Player.GetAgentID()}_{target_agent_id}"
+        visit_duration_in_seconds = self.visit_duration_in_seconds_config[merchant_type]
+        if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=visit_duration_in_seconds) == False:
+            ConsoleLog("MerchantRefillIfNeededUtility", f"Merchant Locked for Player, wait {visit_duration_in_seconds} seconds", Console.MessageType.Info)
+            return
+
+        Player.ChangeTarget(target_agent_id, queue_name="MERCHANT")
+        Player.Interact(target_agent_id, queue_name="MERCHANT")
+        if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"Should have trade window open", Console.MessageType.Info)
+        if merchant_type == MerchantType.MERCHANT:
+            if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", "Starting merchant buy orders", Console.MessageType.Info)
+            buy = self.GetIDKitsToBuy()
+
+            if buy > 0:
+                if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"GetIDKitsToBuy = {buy}", Console.MessageType.Info)
+                yield from Routines.Yield.Merchant.BuyIDKits(buy, constants.DEBUG, flush_queue=False)
+            else:
+                if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"I have all the id kits i could want", Console.MessageType.Info)
+
+            buy = self.GetSalvageKitsToBuy()
+            if buy > 0:
+                if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"GetSalvageKitsToBuy = {buy}", Console.MessageType.Info)
+                yield from Routines.Yield.Merchant.BuySalvageKits(buy, constants.DEBUG, flush_queue=False)
+            else:
+                if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"I have all the regular salvage kits i could want", Console.MessageType.Info)
+
+            buy = self.GetExpertSalvageKitsToBuy()
+            if buy > 0:
+                if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"GetExpertSalvageKitsToBuy = {buy}", Console.MessageType.Info)
+                yield from Routines.Yield.Merchant.BuySalvageKits(buy, constants.DEBUG, ModelID.Expert_Salvage_Kit, flush_queue=False)
+            else:
+                if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"I have all the expert salvage kits i could want", Console.MessageType.Info)
+        elif merchant_type == MerchantType.XUNLAI_CHEST:
+            ConsoleLog("MerchantRefillIfNeededUtility", f"Opening Xunlai", Console.MessageType.Info)
+            pass
+        else:
+            ConsoleLog("MerchantRefillIfNeededUtility", f"Unknown merchant type {merchant_type}", Console.MessageType.Info)
 
     @override
     def has_persistence(self) -> bool:
@@ -245,17 +330,30 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
-        
+
+        lock_key = f"merchant_user_{Player.GetAgentID()}"
+
+        if not self.npc_visited[MerchantType.XUNLAI_CHEST]:
+            yield from self._visit(MerchantType.XUNLAI_CHEST)
+            return BehaviorResult.ACTION_PERFORMED
         if not self.npc_visited[MerchantType.MERCHANT]:
+            if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10) == False:
+                return BehaviorResult.ACTION_SKIPPED
             yield from self._visit(MerchantType.MERCHANT)
             return BehaviorResult.ACTION_PERFORMED
         if not self.npc_visited[MerchantType.RUNE_TRADER]:
+            if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10) == False:
+                return BehaviorResult.ACTION_SKIPPED
             yield from self._visit(MerchantType.RUNE_TRADER)
             return BehaviorResult.ACTION_PERFORMED
         if not self.npc_visited[MerchantType.RARE_MATERIAL_TRADER]:
+            if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10) == False:
+                return BehaviorResult.ACTION_SKIPPED
             yield from self._visit(MerchantType.RARE_MATERIAL_TRADER)
             return BehaviorResult.ACTION_PERFORMED
         if not self.npc_visited[MerchantType.CRAFTING_MATERIAL_TRADER]:
+            if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10) == False:
+                return BehaviorResult.ACTION_SKIPPED
             yield from self._visit(MerchantType.CRAFTING_MATERIAL_TRADER)
             return BehaviorResult.ACTION_PERFORMED
 

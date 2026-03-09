@@ -1352,19 +1352,19 @@ class Yield:
                 ConsoleLog("SellItems", f"Sold {len(item_array)} items.", Console.MessageType.Info)
 
         @staticmethod
-        def BuyIDKits(kits_to_buy:int, log=False):
+        def BuyIDKits(kits_to_buy:int, log=False, flush_queue=True):
             from ..Py4GWcorelib import ActionQueueManager, ConsoleLog, Console
             from ..ItemArray import ItemArray
             
             if kits_to_buy <= 0:
-                ActionQueueManager().ResetQueue("MERCHANT")
+                if flush_queue: ActionQueueManager().ResetQueue("MERCHANT")
                 return
 
             merchant_item_list = GLOBAL_CACHE.Trading.Merchant.GetOfferedItems()
             merchant_item_list = ItemArray.Filter.ByCondition(merchant_item_list, lambda item_id: GLOBAL_CACHE.Item.GetModelID(item_id) == 5899)
 
             if len(merchant_item_list) == 0:
-                ActionQueueManager().ResetQueue("MERCHANT")
+                if flush_queue: ActionQueueManager().ResetQueue("MERCHANT")
                 return
             
             for i in range(kits_to_buy):
@@ -1379,19 +1379,19 @@ class Yield:
                 ConsoleLog("BuyIDKits", f"Bought {kits_to_buy} ID Kits.", Console.MessageType.Info)
 
         @staticmethod
-        def BuySalvageKits(kits_to_buy:int, log=False, kit_id=2992):
+        def BuySalvageKits(kits_to_buy:int, log=False, kit_id=2992, flush_queue=True):
             from ..ItemArray import ItemArray
             from ..Py4GWcorelib import ActionQueueManager, ConsoleLog, Console
             
             if kits_to_buy <= 0:
-                ActionQueueManager().ResetQueue("MERCHANT")
+                if flush_queue: ActionQueueManager().ResetQueue("MERCHANT")
                 return
 
             merchant_item_list = GLOBAL_CACHE.Trading.Merchant.GetOfferedItems()
             merchant_item_list = ItemArray.Filter.ByCondition(merchant_item_list, lambda item_id: GLOBAL_CACHE.Item.GetModelID(item_id) == kit_id)
 
             if len(merchant_item_list) == 0:
-                ActionQueueManager().ResetQueue("MERCHANT")
+                if flush_queue: ActionQueueManager().ResetQueue("MERCHANT")
                 return
             
             for i in range(kits_to_buy):
