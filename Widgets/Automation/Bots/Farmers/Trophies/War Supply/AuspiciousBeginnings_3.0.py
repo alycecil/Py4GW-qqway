@@ -57,6 +57,8 @@ bot = Botting("Auspicious Beginnings", custom_build=_keiran_build)
 _keiran_build.set_fsm(bot.config.FSM)
 bot.config.reset_pause_on_danger_fn(aggro_area=Range.Longbow)
 navmesh = None
+loop_header = "[H]Check and Deposit Gold_2"
+death_header = "[H]Prepare for Quest_4"
      
 def create_bot_routine(bot: Botting) -> None:
     widget_handler = get_widget_handler()
@@ -69,7 +71,7 @@ def create_bot_routine(bot: Botting) -> None:
         yield
     bot.States.AddCustomState(lambda: _initial_vanguard_scan(), "ScanVanguardRank")
     GoToEOTN(bot)
-    GetBonusBow(bot)
+    # GetBonusBow(bot)
     QuestLoopEntry(bot)  # Start the quest loop
     
 def QuestLoopEntry(bot: Botting) -> None:
@@ -90,7 +92,7 @@ def _on_death(bot: "Botting"):
     yield from Routines.Yield.Map.WaitforMapLoad(BotSettings.HOM_OUTPOST_ID, timeout=30000)
     bot.Properties.ApplyNow("halt_on_death","active", False)
     fsm = bot.config.FSM
-    fsm.jump_to_state_by_name("[H]Prepare for Quest_5")
+    fsm.jump_to_state_by_name(death_header)
     fsm.resume()
     yield
     
@@ -227,7 +229,7 @@ def DoCraftLongbow(bot: Botting):
 
 def CheckAndDepositGold(bot: Botting) -> None:
     """Check gold on character, deposit if needed"""
-    bot.States.AddHeader("Check and Deposit Gold")
+    loop_header = bot.States.AddHeader("Check and Deposit Gold")
 
     def _check_and_deposit_gold(bot: Botting):
         current_map = Map.GetMapID()
@@ -304,7 +306,7 @@ def ExitToHOM(bot: Botting) -> None:
 
 def PrepareForQuest(bot: Botting) -> None:
     """Prepare for quest in HOM: acquire and equip Keiran's Bow"""
-    bot.States.AddHeader("Prepare for Quest")
+    death_header = bot.States.AddHeader("Prepare for Quest")
     #bot.Wait.ForMapLoad(target_map_id=BotSettings.HOM_OUTPOST_ID)
 
     def _prepare_for_quest(bot: Botting):
@@ -418,7 +420,7 @@ def RunQuest(bot: Botting) -> None:
     bot.States.AddCustomState(lambda: _increment_success(), "IncrementSuccessCounter")
     
     # Loop back to check gold and run quest again
-    bot.States.JumpToStepName("[H]Check and Deposit Gold_3")
+    bot.States.JumpToStepName(loop_header)
 
 def _handle_bonus_bow(bot: Botting):
     bonus_bow_id = 11723
