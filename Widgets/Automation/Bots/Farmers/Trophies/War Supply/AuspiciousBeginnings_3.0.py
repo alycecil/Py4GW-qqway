@@ -56,7 +56,6 @@ _keiran_build.set_fsm(bot.config.FSM)
 bot.config.reset_pause_on_danger_fn(aggro_area=Range.Longbow)
 navmesh = None
 loop_header = "[H]Check and Deposit Gold_2"
-death_header = "[H]Prepare for Quest_4"
      
 def create_bot_routine(bot: Botting) -> None:
     widget_handler = get_widget_handler()
@@ -90,7 +89,7 @@ def _on_death(bot: "Botting"):
     yield from Routines.Yield.Map.WaitforMapLoad(BotSettings.HOM_OUTPOST_ID, timeout=30000)
     bot.Properties.ApplyNow("halt_on_death","active", False)
     fsm = bot.config.FSM
-    fsm.jump_to_state_by_name(death_header)
+    fsm.jump_to_state_by_name(loop_header)
     fsm.resume()
     yield
     
@@ -129,7 +128,7 @@ def _load_navmesh_object(bot) -> None:
     GLOBAL_CACHE.Coroutines.append(_load_coro())
 
 def GoToEOTN(bot: Botting) -> None:
-    bot.States.AddHeader("Go to EOTN")
+    loop_header = bot.States.AddHeader("Go to EOTN")
 
     def _go_to_eotn(bot: Botting):
         current_map = Map.GetMapID()
@@ -228,7 +227,7 @@ def DoCraftLongbow(bot: Botting):
 
 def CheckAndDepositGold(bot: Botting) -> None:
     """Check gold on character, deposit if needed"""
-    loop_header = bot.States.AddHeader("Check and Deposit Gold")
+    bot.States.AddHeader("Check and Deposit Gold")
 
     def _check_and_deposit_gold(bot: Botting):
         current_map = Map.GetMapID()
