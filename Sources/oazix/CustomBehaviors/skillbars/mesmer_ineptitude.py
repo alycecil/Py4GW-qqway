@@ -8,6 +8,7 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition imp
 from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_utility import CustomBehaviorBaseUtility
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
+from Sources.oazix.CustomBehaviors.skills.common.asuran_technobabble import Technobabble_Utility
 from Sources.oazix.CustomBehaviors.skills.common.breath_of_the_great_dwarf_utility import BreathOfTheGreatDwarfUtility
 from Sources.oazix.CustomBehaviors.skills.common.by_urals_hammer_utility import ByUralsHammerUtility
 from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_wisdom_utility import EbonBattleStandardOfWisdom
@@ -36,6 +37,7 @@ from Sources.oazix.CustomBehaviors.skills.necromancer.necrosis_utility import Ne
 from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_corruption_utility import SignetOfCorruptionUtility
 from Sources.oazix.CustomBehaviors.skills.paragon.fall_back_utility import FallBackUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.spiritual_pain_utility import SpiritualPainUtility
+from Sources.oazix.CustomBehaviors.skills.monk.judges_insight_utility import JudgesInsightUtility
 
 class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
 
@@ -58,7 +60,7 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
             skill=CustomSkill("Signet_of_Corruption_kurzick"),
             current_build=in_game_build)
         # todo not a boss
-        self.technobabble_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Technobabble"), current_build=in_game_build, mana_required_to_cast=15)
+        self.technobabble_utility: CustomSkillUtilityBase = Technobabble_Utility(event_bus=self.event_bus, skill=CustomSkill("Technobabble"), current_build=in_game_build, mana_required_to_cast=15)
         self.fragility_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Fragility"), current_build=in_game_build, mana_required_to_cast=20)
 
 #         Cast Glyph of Lesser Energy↦Arcane Conundrum↦Cry of Pain on the largest group of foes, preferably hitting casters.
@@ -73,6 +75,7 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
         # utilities
         self.fall_back_utility: CustomSkillUtilityBase = FallBackUtility(event_bus=self.event_bus, current_build=in_game_build)
         self.drain_enchantment_utility: CustomSkillUtilityBase = DrainEnchantmentUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(89))
+        self.judges_insight_utility: CustomSkillUtilityBase = JudgesInsightUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(91))
 
         #common
         self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(event_bus=self.event_bus, score_definition=ScoreStaticDefinition(71), current_build=in_game_build, mana_required_to_cast=15)
@@ -98,6 +101,7 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.necrosis_utility,
             self.power_drain_utility,
             self.leech_signet_utility,
+            self.judges_insight_utility,
             self.wandering_eye_utility,
             self.arcane_conundrum_utility,
             self.drain_enchantment_utility,

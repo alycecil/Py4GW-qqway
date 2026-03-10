@@ -1,6 +1,7 @@
 
 import PyImGui
 import PyUIManager
+import time
 from typing import Dict, List, Optional
 import json
 import PyOverlay
@@ -359,6 +360,34 @@ class UIManager:
     @staticmethod
     def GetParentFrameID(frame_id: int) -> int:
         return PyUIManager.UIManager.get_parent_frame_id(frame_id)
+
+    @staticmethod
+    def GetFrameContext(frame_id: int) -> int:
+        return int(PyUIManager.UIManager.get_frame_context(frame_id) or 0)
+
+    @staticmethod
+    def GetFirstChildFrameID(parent_frame_id: int) -> int:
+        return int(PyUIManager.UIManager.get_first_child_frame_id(parent_frame_id) or 0)
+
+    @staticmethod
+    def GetLastChildFrameID(parent_frame_id: int) -> int:
+        return int(PyUIManager.UIManager.get_last_child_frame_id(parent_frame_id) or 0)
+
+    @staticmethod
+    def GetNextChildFrameID(frame_id: int) -> int:
+        return int(PyUIManager.UIManager.get_next_child_frame_id(frame_id) or 0)
+
+    @staticmethod
+    def GetPrevChildFrameID(frame_id: int) -> int:
+        return int(PyUIManager.UIManager.get_prev_child_frame_id(frame_id) or 0)
+
+    @staticmethod
+    def GetItemFrameID(parent_frame_id: int, index: int) -> int:
+        return int(PyUIManager.UIManager.get_item_frame_id(parent_frame_id, index) or 0)
+
+    @staticmethod
+    def GetTabFrameID(parent_frame_id: int, index: int) -> int:
+        return int(PyUIManager.UIManager.get_tab_frame_id(parent_frame_id, index) or 0)
     
     @staticmethod
     def GetHashByLabel(label):
@@ -411,459 +440,8 @@ class UIManager:
         return PyUIManager.UIManager.SendFrameUIMessage(frame_id, message_id, wparam, lparam)
 
     @staticmethod
-    def CreateUIComponentByFrameId(
-        parent_frame_id: int,
-        component_flags: int,
-        child_index: int,
-        event_callback: int,
-        name_enc: str = "",
-        component_label: str = "",
-    ) -> int:
-        return PyUIManager.UIManager.create_ui_component_by_frame_id(
-            parent_frame_id,
-            component_flags,
-            child_index,
-            event_callback,
-            name_enc,
-            component_label,
-        )
-
-    @staticmethod
-    def CreateLabeledFrameByFrameId(
-        parent_frame_id: int,
-        frame_flags: int,
-        child_index: int,
-        frame_callback: int,
-        create_param: int,
-        frame_label: str = "",
-    ) -> int:
-        return PyUIManager.UIManager.create_labeled_frame_by_frame_id(
-            parent_frame_id,
-            frame_flags,
-            child_index,
-            frame_callback,
-            create_param,
-            frame_label,
-        )
-
-    @staticmethod
-    def CreateWindowByFrameId(
-        parent_frame_id: int,
-        child_index: int,
-        frame_callback: int,
-        x: float,
-        y: float,
-        width: float,
-        height: float,
-        frame_flags: int = 0,
-        create_param: int = 0,
-        frame_label: str = "",
-        anchor_flags: int = 0x6,
-    ) -> int:
-        return PyUIManager.UIManager.create_window_by_frame_id(
-            parent_frame_id,
-            child_index,
-            frame_callback,
-            x,
-            y,
-            width,
-            height,
-            frame_flags,
-            create_param,
-            frame_label,
-            anchor_flags,
-        )
-
-    @staticmethod
-    def SetFrameControllerAnchorMarginsByFrameIdEx(
-        frame_id: int,
-        x: float,
-        y: float,
-        width: float,
-        height: float,
-        flags: int = 0x6,
-    ) -> bool:
-        return PyUIManager.UIManager.set_frame_controller_anchor_margins_by_frame_id_ex(
-            frame_id,
-            x,
-            y,
-            width,
-            height,
-            flags,
-        )
-
-    @staticmethod
-    def ChooseAnchorFlagsForDesiredRect(
-        x: float,
-        y: float,
-        width: float,
-        height: float,
-        parent_width: float,
-        parent_height: float,
-        disable_center: bool = False,
-    ) -> int:
-        return PyUIManager.UIManager.choose_anchor_flags_for_desired_rect(
-            x,
-            y,
-            width,
-            height,
-            parent_width,
-            parent_height,
-            disable_center,
-        )
-
-    @staticmethod
-    def FindAvailableChildSlot(parent_frame_id: int, start_index: int = 0x20, end_index: int = 0xFE) -> int:
-        return int(
-            PyUIManager.UIManager.find_available_child_slot(
-                parent_frame_id,
-                start_index,
-                end_index,
-            )
-            or 0
-        )
-
-    @staticmethod
-    def ResolveDevTextDialogProc() -> int:
-        return int(PyUIManager.UIManager.resolve_devtext_dialog_proc() or 0)
-
-    @staticmethod
-    def EnsureDevTextSource() -> tuple[int, bool]:
-        frame_id, opened_temporarily = PyUIManager.UIManager.ensure_devtext_source()
-        return int(frame_id or 0), bool(opened_temporarily)
-
-    @staticmethod
-    def RestoreDevTextSource(opened_temporarily: bool) -> None:
-        PyUIManager.UIManager.restore_devtext_source(opened_temporarily)
-
-    @staticmethod
-    def ResolveObservedContentHostByFrameId(root_frame_id: int) -> int:
-        return int(PyUIManager.UIManager.resolve_observed_content_host_by_frame_id(root_frame_id) or 0)
-
-    @staticmethod
-    def ClearFrameChildrenRecursiveByFrameId(frame_id: int) -> bool:
-        return PyUIManager.UIManager.clear_frame_children_recursive_by_frame_id(frame_id)
-
-    @staticmethod
-    def ClearWindowContentsByFrameId(root_frame_id: int) -> bool:
-        return PyUIManager.UIManager.clear_window_contents_by_frame_id(root_frame_id)
-
-    @staticmethod
-    def CloneWindow(
-        parent_frame_id: int,
-        frame_callback: int,
-        frame_flags: int = 0,
-        child_index: int = 0,
-        create_param: int = 0,
-        frame_label: str = "",
-    ) -> int:
-        resolved_child_index = child_index if child_index > 0 else UIManager.FindAvailableChildSlot(parent_frame_id)
-        if resolved_child_index <= 0:
-            return 0
-        return UIManager.CreateLabeledFrameByFrameId(
-            parent_frame_id,
-            frame_flags,
-            resolved_child_index,
-            frame_callback,
-            create_param,
-            frame_label,
-        )
-
-    @staticmethod
-    def CreateWindow(
-        x: float,
-        y: float,
-        width: float,
-        height: float,
-        frame_label: str = "",
-        parent_frame_id: int = 9,
-        child_index: int = 0,
-        frame_flags: int = 0,
-        create_param: int = 0,
-        frame_callback: int = 0,
-        anchor_flags: int = 0x6,
-        ensure_devtext_source: bool = True,
-    ) -> int:
-        return int(
-            PyUIManager.UIManager.create_window(
-            x,
-            y,
-            width,
-            height,
-            frame_label,
-            parent_frame_id,
-            child_index,
-            frame_flags,
-            create_param,
-            frame_callback,
-            anchor_flags,
-            ensure_devtext_source,
-        )
-            or 0
-        )
-
-    @staticmethod
-    def CreateEmptyWindow(
-        x: float,
-        y: float,
-        width: float,
-        height: float,
-        frame_label: str = "",
-        parent_frame_id: int = 9,
-        child_index: int = 0,
-        frame_flags: int = 0,
-        create_param: int = 0,
-        frame_callback: int = 0,
-        anchor_flags: int = 0x6,
-        ensure_devtext_source: bool = True,
-    ) -> int:
-        return int(
-            PyUIManager.UIManager.create_empty_window(
-                x,
-                y,
-                width,
-                height,
-                frame_label,
-                parent_frame_id,
-                child_index,
-                frame_flags,
-                create_param,
-                frame_callback,
-                anchor_flags,
-                ensure_devtext_source,
-            )
-            or 0
-        )
-
-    @staticmethod
-    def SetFrameRect(
-        frame_id: int,
-        x: float,
-        y: float,
-        width: float,
-        height: float,
-        flags: Optional[int] = 0x6,
-        disable_center: bool = False,
-    ) -> bool:
-        resolved_flags = flags
-        if resolved_flags is None:
-            parent_id = UIManager.GetParentID(frame_id)
-            if parent_id <= 0:
-                resolved_flags = 0x6
-            else:
-                left, top, right, bottom = UIManager.GetFrameCoords(parent_id)
-                parent_width = abs(float(right - left))
-                parent_height = abs(float(bottom - top))
-                resolved_flags = UIManager.ChooseAnchorFlagsForDesiredRect(
-                    float(x),
-                    float(y),
-                    float(width),
-                    float(height),
-                    parent_width,
-                    parent_height,
-                    disable_center,
-                )
-        return UIManager.SetFrameControllerAnchorMarginsByFrameIdEx(
-            frame_id,
-            float(x),
-            float(y),
-            float(width),
-            float(height),
-            int(resolved_flags),
-        )
-
-    @staticmethod
-    def ApplyRect(
-        frame_id: int,
-        x: float,
-        y: float,
-        width: float,
-        height: float,
-        flags: Optional[int] = 0x6,
-        disable_center: bool = False,
-    ) -> bool:
-        return UIManager.SetFrameRect(
-            frame_id,
-            x,
-            y,
-            width,
-            height,
-            flags,
-            disable_center,
-        )
-
-    @staticmethod
-    def SetFrameSize(
-        frame_id: int,
-        width: float,
-        height: float,
-        flags: Optional[int] = 0x6,
-        disable_center: bool = False,
-    ) -> bool:
-        return UIManager.ResizeRect(
-            frame_id,
-            float(width),
-            float(height),
-            None,
-            None,
-            flags,
-            disable_center,
-        )
-
-    @staticmethod
-    def ResizeRect(
-        frame_id: int,
-        width: float,
-        height: float,
-        x: Optional[float] = None,
-        y: Optional[float] = None,
-        flags: Optional[int] = 0x6,
-        disable_center: bool = False,
-    ) -> bool:
-        if x is None or y is None:
-            left, top, _, _ = UIManager.GetFrameCoords(frame_id)
-            if x is None:
-                x = float(left)
-            if y is None:
-                y = float(top)
-        return UIManager.ApplyRect(
-            frame_id,
-            float(x),
-            float(y),
-            width,
-            height,
-            flags,
-            disable_center,
-        )
-
-    @staticmethod
-    def SetFramePosition(
-        frame_id: int,
-        x: float,
-        y: float,
-        flags: Optional[int] = 0x6,
-        disable_center: bool = False,
-    ) -> bool:
-        return UIManager.MoveRect(
-            frame_id,
-            float(x),
-            float(y),
-            flags,
-            disable_center,
-        )
-
-    @staticmethod
-    def MoveRect(
-        frame_id: int,
-        x: float,
-        y: float,
-        width: Optional[float] = None,
-        height: Optional[float] = None,
-        flags: Optional[int] = 0x6,
-        disable_center: bool = False,
-    ) -> bool:
-        if width is None or height is None:
-            left, top, right, bottom = UIManager.GetFrameCoords(frame_id)
-            if width is None:
-                width = abs(float(right - left))
-            if height is None:
-                height = abs(float(bottom - top))
-        return UIManager.ApplyRect(
-            frame_id,
-            x,
-            y,
-            float(width),
-            float(height),
-            flags,
-            disable_center,
-        )
-
-    @staticmethod
-    def HideWindowByLabel(frame_label: str) -> bool:
-        frame_id = int(UIManager.GetFrameIDByLabel(frame_label) or 0)
-        if frame_id <= 0 or not UIManager.FrameExists(frame_id):
-            return False
-        return bool(UIManager.DestroyUIComponentByFrameId(frame_id))
-
-    @staticmethod
-    def CollapseWindowByFrameId(frame_id: int) -> bool:
-        return PyUIManager.UIManager.collapse_window_by_frame_id(frame_id)
-
-    @staticmethod
-    def RestoreWindowRectByFrameId(
-        frame_id: int,
-        x: float,
-        y: float,
-        width: float,
-        height: float,
-        flags: int = 0,
-        use_auto_flags: bool = True,
-        disable_center: bool = True,
-    ) -> bool:
-        return PyUIManager.UIManager.restore_window_rect_by_frame_id(
-            frame_id,
-            x,
-            y,
-            width,
-            height,
-            flags,
-            use_auto_flags,
-            disable_center,
-        )
-
-    @staticmethod
-    def ToggleWindowByLabel(
-        frame_label: str,
-        x: float,
-        y: float,
-        width: float,
-        height: float,
-        parent_frame_id: int = 9,
-        child_index: int = 0,
-        frame_flags: int = 0,
-        create_param: int = 0,
-        frame_callback: int = 0,
-        anchor_flags: int = 0x6,
-        ensure_devtext_source: bool = True,
-    ) -> int:
-        frame_id = int(UIManager.GetFrameIDByLabel(frame_label) or 0)
-        if frame_id > 0 and UIManager.FrameExists(frame_id):
-            UIManager.DestroyUIComponentByFrameId(frame_id)
-            return 0
-        return UIManager.CreateWindow(
-            x,
-            y,
-            width,
-            height,
-            frame_label,
-            parent_frame_id,
-            child_index,
-            frame_flags,
-            create_param,
-            frame_callback,
-            anchor_flags,
-            ensure_devtext_source,
-        )
-
-    @staticmethod
-    def DestroyUIComponentByFrameId(frame_id: int) -> bool:
-        return PyUIManager.UIManager.destroy_ui_component_by_frame_id(frame_id)
-
-    @staticmethod
-    def AddFrameUIInteractionCallbackByFrameId(
-        frame_id: int,
-        event_callback: int,
-        wparam: int = 0,
-    ) -> bool:
-        return PyUIManager.UIManager.add_frame_ui_interaction_callback_by_frame_id(
-            frame_id,
-            event_callback,
-            wparam,
-        )
-
-    @staticmethod
-    def TriggerFrameRedrawByFrameId(frame_id: int) -> bool:
-        return PyUIManager.UIManager.trigger_frame_redraw_by_frame_id(frame_id)
+    def SendFrameUIMessageWString(frame_id: int, message_id: int, text: str) -> bool:
+        return PyUIManager.UIManager.SendFrameUIMessageWString(frame_id, message_id, text)
 
     @staticmethod
     def DrawOnCompass(session_id: int, points: list[tuple[int, int]]) -> bool:
@@ -881,106 +459,17 @@ class UIManager:
     def GetCurrentTooltipAddress() -> int:
         return PyUIManager.UIManager.get_current_tooltip_address()
 
-    @staticmethod
-    def CreateButtonFrameByFrameId(
-        parent_frame_id: int,
-        component_flags: int,
-        child_index: int = 0,
-        name_enc: str = "",
-        component_label: str = "",
-    ) -> int:
-        return PyUIManager.UIManager.create_button_frame_by_frame_id(
-            parent_frame_id,
-            component_flags,
-            child_index,
-            name_enc,
-            component_label,
-        )
-
-    @staticmethod
-    def CreateCheckboxFrameByFrameId(
-        parent_frame_id: int,
-        component_flags: int,
-        child_index: int = 0,
-        name_enc: str = "",
-        component_label: str = "",
-    ) -> int:
-        return PyUIManager.UIManager.create_checkbox_frame_by_frame_id(
-            parent_frame_id,
-            component_flags,
-            child_index,
-            name_enc,
-            component_label,
-        )
-
-    @staticmethod
-    def CreateScrollableFrameByFrameId(
-        parent_frame_id: int,
-        component_flags: int,
-        child_index: int = 0,
-        page_context: int = 0,
-        component_label: str = "",
-    ) -> int:
-        return PyUIManager.UIManager.create_scrollable_frame_by_frame_id(
-            parent_frame_id,
-            component_flags,
-            child_index,
-            page_context,
-            component_label,
-        )
-
-    @staticmethod
-    def CreateTextLabelFrameByFrameId(
-        parent_frame_id: int,
-        component_flags: int,
-        child_index: int = 0,
-        name_enc: str = "",
-        component_label: str = "",
-    ) -> int:
-        return PyUIManager.UIManager.create_text_label_frame_by_frame_id(
-            parent_frame_id,
-            component_flags,
-            child_index,
-            name_enc,
-            component_label,
-        )
-    
-    @staticmethod
-    def FrameClick(frame_id):
-        """
-        Click a frame on the UI.
-
-        :param frame_id: The ID of the frame.
-        """
-        if not UIManager.FrameExists(frame_id):
-            return
-        PyUIManager.UIManager.button_click(frame_id)
-    
-    @staticmethod
-    def TestMouseAction(frame_id, current_state, wparam_value, lparam_value=0):
-        """
-        Test mouse action on a frame.
-
-        :param frame_id: The ID of the frame.
-        :param current_state: The current state of the mouse.
-        :param wparam_value: The wparam value.
-        """
-        if not UIManager.FrameExists(frame_id):
-            return
-        PyUIManager.UIManager.test_mouse_action(frame_id, current_state, wparam_value, lparam_value)
-    
-    @staticmethod
-    def TestMouseClickAction(frame_id, current_state, wparam_value, lparam_value=0):
-        """
-        Test mouse click action on a frame.
-
-        :param frame_id: The ID of the frame.
-        :param current_state: The current state of the mouse.
-        :param wparam_value: The wparam value.
-        """
-        if not UIManager.FrameExists(frame_id):
-            return
-        PyUIManager.UIManager.test_mouse_click_action(frame_id, current_state, wparam_value, lparam_value)
+    # CreateUIComponent callback binding is intentionally disabled for now.
+    # The runtime path was destabilizing validation runs and should only be
+    # restored when callback-specific work is resumed.
+    #
+    # @staticmethod
+    # def RegisterCreateUIComponentCallback(callback, altitude: int = -0x8000) -> int:
+    #     return int(PyUIManager.UIManager.register_create_ui_component_callback(callback, altitude) or 0)
+    #
+    # @staticmethod
+    # def RemoveCreateUIComponentCallback(handle: int) -> bool:
+    #     return bool(PyUIManager.UIManager.remove_create_ui_component_callback(handle))
     
     @staticmethod
     def GetRootFrameID():
@@ -1072,6 +561,41 @@ class UIManager:
             UIManager().DrawFrame(frame_id, colors[i])
             
     @staticmethod
+    def FrameClick(frame_id: int) -> None:
+        from Py4GWCoreLib import UIManager
+
+        if not UIManager.FrameExists(frame_id):
+            return
+        PyUIManager.UIManager.button_click(frame_id)    
+        
+    @staticmethod
+    def TestMouseAction(
+        frame_id: int,
+        current_state: int,
+        wparam_value: int,
+        lparam_value: int = 0,
+    ) -> None:
+        from Py4GWCoreLib import UIManager
+
+        if not UIManager.FrameExists(frame_id):
+            return
+        PyUIManager.UIManager.test_mouse_action(frame_id, current_state, wparam_value, lparam_value)
+
+    @staticmethod
+    def TestMouseClickAction(
+        frame_id: int,
+        current_state: int,
+        wparam_value: int,
+        lparam_value: int = 0,
+    ) -> None:
+        from Py4GWCoreLib import UIManager
+
+        if not UIManager.FrameExists(frame_id):
+            return
+        PyUIManager.UIManager.test_mouse_click_action(frame_id, current_state, wparam_value, lparam_value)
+
+            
+    @staticmethod
     def IsWorldMapShowing():
         """
         Check if the world map is showing.
@@ -1091,6 +615,10 @@ class UIManager:
     @staticmethod
     def IsValidEncStr(enc_str: str) -> bool:
         return PyUIManager.UIManager.is_valid_enc_str(enc_str)
+
+    @staticmethod
+    def IsValidEncBytes(enc_bytes: bytes) -> bool:
+        return bool(PyUIManager.UIManager.is_valid_enc_bytes(bytes(enc_bytes or b"")))
 
     @staticmethod
     def UInt32ToEncStr(value: int) -> str:
@@ -1496,6 +1024,8 @@ class UIManager:
         """
         Click the Nth dialog option (1-based). Returns True if dispatched.
         """
+        from .GWUI import GWUI
+
         ids = UIManager.GetDialogButtonIDs(debug)
         idx = choice - 1
         if idx < 0 or idx >= len(ids):
@@ -1510,7 +1040,7 @@ class UIManager:
                 f"Clicking dialog choice #{choice} -> frame {target}",
                 Console.MessageType.Info
             )
-        UIManager.FrameClick(target)
+        GWUI.FrameClick(target)
         return True
     
     @staticmethod
@@ -1674,14 +1204,16 @@ class UIManager:
         '''
         Confirm the max amount dialog such as those from Trading and Dropping items by clicking the relevant buttons.
         '''
+        from .GWUI import GWUI
+
         max_amount = UIManager.GetFrameIDByHash(4008686776)
         drop_offer_confirm = UIManager.GetFrameIDByHash(4014954629)
         
         if UIManager.FrameExists(max_amount):
-            UIManager.FrameClick(max_amount)
+            GWUI.FrameClick(max_amount)
             
         if UIManager.FrameExists(drop_offer_confirm):
-            UIManager.FrameClick(drop_offer_confirm)
+            GWUI.FrameClick(drop_offer_confirm)
     
 #region frameInfo
 @dataclass
@@ -1728,8 +1260,10 @@ class FrameInfo:
             UIManager().DrawFrameOutline(self.FrameID, color, thickness)
             
     def FrameClick(self):
+        from .GWUI import GWUI
+
         if self.FrameExists():
-            UIManager().FrameClick(self.FrameID)
+            GWUI.FrameClick(self.FrameID)
             
     def GetCoords(self):
         if self.FrameExists():

@@ -37,11 +37,13 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.spiritual_pain_utility import S
 from Sources.oazix.CustomBehaviors.skills.mesmer.unnatural_signet_utility import UnnaturalSignetUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.blood_bond_utility import BloodBondUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.blood_is_power_utility import BloodIsPowerUtility
+from Sources.oazix.CustomBehaviors.skills.mesmer.wastrels_demise_utility import WastrelsDemiseUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.blood_of_the_master import BloodOfTheMasterUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.discord_utility import DiscordUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.foul_feast_utility import FoulFeastUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.icy_veins_utility import IcyVeins_NearDeathUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.necrosis_utility import NecrosisUtility
+from Sources.oazix.CustomBehaviors.skills.necromancer.icy_veins_utility import IcyVeinsUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.putrid_bile_utility import PutridBile_NearDeathUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.putrid_explosion_utility import PutridExplosionUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_corruption_utility import SignetOfCorruptionUtility
@@ -104,12 +106,10 @@ class NecromancerIcyVeinsNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
         # aoe
         self.overload_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Overload"), current_build=in_game_build, mana_required_to_cast=15)
         self.chaos_storm_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Chaos_Storm"), current_build=in_game_build, mana_required_to_cast=15)
+
         self.wastrels_demise_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Wastrels_Demise"), current_build=in_game_build, mana_required_to_cast=15)
         self.spiritual_pain_utility: CustomSkillUtilityBase = SpiritualPainUtility(event_bus=self.event_bus, current_build=in_game_build, mana_required_to_cast=10)
-        self.Icy_Veins_utility: CustomSkillUtilityBase = IcyVeins_NearDeathUtility(
-            event_bus=self.event_bus,
-            current_build=in_game_build
-        )
+
 
         self.Signet_of_Corruption_luxon_utility: CustomSkillUtilityBase = SignetOfCorruptionUtility(
             event_bus=self.event_bus,
@@ -120,16 +120,17 @@ class NecromancerIcyVeinsNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
             skill=CustomSkill("Signet_of_Corruption_kurzick"),
             current_build=in_game_build)
 
+        self.icy_veins_utility: CustomSkillUtilityBase = IcyVeinsUtility(event_bus=self.event_bus, current_build=in_game_build)
+
         self.arcane_echo_utility: CustomSkillUtilityBase = ArcaneEchoUtility(
             event_bus=self.event_bus,
             current_build=in_game_build,
-            original_skill_to_copy= self.Icy_Veins_utility,
-            new_copied_instance= RawAoeAttackUtility(
+            original_skill_to_copy= self.icy_veins_utility,
+            new_copied_instance= IcyVeinsUtility(
                 event_bus=self.event_bus,
-                skill=CustomSkill("Icy_Veins"),
                 current_build=in_game_build,
-                score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 80 if enemy_qte >= 3 else 50 if enemy_qte <= 2 else 20),
-                mana_required_to_cast=12),
+                score_definition=ScoreStaticDefinition(41) # slightly more than above
+            ),
             arcane_echo_score_definition=ScoreStaticDefinition(82))
         self.auspicious_incantation_utility: CustomSkillUtilityBase = AuspiciousIncantationUtility(
             event_bus=self.event_bus,
@@ -180,7 +181,7 @@ class NecromancerIcyVeinsNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
     @override
     def custom_skills_in_behavior(self) -> list[CustomSkillUtilityBase]:
         return [
-            self.Icy_Veins_utility,
+            self.icy_veins_utility,
             self.putrid_bile_utility,
 
             self.necrosis_utility,
@@ -239,7 +240,5 @@ class NecromancerIcyVeinsNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
     @override
     def skills_required_in_behavior(self) -> list[CustomSkill]:
         return [
-            self.Icy_Veins_utility.custom_skill,
-            self.necrosis_utility.custom_skill,
-            self.signet_of_lost_souls_utility.custom_skill,
+            self.icy_veins_utility.custom_skill,
         ]
