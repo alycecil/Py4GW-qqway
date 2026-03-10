@@ -61,7 +61,6 @@ class MesmerESurgery_UtilitySkillBar(CustomBehaviorBaseUtility):
             event_bus=self.event_bus, skill=CustomSkill("Energy_Surge"), current_build=in_game_build,
             score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 80 if enemy_qte >= 3 else 52 if enemy_qte >= 2 else 10),
             allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
-            within_range=Range.Spellcast,
             mana_required_to_cast=7)
         self.overload_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Overload"), current_build=in_game_build, mana_required_to_cast=15)
         self.chaos_storm_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Chaos_Storm"), current_build=in_game_build, mana_required_to_cast=15)

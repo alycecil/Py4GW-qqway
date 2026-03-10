@@ -60,7 +60,7 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
             skill=CustomSkill("Signet_of_Corruption_kurzick"),
             current_build=in_game_build)
         # todo not a boss
-        self.technobabble_utility: CustomSkillUtilityBase = Technobabble_Utility(event_bus=self.event_bus, skill=CustomSkill("Technobabble"), current_build=in_game_build, mana_required_to_cast=15)
+        self.technobabble_utility: CustomSkillUtilityBase = Technobabble_Utility(event_bus=self.event_bus, current_build=in_game_build, mana_required_to_cast=15)
         self.fragility_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Fragility"), current_build=in_game_build, mana_required_to_cast=20)
 
 #         Cast Glyph of Lesser Energy↦Arcane Conundrum↦Cry of Pain on the largest group of foes, preferably hitting casters.

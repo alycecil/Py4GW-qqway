@@ -81,7 +81,7 @@ class NecromancerCultistOfNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
         # optional
         self.great_dwarf_weapon_utility: CustomSkillUtilityBase = GreatDwarfWeaponUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(30))
         self.breath_of_the_great_dwarf_utility: CustomSkillUtilityBase = BreathOfTheGreatDwarfUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(9))
-        self.foul_feast_utility: CustomSkillUtilityBase = FoulFeastUtility(event_bus=self.event_bus, skill=CustomSkill("Foul_Feast"), current_build=in_game_build, mana_required_to_cast=15, score_definition=ScoreStaticDefinition(49)) # let's keep 15 mana to not be out of mana spamming it
+        self.foul_feast_utility: CustomSkillUtilityBase = FoulFeastUtility(event_bus=self.event_bus, current_build=in_game_build, mana_required_to_cast=15, score_definition=ScoreStaticDefinition(49)) # let's keep 15 mana to not be out of mana spamming it
 
         # interrupt
         self.cry_of_pain_utility: CustomSkillUtilityBase = CryOfPainUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(90))
@@ -98,8 +98,6 @@ class NecromancerCultistOfNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
 
         # condispam
         self.Plague_Sending_utility: CustomSkillUtilityBase = PlagueSendingUtility(event_bus=self.event_bus, current_build=in_game_build)
-
-
 
         #shatter/drain
         self.shatter_hex_utility: CustomSkillUtilityBase = ShatterHexUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 95 if enemy_qte >= 2 else 20))

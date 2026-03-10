@@ -1,27 +1,31 @@
-from typing import List, Any, Generator, Callable, override
+from typing import override
 
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
-from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
-from Sources.oazix.CustomBehaviors.primitives.scores.score_per_health_gravity_definition import ScorePerHealthGravityDefinition
+from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import \
+    ScorePerAgentQuantityDefinition
+from Sources.oazix.CustomBehaviors.primitives.scores.score_per_health_gravity_definition import \
+    ScorePerHealthGravityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_utility import CustomBehaviorBaseUtility
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.skills.common.breath_of_the_great_dwarf_utility import BreathOfTheGreatDwarfUtility
 from Sources.oazix.CustomBehaviors.skills.common.by_urals_hammer_utility import ByUralsHammerUtility
-from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_honor_utility import EbonBattleStandardOfHonorUtility
-from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_wisdom_utility import EbonBattleStandardOfWisdom
+from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_honor_utility import \
+    EbonBattleStandardOfHonorUtility
+from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_wisdom_utility import \
+    EbonBattleStandardOfWisdom
 from Sources.oazix.CustomBehaviors.skills.common.ebon_escape_utility import EbonEscapeUtility
-from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
+from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import \
+    EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.common.finish_him_utility import FinishHimUtility
 from Sources.oazix.CustomBehaviors.skills.common.great_dwarf_weapon_utility import GreatDwarfWeaponUtility
 from Sources.oazix.CustomBehaviors.skills.common.i_am_unstoppable_utility import IAmUnstoppableUtility
 from Sources.oazix.CustomBehaviors.skills.generic.auto_combat_utility import AutoCombatUtility
-from Sources.oazix.CustomBehaviors.skills.generic.generic_resurrection_utility import GenericResurrectionUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
-from Sources.oazix.CustomBehaviors.skills.generic.minion_invocation_from_corpse_utility import MinionInvocationFromCorpseUtility
+from Sources.oazix.CustomBehaviors.skills.generic.minion_invocation_from_corpse_utility import \
+    MinionInvocationFromCorpseUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
-from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_attack_utility import RawSimpleAttackUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.arcane_echo_utility import ArcaneEchoUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.auspicious_incantation_utility import AuspiciousIncantationUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_frustration_utility import CryOfFrustrationUtility
@@ -35,27 +39,17 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.shatter_enchantment_utility imp
 from Sources.oazix.CustomBehaviors.skills.mesmer.shatter_hex_utility import ShatterHexUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.spiritual_pain_utility import SpiritualPainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.unnatural_signet_utility import UnnaturalSignetUtility
-from Sources.oazix.CustomBehaviors.skills.necromancer.blood_bond_utility import BloodBondUtility
-from Sources.oazix.CustomBehaviors.skills.necromancer.blood_is_power_utility import BloodIsPowerUtility
-from Sources.oazix.CustomBehaviors.skills.mesmer.wastrels_demise_utility import WastrelsDemiseUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.blood_of_the_master import BloodOfTheMasterUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.discord_utility import DiscordUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.foul_feast_utility import FoulFeastUtility
-from Sources.oazix.CustomBehaviors.skills.necromancer.icy_veins_utility import IcyVeins_NearDeathUtility
-from Sources.oazix.CustomBehaviors.skills.necromancer.necrosis_utility import NecrosisUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.icy_veins_utility import IcyVeinsUtility
+from Sources.oazix.CustomBehaviors.skills.necromancer.necrosis_utility import NecrosisUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.putrid_bile_utility import PutridBile_NearDeathUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.putrid_explosion_utility import PutridExplosionUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_corruption_utility import SignetOfCorruptionUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_lost_souls_utility import SignetOfLostSoulsUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.suffering import SufferingUtility
 from Sources.oazix.CustomBehaviors.skills.paragon.fall_back_utility import FallBackUtility
-from Sources.oazix.CustomBehaviors.skills.ritualist.mend_body_and_soul_utility import MendBodyAndSoulUtility
-from Sources.oazix.CustomBehaviors.skills.ritualist.life_utility import LifeUtility
-from Sources.oazix.CustomBehaviors.skills.ritualist.protective_was_kaolai_utility import ProtectiveWasKaolaiUtility
-from Sources.oazix.CustomBehaviors.skills.ritualist.soothing_memories_utility import SoothingMemoriesUtility
-from Sources.oazix.CustomBehaviors.skills.ritualist.spirit_light_utility import SpiritLightUtility
-from Sources.oazix.CustomBehaviors.skills.ritualist.spirit_transfer_utility import SpiritTransferUtility
 
 
 class NecromancerIcyVeinsNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
@@ -79,7 +73,7 @@ class NecromancerIcyVeinsNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
         # optional
         self.great_dwarf_weapon_utility: CustomSkillUtilityBase = GreatDwarfWeaponUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(30))
         self.breath_of_the_great_dwarf_utility: CustomSkillUtilityBase = BreathOfTheGreatDwarfUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(9))
-        self.foul_feast_utility: CustomSkillUtilityBase = FoulFeastUtility(event_bus=self.event_bus, skill=CustomSkill("Foul_Feast"), current_build=in_game_build, mana_required_to_cast=15, score_definition=ScoreStaticDefinition(49)) # let's keep 15 mana to not be out of mana spamming it
+        self.foul_feast_utility: CustomSkillUtilityBase = FoulFeastUtility(event_bus=self.event_bus, current_build=in_game_build, mana_required_to_cast=15, score_definition=ScoreStaticDefinition(49)) # let's keep 15 mana to not be out of mana spamming it
 
         # interrupt
         self.cry_of_pain_utility: CustomSkillUtilityBase = CryOfPainUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(90))
