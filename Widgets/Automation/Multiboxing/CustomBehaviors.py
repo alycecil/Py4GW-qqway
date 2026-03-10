@@ -3,24 +3,12 @@ import pathlib
 import sys
 
 import Py4GW
-from HeroAI.ui import is_left_mouse_clicked, commands, gray_color
 from Py4GWCoreLib import ImGui, Map, PyImGui, Routines, Color
 from Py4GWCoreLib.Py4GWcorelib import ThrottledTimer
 from Py4GWCoreLib.UIManager import UIManager
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.fps_monitor import FPSMonitor
-from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_utility import CustomBehaviorBaseUtility
-from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
-from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.primitives.widget_monitor import WidgetMonitor
-from Py4GWCoreLib import Player
-from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
-from Py4GWCoreLib.GlobalCache.SharedMemory import SharedMessageStruct
-from Py4GWCoreLib.Py4GWcorelib import ThrottledTimer
-from Py4GWCoreLib.ImGui_src.WindowModule import WindowModule
-
-from HeroAI.cache_data import CacheData
-from HeroAI.settings import Settings
 
 # Iterate through all modules in sys.modules (already imported modules)
 # Iterate over all imported modules and reload them
@@ -35,21 +23,6 @@ for module_name in list(sys.modules.keys()):
         except Exception as e:
             Py4GW.Console.Log("CustomBehaviors", f"Error reloading module {module_name}: {e}")
 
-from Sources.oazix.CustomBehaviors.daemon import daemon
-from Sources.oazix.CustomBehaviors.primitives import constants
-from Sources.oazix.CustomBehaviors.primitives.fps_monitor import FPSMonitor
-from Sources.oazix.CustomBehaviors.primitives.widget_monitor import WidgetMonitor
-from Sources.oazix.CustomBehaviors.gui.current_build import render as current_build_render
-from Sources.oazix.CustomBehaviors.gui.party import render as party
-from Sources.oazix.CustomBehaviors.gui.debug_skillbars import render as debug_skilbars
-from Sources.oazix.CustomBehaviors.gui.debug_execution import render as debug_execution
-from Sources.oazix.CustomBehaviors.gui.debug_sharedlocks import render as debug_sharedlocks
-from Sources.oazix.CustomBehaviors.gui.debug_eventbus import render as debug_eventbus
-from Sources.oazix.CustomBehaviors.gui.debug_eval_profiler import render as debug_eval_profiler
-from Sources.oazix.CustomBehaviors.gui.auto_mover import render as auto_mover
-from Sources.oazix.CustomBehaviors.gui.teambuild import render as teambuild
-from Sources.oazix.CustomBehaviors.gui.botting import render as botting
-
 party_forced_state_combo = 0
 current_path = pathlib.Path.cwd()
 monitor = FPSMonitor(history=300)
@@ -61,53 +34,25 @@ widget_window_pos:tuple[float, float] = (0,0)
 MODULE_NAME = "Custom Behaviors: Utility AI"
 MODULE_ICON = "Textures/Module_Icons/Custom Behaviors.png"
 
-
-def draw_dialog_overlay():
-    global frame_coords, dialog_open, dialog_coords
-
-    account_email = Player.GetAccountEmail()
-    own_data = GLOBAL_CACHE.ShMem.GetAccountDataFromEmail(account_email)
-    if own_data is None:
-        print("no cache data")
-        return
-
-    dialog_open = UIManager.IsNPCDialogVisible()
-    frame_coords = UIManager.GetDialogButtonFrames() if dialog_open else []
-
-    if not frame_coords or not dialog_open:
-        # print("no dialog data")
-        return
-
-    pyimgui_io = PyImGui.get_io()
-    mouse_pos = (pyimgui_io.mouse_pos_x, pyimgui_io.mouse_pos_y)
-
-    # if Console.is_window_active():
-    sorted_frames = sorted(frame_coords, key=lambda x: (x[1][1], x[1][0]))  # Sort by Y, then X
-
-    # print("dialog open")
-    for i, (frame_id, frame) in enumerate(sorted_frames):
-        if ImGui.is_mouse_in_rect((frame[0], frame[1], frame[2] - frame[0], frame[3] - frame[1]), mouse_pos):
-            if is_left_mouse_clicked() and pyimgui_io.key_ctrl:
-                accounts = [acc for acc in GLOBAL_CACHE.ShMem.GetAllAccountData() if acc.AccountEmail != account_email]
-                commands.send_dialog(accounts, i + 1)
-                return
-            else:
-                ImGui.begin_tooltip()
-                ImGui.text_colored(f"Ctrl + Click to select on all accounts.", gray_color.color_tuple, 12)
-                ImGui.end_tooltip()
-        else:
-            # print("no dialog")
-            pass
-
-    pass
-
 def gui():
     # PyImGui.set_next_window_size(260, 650)
     # PyImGui.set_next_window_size(460, 800)
-    draw_dialog_overlay()
+    from Sources.oazix.CustomBehaviors.primitives import constants
+    from Sources.oazix.CustomBehaviors.primitives.fps_monitor import FPSMonitor
+    from Sources.oazix.CustomBehaviors.primitives.widget_monitor import WidgetMonitor
+    from Sources.oazix.CustomBehaviors.gui.current_build import render as current_build_render
+    from Sources.oazix.CustomBehaviors.gui.party import render as party
+    from Sources.oazix.CustomBehaviors.gui.debug_skillbars import render as debug_skilbars
+    from Sources.oazix.CustomBehaviors.gui.debug_execution import render as debug_execution
+    from Sources.oazix.CustomBehaviors.gui.debug_sharedlocks import render as debug_sharedlocks
+    from Sources.oazix.CustomBehaviors.gui.debug_eventbus import render as debug_eventbus
+    from Sources.oazix.CustomBehaviors.gui.debug_eval_profiler import render as debug_eval_profiler
+    from Sources.oazix.CustomBehaviors.gui.auto_mover import render as auto_mover
+    from Sources.oazix.CustomBehaviors.gui.teambuild import render as teambuild
+    from Sources.oazix.CustomBehaviors.gui.botting import render as botting
 
     global party_forced_state_combo, monitor, widget_window_size, widget_window_pos
-    
+
     # window_module:ImGui.WindowModule = ImGui.WindowModule("Custom behaviors", window_name="Custom behaviors - Multiboxing over utility-ai algorithm.", window_size=(0, 600), window_flags=PyImGui.WindowFlags.AlwaysAutoResize)
 
     if PyImGui.begin("Custom behaviors - Multiboxing over utility-ai algorithm.", PyImGui.WindowFlags.AlwaysAutoResize):
@@ -136,13 +81,13 @@ def gui():
             PyImGui.end_tab_item()
 
         if PyImGui.begin_tab_item("debug"):
-                
+
                 PyImGui.text(f"{monitor.fps_stats()[1]}")
                 PyImGui.text(f"{monitor.frame_stats()[1]}")
                 constants.DEBUG = PyImGui.checkbox("with debugging logs", constants.DEBUG)
-                
+
                 PyImGui.begin_tab_bar("debug_tab_bar")
-                
+
                 if PyImGui.begin_tab_item("debug_execution"):
                     debug_execution()
                     PyImGui.end_tab_item()
@@ -174,6 +119,12 @@ previous_map_status = False
 map_change_throttler = ThrottledTimer(1_500)
 
 def main():
+    from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_utility import CustomBehaviorBaseUtility
+    from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
+    from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_shared_memory import CustomBehaviorWidgetMemoryManager
+    from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
+    from Sources.oazix.CustomBehaviors.daemon import daemon
+
     global previous_map_status, monitor, widget_window_size, widget_window_pos
 
     monitor.tick()
@@ -184,10 +135,10 @@ def main():
         if constants.DEBUG: print("map changed detected - we will throttle.")
 
     previous_map_status = Routines.Checks.Map.MapValid()
-    
+
     if not Routines.Checks.Map.MapValid():
         return
-    
+
     if not map_change_throttler.IsExpired():
         if constants.DEBUG: print("map changed - throttling.")
 
@@ -198,7 +149,6 @@ def main():
                 gui()
             except Exception as e:
                 print(f'GUI Exception: {e}')
-
 
         daemon()
 

@@ -26,6 +26,9 @@ from Sources.oazix.CustomBehaviors.skills.ritualist.protective_was_kaolai_utilit
 from Sources.oazix.CustomBehaviors.skills.ritualist.soothing_memories_utility import SoothingMemoriesUtility
 from Sources.oazix.CustomBehaviors.skills.ritualist.spirit_light_utility import SpiritLightUtility
 from Sources.oazix.CustomBehaviors.skills.ritualist.spirit_transfer_utility import SpiritTransferUtility
+from Sources.oazix.CustomBehaviors.skills.ritualist.mending_grip_utility import MendingGripUtility
+from Sources.oazix.CustomBehaviors.skills.ritualist.resilient_weapon_utility import ResilientWeaponUtility
+from Sources.oazix.CustomBehaviors.skills.ritualist.wielders_boon_utility import WieldersBoonUtility
 
 
 class NecromancerBipRestoration_UtilitySkillBar(CustomBehaviorBaseUtility):
@@ -49,6 +52,10 @@ class NecromancerBipRestoration_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.blood_bond_utility: CustomSkillUtilityBase = BloodBondUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 25 if enemy_qte >= 2 else 0), mana_required_to_cast=15)
         self.cry_of_pain_utility: CustomSkillUtilityBase = CryOfPainUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(90))
         self.necrosis_utility: CustomSkillUtilityBase = NecrosisUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 10 if enemy_qte >= 3 else 20 if enemy_qte <= 1 else 70))
+        self.wielders_boon_utility: CustomSkillUtilityBase = WieldersBoonUtility(event_bus=self.event_bus, current_build=in_game_build)
+        self.resilient_weapon_utility: CustomSkillUtilityBase = ResilientWeaponUtility(event_bus=self.event_bus, current_build=in_game_build)
+        self.mending_grip_utility: CustomSkillUtilityBase = MendingGripUtility(event_bus=self.event_bus, current_build=in_game_build)
+        self.flesh_of_my_flesh_utility: CustomSkillUtilityBase = GenericResurrectionUtility(event_bus=self.event_bus, skill=CustomSkill("Flesh_of_My_Flesh"), current_build=in_game_build, score_definition=ScoreStaticDefinition(94))
 
         # common
         self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(event_bus=self.event_bus, score_definition=ScoreStaticDefinition(71), current_build=in_game_build, mana_required_to_cast=15)
@@ -76,6 +83,10 @@ class NecromancerBipRestoration_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.blood_bond_utility,
             self.cry_of_pain_utility,
             self.necrosis_utility,
+            self.wielders_boon_utility,
+            self.resilient_weapon_utility,
+            self.mending_grip_utility,
+            self.flesh_of_my_flesh_utility,
             self.ebon_vanguard_assassin_support,
             self.ebon_battle_standard_of_wisdom,
             self.i_am_unstopabble,

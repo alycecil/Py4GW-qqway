@@ -26,7 +26,6 @@ class BloodRitualUtility(CustomSkillUtilityBase):
     def __init__(self,
         event_bus:EventBus,
         current_build: list[CustomSkill],
-        skill: CustomSkill = CustomSkill("Blood_Ritual"),
         score_definition: ScoreStaticDefinition = ScoreStaticDefinition(10),
         sacrifice_life_cost: int = 17,
         sacrifice_life_limit_percent: float = 0.55,
@@ -39,7 +38,7 @@ class BloodRitualUtility(CustomSkillUtilityBase):
 
         super().__init__(
             event_bus=event_bus,
-            skill=skill,
+            skill=CustomSkill("Blood_Ritual"),
             in_game_build=current_build,
             score_definition=score_definition,
             mana_required_to_cast=mana_required_to_cast,
