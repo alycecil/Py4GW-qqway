@@ -53,3 +53,29 @@ class AttackNearestEnemyHasConditionUtility(CustomSkillUtilityBase):
         target = enemies[0]
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
         return result
+
+class KurzAttackNearestEnemyHasConditionUtility(AttackNearestEnemyHasConditionUtility):
+
+    def __init__(self,
+                 event_bus: EventBus,
+                 current_build: list[CustomSkill],
+                 ) -> None:
+
+        super().__init__(
+            event_bus=event_bus,
+            skill=CustomSkill("Spear_of_Fury_kurzick"),
+            current_build=current_build
+        )
+
+class LuxAttackNearestEnemyHasConditionUtility(AttackNearestEnemyHasConditionUtility):
+
+    def __init__(self,
+                 event_bus: EventBus,
+                 current_build: list[CustomSkill],
+                 ) -> None:
+
+        super().__init__(
+            event_bus=event_bus,
+            skill=CustomSkill("Spear_of_Fury_luxon"),
+            current_build=current_build
+        )
