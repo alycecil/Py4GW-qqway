@@ -27,9 +27,11 @@ class BloodRitualUtility(CustomSkillUtilityBase):
         event_bus:EventBus,
         current_build: list[CustomSkill],
         score_definition: ScoreStaticDefinition = ScoreStaticDefinition(10),
+        sacrifice_life_cost: int = 17,
         sacrifice_life_limit_percent: float = 0.55,
         sacrifice_life_limit_absolute: int = 175,
         required_target_mana_lower_than_percent: float = 0.40,
+        lock_ttl = 15,
         mana_required_to_cast: int = 7,
         allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO],
         ) -> None:
@@ -53,6 +55,11 @@ class BloodRitualUtility(CustomSkillUtilityBase):
         self.sacrifice_life_limit_percent: float = sacrifice_life_limit_percent
         self.sacrifice_life_limit_absolute: int = sacrifice_life_limit_absolute
         self.required_target_mana_lower_than_percent: float = required_target_mana_lower_than_percent
+        self.sacrifice_life_cost = sacrifice_life_cost
+        self.lock_ttl = lock_ttl
+
+    def _get_lock_key(self, agent_id: int) -> str:
+        return f"necroenergy_{self.custom_skill.skill_name}_{agent_id}"
 
     def _get_target(self) -> int | None:
 
@@ -61,7 +68,9 @@ class BloodRitualUtility(CustomSkillUtilityBase):
                 condition=lambda agent_id:
                     agent_id != Player.GetAgentID() and
                     self.buff_configuration.get_agent_id_predicate()(agent_id) and
-                    custom_behavior_helpers.Resources.get_energy_percent_in_party(agent_id) < self.required_target_mana_lower_than_percent,
+                    custom_behavior_helpers.Resources.get_energy_percent_in_party(agent_id) < self.required_target_mana_lower_than_percent and
+                    not (GLOBAL_CACHE.Effects.EffectExists(agent_id, self.custom_skill.skill_id) or GLOBAL_CACHE.Effects.BuffExists(agent_id, self.custom_skill.skill_id)) and
+                    not CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(self._get_lock_key(agent_id)),
                 sort_key=(TargetingOrder.ENERGY_ASC, TargetingOrder.DISTANCE_ASC),
                 range_to_count_enemies=None,
                 range_to_count_allies=None)
@@ -71,7 +80,7 @@ class BloodRitualUtility(CustomSkillUtilityBase):
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
-        if not custom_behavior_helpers.Resources.player_can_sacrifice_health(17, self.sacrifice_life_limit_percent, self.sacrifice_life_limit_absolute):
+        if not custom_behavior_helpers.Resources.player_can_sacrifice_health(self.sacrifice_life_cost, self.sacrifice_life_limit_percent, self.sacrifice_life_limit_absolute):
             return None
 
         target = self._get_target()
@@ -84,6 +93,11 @@ class BloodRitualUtility(CustomSkillUtilityBase):
         target = self._get_target()
         if target is None: return BehaviorResult.ACTION_SKIPPED
 
+        lock_key = self._get_lock_key(target)
+        if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(key=lock_key, timeout_seconds=self.lock_ttl) == False:
+            yield
+            return BehaviorResult.ACTION_SKIPPED
+
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target)
         return result
 
@@ -93,6 +107,8 @@ class BloodRitualUtility(CustomSkillUtilityBase):
 
     @override
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
+        PyImGui.bullet_text(f"sacrifice_life_cost : {self.sacrifice_life_cost}")
+        #self.sacrifice_life_limit_absolute = PyImGui.input_int("##sacrifice_life_cost", self.sacrifice_life_cost)
         PyImGui.bullet_text(f"sacrifice_life_limit_percent :")
         self.sacrifice_life_limit_percent = PyImGui.input_float("##sacrifice_life_limit_percent", self.sacrifice_life_limit_percent)
         PyImGui.bullet_text(f"sacrifice_life_limit_absolute :")
