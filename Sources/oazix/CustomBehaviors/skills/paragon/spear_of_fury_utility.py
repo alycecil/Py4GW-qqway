@@ -18,7 +18,7 @@ class AttackNearestEnemyHasConditionUtility(CustomSkillUtilityBase):
                  event_bus: EventBus,
                  current_build: list[CustomSkill],
                  skill: CustomSkill, # pass the luxon or kurzick skill here
-                 score_definition: ScoreStaticDefinition = ScoreStaticDefinition(70),
+                 score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 45 if enemy_qte >= 3 else 30 if enemy_qte >= 2 else 11),
                  ) -> None:
 
         super().__init__(
