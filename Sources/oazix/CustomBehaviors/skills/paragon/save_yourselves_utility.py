@@ -59,3 +59,31 @@ class SaveYourselfsUtility(ProtectiveShoutUtility):
         result:BehaviorResult = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
         CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
         return result
+
+class SaveYourSelfKurzUtility(SaveYourselfsUtility):
+    def __init__(
+            self,
+            event_bus: EventBus,
+            current_build: list[CustomSkill],
+            score_definition: ScoreStaticDefinition = ScoreStaticDefinition(90)
+    ) -> None:
+
+        super().__init__(
+            event_bus=event_bus,
+            skill=CustomSkill("Save_Yourselves_kurzick"),
+            current_build=current_build,
+            score_definition=score_definition)
+
+class SaveYourSelfLuxonUtility(SaveYourselfsUtility):
+    def __init__(
+            self,
+            event_bus: EventBus,
+            current_build: list[CustomSkill],
+            score_definition: ScoreStaticDefinition = ScoreStaticDefinition(90)
+    ) -> None:
+
+        super().__init__(
+            event_bus=event_bus,
+            skill=CustomSkill("Save_Yourselves_luxon"),
+            current_build=current_build,
+            score_definition=score_definition)
