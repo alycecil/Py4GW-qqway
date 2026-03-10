@@ -70,6 +70,7 @@ class NecromancerCultistOfNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
             score_definition=ScoreStaticDefinition(90),
             allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO])
 
+        self.blood_bond_utility: CustomSkillUtilityBase = BloodBondUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 25 if enemy_qte >= 2 else 0), mana_required_to_cast=15)
 
         # MM skills
         self.animate_shambling_horror_utility: CustomSkillUtilityBase = MinionInvocationFromCorpseUtility(event_bus=self.event_bus, skill=CustomSkill("Animate_Shambling_Horror"), current_build=in_game_build, score_definition=ScoreStaticDefinition(62))
@@ -147,6 +148,7 @@ class NecromancerCultistOfNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.necrosis_utility,
             self.discord_utility,
             self.cultists_fervor,
+            self.blood_bond_utility,
 
             self.animate_bone_fiend_utility,
             self.animate_bone_horror_utility,
@@ -202,5 +204,4 @@ class NecromancerCultistOfNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
     def skills_required_in_behavior(self) -> list[CustomSkill]:
         return [
             self.cultists_fervor.custom_skill,
-            self.necrosis_utility.custom_skill,
         ]
