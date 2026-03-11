@@ -71,7 +71,7 @@ def bot_routine(bot: Botting) -> None:
     bot.Templates.Multibox_Aggressive()
     bot.Templates.Routines.PrepareForFarm(map_id_to_travel=OUTPOST_TO_TRAVEL)
     
-    # bot.Party.SetHardMode(True)
+    bot.Party.SetHardMode(True)
     bot.Move.XYAndExitMap(-5490, 13672, 200) # Mount Qinkai
     bot.Wait.ForTime(4000)
     
@@ -92,8 +92,8 @@ def bot_routine(bot: Botting) -> None:
 
     bot.Multibox.ResignParty()
     bot.Wait.UntilOnOutpost()
-    # bot.Templates.Routines.PrepareForFarm(map_id_to_travel=CAVALON)
-    # bot.Multibox.DonateFaction()
+    bot.Templates.Routines.PrepareForFarm(map_id_to_travel=CAVALON)
+    bot.Multibox.DonateFaction()
     bot.Wait.ForTime(30000)
     bot.States.JumpToStepName("[H]VQ Mount Qinkai_1")
     
