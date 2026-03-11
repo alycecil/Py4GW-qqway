@@ -13,22 +13,22 @@ from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party impo
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
-from Sources.oazix.CustomBehaviors.skills.paragon.save_yourselves_utility import SaveYourSelfLuxonUtility
+from Sources.oazix.CustomBehaviors.skills.paragon.save_yourselves_utility import SaveYourSelfLuxonUtility, \
+    SaveYourselfsUtility
 
 
-class WatchYourselfPowerbatteryUtility(SaveYourSelfLuxonUtility):
+class WatchYourselfPowerbatteryUtility(SaveYourselfsUtility):
     def __init__(
             self,
             event_bus: EventBus,
             current_build: list[CustomSkill],
-            skill: CustomSkill = CustomSkill("Watch_Yourself"),
             score_definition: ScoreStaticDefinition = ScoreStaticDefinition(20),
             allowed_states: list[BehaviorState] = [BehaviorState.CLOSE_TO_AGGRO, BehaviorState.IN_AGGRO]
             ) -> None:
 
         super().__init__(
             event_bus=event_bus,
-            skill=skill,
+            skill=CustomSkill("Watch_Yourself"),
             current_build=current_build,
             score_definition=score_definition,
             allowed_states=allowed_states)
