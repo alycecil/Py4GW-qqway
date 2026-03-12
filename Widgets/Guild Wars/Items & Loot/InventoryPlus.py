@@ -2046,7 +2046,8 @@ class InventoryPlusWidget:
         try:
             is_rare_material_trader = bool(self._legacy_merchant_module._is_rare_material_trader())
         except Exception:
-            is_rare_material_trader = False
+            # is_rare_material_trader = False
+            return
         window_title = "Rare Material bulk trade" if is_rare_material_trader else "Material bulk trader"
 
         window_flags = PyImGui.WindowFlags.NoFlag
@@ -2227,7 +2228,7 @@ class InventoryPlusWidget:
         if merchant_right > merchant_left and merchant_bottom > merchant_top:
             merchant_frame_rect = (merchant_left, merchant_top, merchant_right, merchant_bottom)
 
-        self._legacy_merchant_module.colorize_merchants()
+        # self._legacy_merchant_module.colorize_merchants()
         if self._legacy_merchant_module.merchant_frame_exists:
             if not self.merchant_frame_exists:
                 self._set_merchant_checkbox_state(True)
