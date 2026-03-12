@@ -27,7 +27,7 @@ SLOW_MODE_DELAY_MAX = 1.0             # Maximum seconds between moves in Slow Mo
 # Runtime toggle states — persisted per-account in the INI file
 ANNIVERSARY_SLOT_UNLOCKED = False  # Whether the 14th storage pane is available
 SHOW_SETTINGS = False              # Whether the settings panel is expanded
-SHOW_DEBUG = False                 # Whether debug log output is enabled
+SHOW_DEBUG = True                 # Whether debug log output is enabled
 SLOW_MODE = False                  # Throttle moves to human-like speed (anti-bot measure)
 CONSOLIDATE_TO_BACK = False        # Sort non-filter-assigned items to the back of wildcard panes so free slots appear at the front
 AUTO_DEPOSIT_MATERIALS = False     # Automatically move materials into Material Storage
@@ -191,7 +191,7 @@ def _ensure_account_settings_loaded(force: bool = False):
 	ANNIVERSARY_SLOT_UNLOCKED = ini_handler.read_bool(INI_KEY, "anniversary_slot_unlocked", False)
 	_last_saved_anniversary_slot_unlocked = ANNIVERSARY_SLOT_UNLOCKED
 	SHOW_SETTINGS = ini_handler.read_bool(INI_KEY, "show_settings", False)
-	SHOW_DEBUG = ini_handler.read_bool(INI_KEY, "show_debug", False)
+	SHOW_DEBUG = True or ini_handler.read_bool(INI_KEY, "show_debug", False)
 	SLOW_MODE = ini_handler.read_bool(INI_KEY, "slow_mode", False)
 	CONSOLIDATE_TO_BACK = ini_handler.read_bool(INI_KEY, "consolidate_to_back", False)
 	AUTO_DEPOSIT_MATERIALS = ini_handler.read_bool(INI_KEY, "auto_deposit_materials", False)
