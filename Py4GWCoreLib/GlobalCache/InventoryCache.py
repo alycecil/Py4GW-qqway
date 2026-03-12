@@ -706,6 +706,9 @@ class InventoryCache:
 
         def _get_item_quantity(item, default: int = 1) -> int:
             """Return quantity from an item object, falling back to GLOBAL_CACHE lookup."""
+            #
+            # Local $countMaterial = DllStructGetData($materialInStorage, 'Equipped') * 256 + DllStructGetData($materialInStorage, 'Quantity')
+            # Then Mod 250 to find true quantity deposit-able for those that have the inventory expansions.
             if hasattr(item, "quantity"):
                 return int(item.quantity)
             try:
