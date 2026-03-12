@@ -19,6 +19,7 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base i
 class EbonVanguardAssassinSupportMode(Enum):
     SPIKE = 0
     CHAINED = 1
+    SPREAD = 2
 
 class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
     def __init__(self,
@@ -27,7 +28,7 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
         score_definition: ScoreStaticDefinition = ScoreStaticDefinition(40),
         mana_required_to_cast: int = 20,
         allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
-        mode: EbonVanguardAssassinSupportMode = EbonVanguardAssassinSupportMode.SPIKE
+        mode: EbonVanguardAssassinSupportMode = EbonVanguardAssassinSupportMode.SPREAD
         ) -> None:
 
         super().__init__(
@@ -53,7 +54,12 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
             within_range=Range.Spellcast,
             sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_ASC, TargetingOrder.DISTANCE_ASC),
             range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id),
-            condition=lambda agent_id: Agent.GetHealth(agent_id) > 0.2)
+            condition=lambda agent_id: Agent.GetHealth(agent_id) > 0.2 and (
+                    self.mode != EbonVanguardAssassinSupportMode.SPREAD or
+                    CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(self._get_lock_key(agent_id)) # Spread mode won't target those already locked
+            )
+        )
+
     
     def _get_lock_key(self, agent_id: int) -> str:
         return f"EbonVanguardAssassinSupport_{agent_id}"
@@ -79,8 +85,8 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
         if len(enemies) == 0: return BehaviorResult.ACTION_SKIPPED
         target = enemies[0]
 
-        # Only use lock in CHAINED mode
-        if self.mode == EbonVanguardAssassinSupportMode.CHAINED:
+        # Only use lock in CHAINED or SPREAD mode
+        if self.mode == EbonVanguardAssassinSupportMode.CHAINED or self.mode == EbonVanguardAssassinSupportMode.SPREAD:
             lock_key = self._get_lock_key(target.agent_id)
             if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=3) == False:
                 yield
@@ -107,6 +113,8 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
         mode_value = PyImGui.radio_button("SPIKE", mode_value, EbonVanguardAssassinSupportMode.SPIKE.value)
         PyImGui.same_line(0, -1)
         mode_value = PyImGui.radio_button("CHAINED", mode_value, EbonVanguardAssassinSupportMode.CHAINED.value)
+        PyImGui.same_line(0, -1)
+        mode_value = PyImGui.radio_button("SPREAD", mode_value, EbonVanguardAssassinSupportMode.SPREAD.value)
 
         # Update mode if changed
         self.mode = EbonVanguardAssassinSupportMode(mode_value)
