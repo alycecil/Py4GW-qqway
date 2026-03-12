@@ -56,7 +56,7 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
             range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id),
             condition=lambda agent_id: Agent.GetHealth(agent_id) > 0.2 and (
                     self.mode != EbonVanguardAssassinSupportMode.SPREAD or
-                    CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(self._get_lock_key(agent_id)) # Spread mode won't target those already locked
+                    not CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(self._get_lock_key(agent_id)) # Spread mode won't target those already locked
             )
         )
 
