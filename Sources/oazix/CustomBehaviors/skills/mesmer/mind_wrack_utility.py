@@ -17,7 +17,7 @@ class MindWrackUtility(CustomSkillUtilityBase):
     def __init__(self,
         event_bus: EventBus,
         current_build: list[CustomSkill],
-        score_definition: ScoreStaticDefinition = ScoreStaticDefinition(80),
+        score_definition: ScoreStaticDefinition = ScoreStaticDefinition(70),
         mana_required_to_cast: int = 10,
         allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO]
         ) -> None:
