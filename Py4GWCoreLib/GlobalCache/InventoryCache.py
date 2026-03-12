@@ -649,14 +649,24 @@ class InventoryCache:
                     material_slot = self.MATERIALS_MODEL_IDS[model_id]
                     space_left = MAX_STACK_SIZE - material_in_storage
                     to_move = min(space_left, remaining_quantity)
-                    self.MoveItem(item_id, Bags.MaterialStorage.value, material_slot, to_move)
-                    remaining_quantity -= to_move
-                    moved_any = True
-                    if remaining_quantity == 0:
-                        return True
+                    ConsoleLog("Inventory Cache", f"Attempting to move {to_move} of model id {model_id} into the material storage", message_type=0)
+                    moved_ok = False
+                    try:
+                        moved_ok = bool(PyInventory.PyInventory().MoveItem(int(item_id), int(Bags.MaterialStorage.value), int(material_slot), int(to_move)))
+                    except Exception as e1:
+                        ConsoleLog("Inventory Cache", f"Exception while trying to store items in the material storage {e1}", message_type=0)
+                        moved_ok = False
+                    if moved_ok:
+                        remaining_quantity = self.item_cache.Properties.GetQuantity(item_id)
+                        ConsoleLog("Inventory Cache", f"Move to mat storage claims it succeeded old qnty={quantity}, new={remaining_quantity}", message_type=0)
+                        moved_any = True
+                        if remaining_quantity == 0:
+                            return True
+                    else:
+                        ConsoleLog("Inventory Cache", f"Move to mat storage failed, falling back", message_type=0)
 
         except Exception as e:
-            print(f"Exception while trying to store items in the material storage {e}")
+            ConsoleLog("Inventory Cache",f"Exception while trying to store items in the material storage {e}", message_type=0)
 
         for bag_enum, bag in storage_bags:
             items = bag.GetItems()
