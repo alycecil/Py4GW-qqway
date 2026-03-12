@@ -8,6 +8,8 @@ from Py4GWCoreLib import ModelID
 from Py4GWCoreLib import Item 
 from Py4GWCoreLib import WindowID
 from .ItemCache import RawItemCache, Bag_enum, ItemCache
+from ..enums_src.Item_enums import ItemType
+
 
 class InventoryCache:
     def __init__(self, action_queue_manager, raw_item_cache, item_cache):
@@ -15,6 +17,45 @@ class InventoryCache:
         self.item_cache:ItemCache = item_cache
         self._inventory_instance = PyInventory.PyInventory()
         self._action_queue_manager:ActionQueueManager = action_queue_manager
+        self.MATERIAL_STACK_MAX = 250
+        self.MATERIALS_MODEL_IDS : dict[int, int] = {
+            ModelID.Bone: 1,
+            ModelID.Iron_Ingot: 2,
+            ModelID.Tanned_Hide_Square: 3,
+            ModelID.Scale: 4,
+            ModelID.Chitin_Fragment : 5,
+            ModelID.Bolt_Of_Cloth : 6,
+            ModelID.Wood_Plank : 7,
+            ModelID.Granite_Slab : 9,
+            ModelID.Pile_Of_Glittering_Dust : 10,
+            ModelID.Plant_Fiber : 11,
+            ModelID.Feather : 12,
+            ModelID.Fur_Square : 13,
+            ModelID.Bolt_Of_Linen : 14,
+            ModelID.Bolt_Of_Damask : 15,
+            ModelID.Bolt_Of_Silk : 16,
+            ModelID.Glob_Of_Ectoplasm : 17,
+            ModelID.Steel_Ingot : 18,
+            ModelID.Deldrimor_Steel_Ingot : 19,
+            ModelID.Monstrous_Claw : 20,
+            ModelID.Monstrous_Eye : 21,
+            ModelID.Monstrous_Fang : 22,
+            ModelID.Ruby : 23,
+            ModelID.Sapphire : 24,
+            ModelID.Diamond : 25,
+            ModelID.Onyx_Gemstone : 26,
+            ModelID.Lump_Of_Charcoal : 27,
+            ModelID.Obsidian_Shard : 28,
+            ModelID.Tempered_Glass_Vial : 30,
+            ModelID.Leather_Square : 31,
+            ModelID.Elonian_Leather_Square : 32,
+            ModelID.Vial_Of_Ink : 33,
+            ModelID.Roll_Of_Parchment : 34,
+            ModelID.Roll_Of_Vellum : 35,
+            ModelID.Spiritwood_Plank : 36,
+            ModelID.Amber_Chunk : 37,
+            ModelID.Jadeite_Shard : 38,
+        }
 
 
     def GetInventorySpace(self):
@@ -596,6 +637,26 @@ class InventoryCache:
         remaining_quantity = quantity
         moved_any = False
         model_id = self.item_cache.GetModelID(item_id)
+        try:
+            type_id, type_name = self.item_cache.GetItemType(item_id)
+
+            if self._is_material(model_id, type_id):
+                material_bag = PyInventory.Bag(Bags.MaterialStorage.value, Bags.MaterialStorage.name)
+
+                material_in_storage = self._get_material_quantity_in_matstorage(material_bag, model_id)
+
+                if material_in_storage < MAX_STACK_SIZE:
+                    material_slot = self.MATERIALS_MODEL_IDS[model_id]
+                    space_left = MAX_STACK_SIZE - material_in_storage
+                    to_move = min(space_left, remaining_quantity)
+                    self.MoveItem(item_id, Bags.MaterialStorage.value, material_slot, to_move)
+                    remaining_quantity -= to_move
+                    moved_any = True
+                    if remaining_quantity == 0:
+                        return True
+
+        except Exception as e:
+            print(f"Exception while trying to store items in the material storage {e}")
 
         for bag_enum, bag in storage_bags:
             items = bag.GetItems()
@@ -635,7 +696,79 @@ class InventoryCache:
                     return True
 
         return moved_any
-    
+
+    def _get_material_quantity_in_matstorage(self, material_bag, model_id):
+        def _get_item_model_id(item) -> int:
+            """Return model_id from an item object, falling back to GLOBAL_CACHE lookup."""
+            if hasattr(item, "model_id"):
+                return int(item.model_id)
+            return int(self.item_cache.GetModelID(int(item.item_id)))
+
+        def _get_item_quantity(item, default: int = 1) -> int:
+            """Return quantity from an item object, falling back to GLOBAL_CACHE lookup."""
+            if hasattr(item, "quantity"):
+                return int(item.quantity)
+            try:
+                return int(self.item_cache.Properties.GetQuantity(int(item.item_id)))
+            except Exception:
+                return default
+
+        materials_in_storage = 0
+        for item in material_bag.GetItems():
+            if not item or int(item.item_id) == 0:
+                continue
+            this_model_id = _get_item_model_id(item)
+            if this_model_id != model_id:
+                continue
+            quantity = _get_item_quantity(item)
+            if quantity > 0:
+                materials_in_storage = quantity
+
+        return materials_in_storage
+
+    def _is_material(self, model_id, type_id):
+        # TODO Remove this redefine when not debuggin
+        self.MATERIALS_MODEL_IDS : dict[int, int] = {
+            ModelID.Bone: 1,
+            ModelID.Iron_Ingot: 2,
+            ModelID.Tanned_Hide_Square: 3,
+            ModelID.Scale: 4,
+            ModelID.Chitin_Fragment : 5,
+            ModelID.Bolt_Of_Cloth : 6,
+            ModelID.Wood_Plank : 7,
+            ModelID.Granite_Slab : 9,
+            ModelID.Pile_Of_Glittering_Dust : 10,
+            ModelID.Plant_Fiber : 11,
+            ModelID.Feather : 12,
+            ModelID.Fur_Square : 13,
+            ModelID.Bolt_Of_Linen : 14,
+            ModelID.Bolt_Of_Damask : 15,
+            ModelID.Bolt_Of_Silk : 16,
+            ModelID.Glob_Of_Ectoplasm : 17,
+            ModelID.Steel_Ingot : 18,
+            ModelID.Deldrimor_Steel_Ingot : 19,
+            ModelID.Monstrous_Claw : 20,
+            ModelID.Monstrous_Eye : 21,
+            ModelID.Monstrous_Fang : 22,
+            ModelID.Ruby : 23,
+            ModelID.Sapphire : 24,
+            ModelID.Diamond : 25,
+            ModelID.Onyx_Gemstone : 26,
+            ModelID.Lump_Of_Charcoal : 27,
+            ModelID.Obsidian_Shard : 28,
+            ModelID.Tempered_Glass_Vial : 30,
+            ModelID.Leather_Square : 31,
+            ModelID.Elonian_Leather_Square : 32,
+            ModelID.Vial_Of_Ink : 33,
+            ModelID.Roll_Of_Parchment : 34,
+            ModelID.Roll_Of_Vellum : 35,
+            ModelID.Spiritwood_Plank : 36,
+            ModelID.Amber_Chunk : 37,
+            ModelID.Jadeite_Shard : 38,
+        }
+
+        return type_id == ItemType.Materials_Zcoins and model_id in self.MATERIALS_MODEL_IDS
+
     def WithdrawItemFromStorage(self, item_id: int, ammount:int = -1) -> bool:
         """
         Moves the specified item from storage to player inventory, filling partial stacks first.
