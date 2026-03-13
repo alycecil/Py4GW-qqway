@@ -252,6 +252,10 @@ def render():
                 if PyImGui.button(f"{IconsFontAwesome5.ICON_TRASH} ResetPartyCustomTarget | id:{shared_data.party_target_id}"):
                     CustomBehaviorParty().set_party_custom_target(None)
 
+            if shared_data.party_target_id is None:
+                if PyImGui.button(f"{IconsFontAwesome5.ICON_CROSSHAIRS} SetPartyCustomTarget"):
+                    CustomBehaviorParty().set_party_custom_target(Player.GetTargetID())
+
     PyImGui.separator()
 
     if Map.IsOutpost() or True:
@@ -598,7 +602,7 @@ def render():
 
     PyImGui.separator()
 
-    if custom_behavior_helpers.CustomBehaviorHelperParty.is_party_leader():
+    if True: # custom_behavior_helpers.CustomBehaviorHelperParty.is_party_leader():
         
         if PyImGui.tree_node_ex("[TEAM] Management :", 0):
 
