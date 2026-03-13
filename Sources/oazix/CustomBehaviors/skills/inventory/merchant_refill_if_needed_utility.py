@@ -167,19 +167,20 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         return False
 
     def _needsToVisit(self, merchant_type: MerchantType) -> bool:
+        from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
         if merchant_type == MerchantType.MERCHANT:
             if (self.GetExpertSalvageKitsToBuy() > 0
                     or self.GetSalvageKitsToBuy() > 0
                     or self.GetIDKitsToBuy() > 0
                     or self.hasItemsToMerch()):
-                if constants.DEBUG: print("I need to visit the Merchant")
+                if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", "I need to visit the Merchant", Console.MessageType.Info)
                 return True
         else:
             # TODO specific logic for other vendors
             return True
 
         # Fall though if no hits
-        return False
+        return True
 
     def needsToVisit(self, merchant_type: MerchantType) -> bool:
         if (self.should_visit_npc_config[merchant_type]
@@ -190,7 +191,12 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
-        # Xunlai intentionally not in list for scoring.
+
+        lock_key = self.generic_player_lock_key()
+        if CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(lock_key):
+            return None
+        if self.needsToVisit(MerchantType.XUNLAI_CHEST):
+            return self.score_definition.get_score()
         if self.needsToVisit(MerchantType.MERCHANT):
             return self.score_definition.get_score()
         if self.needsToVisit(MerchantType.RUNE_TRADER):
@@ -205,9 +211,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         count_of_id_kits = Inventory.GetModelCount(ModelID.Superior_Identification_Kit) #5899 model for ID kit
         id_kits_to_buy = self.inventory_config.keep_id_kit - count_of_id_kits
         if id_kits_to_buy > 0:
-            if constants.DEBUG: print(f"I need to buy {id_kits_to_buy} id kits")
             return id_kits_to_buy
-        if constants.DEBUG: print("I have enough id kits")
         return 0
 
     def GetSalvageKitsToBuy(self):
@@ -215,21 +219,19 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         salvage_kits_to_buy = self.inventory_config.keep_salvage_kit - count_of_salvage_kits
 
         if salvage_kits_to_buy > 0:
-            if constants.DEBUG: print(f"I need to buy {salvage_kits_to_buy} salvage kits")
             return salvage_kits_to_buy
-        if constants.DEBUG: print("I have enough salvage kits")
         return salvage_kits_to_buy
 
     def GetExpertSalvageKitsToBuy(self):
         count_of_salvage_kits = Inventory.GetModelCount(ModelID.Expert_Salvage_Kit) #2991 model for expert salvage kit
         salvage_kits_to_buy = self.inventory_config.keep_expert_salvage_kit - count_of_salvage_kits
         if salvage_kits_to_buy > 0:
-            if constants.DEBUG: print(f"I need to buy {salvage_kits_to_buy} expert salvage kits")
             return salvage_kits_to_buy
-        if constants.DEBUG: print("I have enough expert salvage kits")
         return salvage_kits_to_buy
 
     def _visit(self, merchant_type: MerchantType) -> Generator[Any, None, None]:
+
+        from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
 
         if not self.should_visit_npc_config[merchant_type]: return
         if self.npc_visited[merchant_type]: return
@@ -237,11 +239,11 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         target_agent_id = self._get_target(merchant_type)
         if target_agent_id is None: return
 
-        print(f"Visiting {merchant_type.name}...")
+        ConsoleLog("MerchantRefillIfNeededUtility", f"Visiting {merchant_type.name}...", Console.MessageType.Info)
         if constants.DEBUG: Player.ChangeTarget(target_agent_id)
         target_position : tuple[float, float] = Agent.GetXY(target_agent_id)
         if Utils.Distance(target_position, Player.GetXY()) > 150:
-            path3d = yield from AutoPathing().get_path_to(target_position[0], target_position[1], smooth_by_los=True, margin=100.0, step_dist=300.0)
+            path3d = yield from AutoPathing().get_path_to(target_position[0], target_position[1], smooth_by_los=True, margin=100.0, step_dist=322.0)
             path2d:list[tuple[float, float]]  = [(x, y) for (x, y, *_ ) in path3d]
 
             yield from Routines.Yield.Movement.FollowPath(
@@ -249,54 +251,60 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
                     custom_exit_condition=lambda: Agent.IsDead(Player.GetAgentID()),
                     tolerance=150,
                     log=constants.DEBUG,
-                    timeout=10_000,
-                    progress_callback=lambda progress: print(f"FollowPath merchant_refill_if_needed_utility: progress: {progress}") if constants.DEBUG else None,
+                    timeout=45_000,
+                    progress_callback=lambda progress: ConsoleLog("MerchantRefillIfNeededUtility", f"FollowPath merchant_refill_if_needed_utility: progress: {progress}", Console.MessageType.Info) if constants.DEBUG else None,
                     custom_pause_fn=lambda: False)
 
-        print(f"Merchant {merchant_type.name} reached.")
-        yield from self.interact_with_merchant(merchant_type, target_agent_id)
+        if Utils.Distance(target_position, Player.GetXY()) <= 150:
+            ConsoleLog("MerchantRefillIfNeededUtility", f"Merchant {merchant_type.name} reached.", Console.MessageType.Info)
+            yield from self.interact_with_merchant(merchant_type, target_agent_id)
 
-        visit_duration_in_seconds = self.visit_duration_in_seconds_config[merchant_type]
-        print(f"Merchant {merchant_type.name} waiting at for {visit_duration_in_seconds}s.")
-        yield from custom_behavior_helpers.Helpers.wait_for(visit_duration_in_seconds * 1000)
+            visit_duration_in_seconds = self.visit_duration_in_seconds_config[merchant_type]
+            ConsoleLog("MerchantRefillIfNeededUtility", f"Merchant {merchant_type.name} waiting at for {visit_duration_in_seconds}s.", Console.MessageType.Info)
+            yield from custom_behavior_helpers.Helpers.wait_for(visit_duration_in_seconds * 1000)
 
-        print(f"Merchant {merchant_type.name} wait complete.")
-        self.npc_visited[merchant_type] = True
+            ConsoleLog("MerchantRefillIfNeededUtility", f"Merchant {merchant_type.name} wait complete.", Console.MessageType.Info)
+            self.npc_visited[merchant_type] = True
+        else:
+            ConsoleLog("MerchantRefillIfNeededUtility", f"Merchant {merchant_type.name} was too far for the lock time, try again.", Console.MessageType.Info)
 
     def interact_with_merchant(self, merchant_type, target_agent_id):
 
         from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
-        ActionQueueManager().ResetQueue("MERCHANT")
 
-        lock_key = f"merchant_user_{Player.GetAgentID()}_{target_agent_id}"
+        lock_key = self._lock_key(target_agent_id)
         visit_duration_in_seconds = self.visit_duration_in_seconds_config[merchant_type]
         if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=visit_duration_in_seconds) == False:
             ConsoleLog("MerchantRefillIfNeededUtility", f"Merchant Locked for Player, wait {visit_duration_in_seconds} seconds", Console.MessageType.Info)
             return
 
-        Player.ChangeTarget(target_agent_id, queue_name="MERCHANT")
-        Player.Interact(target_agent_id, queue_name="MERCHANT")
+        ActionQueueManager().ResetQueue("MERCHANT")
+
+        agent_x, agent_y = Agent.GetXY(target_agent_id)
+        yield from Routines.Yield.Agents.InteractWithAgentXY(agent_x, agent_y)
+        yield from Routines.Yield.Merchant._wait_for_trader_inventory(timeout_ms=1000, step_ms=100)
+
         if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"Should have trade window open", Console.MessageType.Info)
         if merchant_type == MerchantType.MERCHANT:
             if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", "Starting merchant buy orders", Console.MessageType.Info)
             buy = self.GetIDKitsToBuy()
 
             if buy > 0:
-                if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"GetIDKitsToBuy = {buy}", Console.MessageType.Info)
+                ConsoleLog("MerchantRefillIfNeededUtility", f"GetIDKitsToBuy = {buy}", Console.MessageType.Info)
                 yield from Routines.Yield.Merchant.BuyIDKits(buy, constants.DEBUG, flush_queue=False)
             else:
                 if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"I have all the id kits i could want", Console.MessageType.Info)
 
             buy = self.GetSalvageKitsToBuy()
             if buy > 0:
-                if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"GetSalvageKitsToBuy = {buy}", Console.MessageType.Info)
+                ConsoleLog("MerchantRefillIfNeededUtility", f"GetSalvageKitsToBuy = {buy}", Console.MessageType.Info)
                 yield from Routines.Yield.Merchant.BuySalvageKits(buy, constants.DEBUG, flush_queue=False)
             else:
                 if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"I have all the regular salvage kits i could want", Console.MessageType.Info)
 
             buy = self.GetExpertSalvageKitsToBuy()
             if buy > 0:
-                if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"GetExpertSalvageKitsToBuy = {buy}", Console.MessageType.Info)
+                ConsoleLog("MerchantRefillIfNeededUtility", f"GetExpertSalvageKitsToBuy = {buy}", Console.MessageType.Info)
                 yield from Routines.Yield.Merchant.BuySalvageKits(buy, constants.DEBUG, ModelID.Expert_Salvage_Kit, flush_queue=False)
             else:
                 if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"I have all the expert salvage kits i could want", Console.MessageType.Info)
@@ -306,36 +314,40 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         else:
             ConsoleLog("MerchantRefillIfNeededUtility", f"Unknown merchant type {merchant_type}", Console.MessageType.Info)
 
+    def _lock_key(self, target_agent_id):
+        lock_key = f"merchant_user_{Player.GetAgentID()}_{target_agent_id}"
+        return lock_key
+
     @override
     def has_persistence(self) -> bool:
         return True
 
     @override
     def persist_configuration_for_account(self):
+        from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
         # PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "should_visit_npc_config", dict_to_string(self.should_visit_npc_config))
         PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "inventory_config", dict_to_string(self.inventory_config.__dict__))
-        print("configuration saved for account")
+        ConsoleLog("MerchantRefillIfNeededUtility", "configuration saved for account", Console.MessageType.Info)
 
     @override
     def persist_configuration_as_global(self):
+        from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
         # PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "should_visit_npc_config", dict_to_string(self.should_visit_npc_config))
-        PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "inventory_config", dict_to_string(self.inventory_config.__dict__))
-        print("configuration saved as global")
+        PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "inventory_config", dict_to_string(self.inventory_config.__dict__))
+        ConsoleLog("MerchantRefillIfNeededUtility", "configuration saved as global", Console.MessageType.Info)
 
     @override
     def delete_persisted_configuration(self):
+        from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
         PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "should_visit_npc_config")
         PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "inventory_config")
-        print("configuration deleted")
+        ConsoleLog("MerchantRefillIfNeededUtility", "configuration deleted", Console.MessageType.Info)
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
 
-        lock_key = f"merchant_user_{Player.GetAgentID()}"
+        lock_key = self.generic_player_lock_key()
 
-        if not self.npc_visited[MerchantType.XUNLAI_CHEST]:
-            yield from self._visit(MerchantType.XUNLAI_CHEST)
-            return BehaviorResult.ACTION_PERFORMED
         if not self.npc_visited[MerchantType.MERCHANT]:
             if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10) == False:
                 return BehaviorResult.ACTION_SKIPPED
@@ -356,8 +368,15 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
                 return BehaviorResult.ACTION_SKIPPED
             yield from self._visit(MerchantType.CRAFTING_MATERIAL_TRADER)
             return BehaviorResult.ACTION_PERFORMED
+        if not self.npc_visited[MerchantType.XUNLAI_CHEST]:
+            yield from self._visit(MerchantType.XUNLAI_CHEST)
+            return BehaviorResult.ACTION_PERFORMED
 
         return BehaviorResult.ACTION_SKIPPED
+
+    def generic_player_lock_key(self):
+        lock_key = f"merchant_user_{Player.GetAgentID()}"
+        return lock_key
 
     @override
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
