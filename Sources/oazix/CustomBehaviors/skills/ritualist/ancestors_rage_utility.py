@@ -55,6 +55,7 @@ class AncestorsRageUtility(CustomSkillUtilityBase):
         return allies
     
     def _get_vanguard(self) -> custom_behavior_helpers.SortableAgentData:
+        # TODO GetAliveAgentsByModelID
         npc_agent_id : int = Routines.Agents.GetNearestAliveAgentByModelID(self.model_id_filter, Range.Spellcast.value)
         if npc_agent_id != None and npc_agent_id != 0:
             all_enemies_ids: list[int] = AgentArray.GetEnemyArray()
