@@ -48,43 +48,29 @@ class AncestorsRageUtility(CustomSkillUtilityBase):
 
         vanguard = self._get_vanguard()
         if vanguard is not None:
-            allies.append(vanguard)
+            allies.extend(vanguard)
 
-            return sorted(allies, key=lambda x: -x.enemy_quantity_within_range)
+            # with vanguards added after means prefer player over npc
+            return sorted(allies, key=lambda x: -x.enemy_quantity_within_range) # intentional dupe of TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC
 
         return allies
     
-    def _get_vanguard(self) -> custom_behavior_helpers.SortableAgentData:
-        # TODO GetAliveAgentsByModelID
-        npc_agent_id : int = Routines.Agents.GetNearestAliveAgentByModelID(self.model_id_filter, Range.Spellcast.value)
-        if npc_agent_id != None and npc_agent_id != 0:
-            all_enemies_ids: list[int] = AgentArray.GetEnemyArray()
-            within_range=Range.Adjacent.value
-            player_pos: tuple[float, float] = Player.GetXY()
-            enemies_ids = AgentArray.Filter.ByCondition(all_enemies_ids, lambda agent_id: Agent.IsAlive(agent_id))
-            enemies_ids = AgentArray.Filter.ByDistance(enemies_ids, player_pos, Range.Spellcast.value * 1.2)
-            enemies_quantity_within_range = 0
+    def _get_vanguard(self) -> list[custom_behavior_helpers.SortableAgentData]:
 
-            agent_pos = Agent.GetXY(npc_agent_id)
+        vanguard: list[
+            custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_ncs_of_model_ordered_by_priority_raw(
+            model_id=self.model_id_filter,
+            within_range=Range.Spellcast.value * 1.2,
+            sort_key=(TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_ASC),
+            range_to_count_allies=None,
+            range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id))
 
-            for enemy_id in enemies_ids:
-                if Utils.Distance(Agent.GetXY(enemy_id), agent_pos) <= within_range:
-                    enemies_quantity_within_range += 1
+        if len(vanguard) == 0: return None
 
-            return SortableAgentData(agent_id=npc_agent_id,
-                                     enemy_quantity_within_range=enemies_quantity_within_range,
-                                     hp=Agent.GetHealth(npc_agent_id),
-                                     is_caster=Agent.IsCaster(npc_agent_id),
-                                     is_melee=Agent.IsMelee(npc_agent_id),
-                                     is_martial=Agent.IsMartial(npc_agent_id),
-                                     agent_quantity_within_range=0,
-                                     energy=1.0,
-                                     distance_from_player=Range.Spellcast.value)
-
-        return None
+        return vanguard
 
     def _get_lock_key(self, agent_id: int) -> str:
-        return LockKeyHelper.hex_removal(agent_id)
+        return f"ancestors_rage_{agent_id}"
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
@@ -92,28 +78,36 @@ class AncestorsRageUtility(CustomSkillUtilityBase):
         allies = self._get_targets()
         if len(allies) == 0: return None
 
-        lock_key = self._get_lock_key(allies[0].agent_id)
-        if CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(lock_key): return None #someone is already shattering
-        return self.score_definition.get_score(allies[0].enemy_quantity_within_range)
+        for ally in allies:
+            if CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(self._get_lock_key(ally.agent_id)):
+                continue
+
+            lock_key = self._get_lock_key(ally.agent_id)
+            if CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(lock_key): return None # someone is already spiking off
+            return self.score_definition.get_score(ally.enemy_quantity_within_range)
+
+        return None
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
 
         allies = self._get_targets()
         if len(allies) == 0: return BehaviorResult.ACTION_SKIPPED
-        target = allies[0]
 
-        lock_key = self._get_lock_key(allies[0].agent_id)
-        if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=1) == False:
-            yield 
-            return BehaviorResult.ACTION_SKIPPED 
+        for target in allies:
+            lock_key = self._get_lock_key(allies[0].agent_id)
+            if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=1):# does not stack, prevent waste
+                continue
 
-        try:
-            result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
-        finally:
-            # CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
-            pass
-        return result
+            try:
+                result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
+            finally:
+                # CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
+                pass
+            return result
+
+        yield
+        return BehaviorResult.ACTION_SKIPPED
 
 
     @override
