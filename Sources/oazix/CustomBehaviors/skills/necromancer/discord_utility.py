@@ -32,7 +32,7 @@ class DiscordUtility(CustomSkillUtilityBase):
          
         targets = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
                     within_range=Range.Spellcast,
-                    condition=lambda agent_id: Agent.IsHexed(agent_id) and Agent.IsConditioned(agent_id),
+                    condition=lambda agent_id: (Agent.IsHexed(agent_id) or Agent.IsEnchanted(agent_id)) and Agent.IsConditioned(agent_id),
                     sort_key=(TargetingOrder.HP_ASC, TargetingOrder.CASTER_THEN_MELEE))
 
         return targets
