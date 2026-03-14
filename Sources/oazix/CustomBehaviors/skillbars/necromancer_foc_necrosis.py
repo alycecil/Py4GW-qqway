@@ -152,7 +152,6 @@ class NecromancerNecrosisFoC_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.signet_of_lost_souls_utility: CustomSkillUtilityBase = SignetOfLostSoulsUtility(event_bus=self.event_bus, current_build=in_game_build)
         #self.breath_of_the_great_dwarf_utility: CustomSkillUtilityBase = BreathOfTheGreatDwarfUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(9))
         self.by_urals_hammer_utility: CustomSkillUtilityBase = ByUralsHammerUtility(event_bus=self.event_bus, current_build=in_game_build)
-        self.air_of_superiority_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Air_of_Superiority"), mana_required_to_cast=5, current_build=in_game_build, score_definition=ScoreStaticDefinition(50), allowed_states=[BehaviorState.IN_AGGRO])
 
         self.ebon_escape_utility: CustomSkillUtilityBase = EbonEscapeUtility(event_bus=self.event_bus, current_build=in_game_build)
 
@@ -209,7 +208,6 @@ class NecromancerNecrosisFoC_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.i_am_unstopabble,
             self.signet_of_lost_souls_utility,
             self.by_urals_hammer_utility,
-            self.air_of_superiority_utility,
             self.ebon_escape_utility,
             self.finish_him_utility,
         ]
