@@ -29,8 +29,7 @@ class GenericUtilitySkillsList:
         skills.append(GenericResurrectionUtility(event_bus=event_bus, skill=CustomSkill("Rebirth"), current_build=in_game_build))
 
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Vampirism"), current_build=in_game_build, score_definition=ScoreStaticDefinition(50), owned_spirit_model_id=SpiritModelID.VAMPIRISM))
-        skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Destruction"), current_build=in_game_build, score_definition=ScoreStaticDefinition(30), owned_spirit_model_id=SpiritModelID.VAMPIRISM))
-        skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Agony"), current_build=in_game_build, score_definition=ScoreStaticDefinition(30), owned_spirit_model_id=SpiritModelID.VAMPIRISM))
+        skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Agony"), current_build=in_game_build, score_definition=ScoreStaticDefinition(30), owned_spirit_model_id=SpiritModelID.AGONY))
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Bloodsong"), current_build=in_game_build, score_definition=ScoreStaticDefinition(50), owned_spirit_model_id=SpiritModelID.BLOODSONG))
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Shadowsong"), current_build=in_game_build, score_definition=ScoreStaticDefinition(50), owned_spirit_model_id=SpiritModelID.SHADOWSONG))
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Pain"), current_build=in_game_build, score_definition=ScoreStaticDefinition(50), owned_spirit_model_id=SpiritModelID.PAIN))
