@@ -573,9 +573,15 @@ class Targets:
             all_agent_ids: list[int] = AgentArray.GetAllyArray()
             all_enemies_ids: list[int] = AgentArray.GetEnemyArray()
 
-            npc_agent_ids: list[int] = Routines.Agents.GetAliveAgentsByModelID(model_id, within_range)
+            # todo after i feel like restarting npc_agent_ids: list[int] = Routines.Agents.GetAliveAgentsByModelID(model_id, within_range)
+            player_pos = Player.GetXY()
+            agent_array = AgentArray.GetAgentArray()
+            agent_array = AgentArray.Filter.ByDistance(agent_array, player_pos, within_range)
+            agent_array = AgentArray.Filter.ByCondition(agent_array, lambda agent_id: Agent.IsAlive(agent_id))
+            agent_array = AgentArray.Filter.ByCondition(agent_array, lambda agent_id: Agent.GetModelID(agent_id) == model_id)
+            agent_array = AgentArray.Sort.ByDistance(agent_array, player_pos)
 
-            agent_ids = AgentArray.Filter.ByDistance(npc_agent_ids, player_pos, within_range)
+            agent_ids = AgentArray.Filter.ByDistance(agent_array, player_pos, within_range)
             if condition is not None: agent_ids = AgentArray.Filter.ByCondition(agent_ids, condition)
 
             _profiler = EvalProfiler()
