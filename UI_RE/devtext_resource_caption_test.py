@@ -230,7 +230,7 @@ def _create_clone() -> None:
     existing_id = _current_clone_frame_id()
     if existing_id > 0:
         GWUI.DestroyUIComponentByFrameId(existing_id)
-    frame_id = GWUI.CreateWindow(
+    frame_id = GWUI.CreateWindowClone(
         0.0,
         0.0,
         180.0,

@@ -78,7 +78,7 @@ def _set_original_title() -> None:
         _log("set title skipped because DevText root is not available")
         return
     _report_state("state before set title")
-    result = bool(GWUI.SetFrameTitleByFrameId(frame_id, TARGET_TITLE))
+    result = bool(GWUI.SetWindowTitle(frame_id, TARGET_TITLE))
     _log(f"set title root={frame_id} title='{TARGET_TITLE}' result={result}")
     _schedule_report("state after set title")
 

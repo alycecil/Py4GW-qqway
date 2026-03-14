@@ -92,7 +92,6 @@ class MesmerESurgery_UtilitySkillBar(CustomBehaviorBaseUtility):
             auspicious_score_definition=ScoreStaticDefinition(85)
         )
 
-
         #common
         self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(event_bus=self.event_bus, score_definition=ScoreStaticDefinition(90), current_build=in_game_build, mana_required_to_cast=15)
         self.ebon_battle_standard_of_wisdom: CustomSkillUtilityBase = EbonBattleStandardOfWisdom(event_bus=self.event_bus, score_definition= ScorePerAgentQuantityDefinition(lambda agent_qte: 80 if agent_qte >= 3 else 60 if agent_qte >= 2 else 40), current_build=in_game_build, mana_required_to_cast=18)

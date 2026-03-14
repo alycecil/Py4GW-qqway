@@ -122,7 +122,7 @@ def _create_window(with_title_override: bool) -> None:
         else:
             GWUI.ClearNextCreatedWindowTitle()
         WINDOW_ID = int(
-            GWUI.CreateWindow(
+            GWUI.CreateWindowClone(
                 WINDOW_X,
                 WINDOW_Y,
                 WINDOW_WIDTH,
@@ -156,7 +156,7 @@ def _apply_direct_title() -> None:
         if WINDOW_ID <= 0:
             _log("apply direct title invoke aborted: window unavailable")
             return
-        applied = GWUI.SetFrameTitleByFrameId(WINDOW_ID, DIRECT_SET_TITLE)
+        applied = GWUI.SetWindowTitle(WINDOW_ID, DIRECT_SET_TITLE)
         _log(
             f"apply direct title invoke complete frame_id={WINDOW_ID} "
             f"applied={applied} title='{DIRECT_SET_TITLE}'"

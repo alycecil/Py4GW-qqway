@@ -186,7 +186,7 @@ def _create_raw_clone() -> None:
     CREATED_FRAME_ID = 0
 
     def _invoke() -> None:
-        GWUI.CreateWindow(
+        GWUI.CreateWindowClone(
             0.0,
             0.0,
             180.0,

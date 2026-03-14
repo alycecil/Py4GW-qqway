@@ -198,7 +198,7 @@ def _create_raw_window() -> None:
 
     engine_y = _to_engine_y_from_top(TARGET_Y, TARGET_HEIGHT)
     frame_id = int(
-        GWUI.CreateWindow(
+        GWUI.CreateWindowClone(
             TARGET_X,
             engine_y,
             TARGET_WIDTH,

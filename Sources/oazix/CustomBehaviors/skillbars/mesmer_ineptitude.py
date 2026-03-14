@@ -48,7 +48,6 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
         # interrupt
         self.cry_of_pain_utility: CustomSkillUtilityBase = CryOfPainUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(90))
         self.power_drain_utility: CustomSkillUtilityBase = PowerDrainUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(92))
-        self.necrosis_utility: CustomSkillUtilityBase = NecrosisUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(80))
         self.leech_signet_utility: CustomSkillUtilityBase = LeechSignetUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(89))
 
         self.Signet_of_Corruption_luxon_utility: CustomSkillUtilityBase = SignetOfCorruptionUtility(
@@ -59,7 +58,7 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
             event_bus=self.event_bus,
             skill=CustomSkill("Signet_of_Corruption_kurzick"),
             current_build=in_game_build)
-        # todo not a boss
+
         self.technobabble_utility: CustomSkillUtilityBase = Technobabble_Utility(event_bus=self.event_bus, current_build=in_game_build, mana_required_to_cast=15)
         self.fragility_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Fragility"), current_build=in_game_build, mana_required_to_cast=20)
 

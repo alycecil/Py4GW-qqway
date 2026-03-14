@@ -31,13 +31,12 @@ class NecrosisUtility(CustomSkillUtilityBase):
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
-        if self.nature_has_been_attempted_last(previously_attempted_skills): return None
 
         player_pos = Player.GetXY()
         enemy_array = Routines.Agents.GetFilteredEnemyArray(player_pos[0], player_pos[1], GameAreas.Earshot)
 
         return self.score_definition.get_score(len(enemy_array))
-        
+
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any | None, Any | None, BehaviorResult]:
 

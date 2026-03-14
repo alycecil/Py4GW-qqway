@@ -247,7 +247,7 @@ def _create_empty_window() -> None:
     def _invoke() -> None:
         engine_y = _to_engine_y_from_top(TARGET_Y, TARGET_HEIGHT)
         frame_id = int(
-            GWUI.CreateEmptyWindow(
+            GWUI.CreateWindow(
                 TARGET_X,
                 engine_y,
                 TARGET_WIDTH,

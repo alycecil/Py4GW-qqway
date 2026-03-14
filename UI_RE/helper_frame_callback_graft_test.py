@@ -8,13 +8,13 @@ from Py4GWCoreLib.enums_src.UI_enums import ControlAction
 from Py4GWCoreLib.GWUI import GWUI
 
 
-MODULE_NAME = "Inventory Into DevText Clone Test"
-SCRIPT_REVISION = "2026-03-08-inventory-into-devtext-clone-test-1"
+MODULE_NAME = "Helper Frame Callback Graft Test"
+SCRIPT_REVISION = "2026-03-08-helper-frame-callback-graft-test-1"
 WINDOW_OPEN = True
 INITIALIZED = False
 
 READ_DELAY_SECONDS = 0.50
-CLONE_LABEL = "PyInventoryIntoDevTextClone"
+CLONE_LABEL = "PyHelperFrameHostClone"
 TARGET_X = 0.0
 TARGET_Y = 0.0
 TARGET_WIDTH = 220.0
@@ -26,12 +26,25 @@ CREATED_FRAME_ID = 0
 LAST_STATUS = "idle"
 PENDING_REPORTS: list[tuple[float, str]] = []
 
+HELPER_TYPES = [
+    ("button", "CreateButtonFrameByFrameId"),
+    ("checkbox", "CreateCheckboxFrameByFrameId"),
+    ("text label", "CreateTextLabelFrameByFrameId"),
+    ("scrollable", "CreateScrollableFrameByFrameId"),
+]
+HELPER_TYPE_INDEX = 0
+
+DONOR_MODES = [
+    ("none", "no callback grafting"),
+    ("target parent", "copy callbacks from the selected host parent"),
+    ("inventory root", "copy callbacks from the Inventory root"),
+    ("devtext root", "copy callbacks from the original DevText root"),
+]
+DONOR_MODE_INDEX = 0
+
 TARGET_PARENT_MODES = [
-    ("clone root", "raw DevText clone root"),
-    ("root[0]", "first child under clone root"),
-    ("root[0][0]", "second-layer clone child"),
-    ("view root", "parent of observed host"),
-    ("observed host", "resolved content host"),
+    ("clone root", "empty clone root"),
+    ("root[0]", "first child under empty clone root"),
 ]
 TARGET_PARENT_MODE_INDEX = 0
 
@@ -137,7 +150,7 @@ def _ensure_devtext() -> None:
     _schedule_report("state after ensure devtext")
 
 
-def _create_raw_clone() -> None:
+def _create_empty_clone() -> None:
     global LAST_STATUS
 
     existing = _clone_root()
@@ -170,18 +183,22 @@ def _create_raw_clone() -> None:
             or 0
         )
         _log(
-            f"create raw clone invoke result frame_id={frame_id} "
+            f"create empty clone invoke result frame_id={frame_id} "
             f"pos=({TARGET_X},{TARGET_Y}) size=({TARGET_WIDTH},{TARGET_HEIGHT})"
         )
 
     Py4GW.Game.enqueue(_invoke)
-    LAST_STATUS = "create raw clone enqueued"
+    LAST_STATUS = "create empty clone enqueued"
     _log(LAST_STATUS)
-    _schedule_report("state after create raw clone")
+    _schedule_report("state after create empty clone")
 
 
 def _inventory_root() -> int:
     return int(UIManager.GetFrameIDByLabel("Inventory") or 0)
+
+
+def _devtext_root() -> int:
+    return int(GWUI.GetDevTextFrameID() or 0)
 
 
 def _clone_root() -> int:
@@ -195,38 +212,11 @@ def _clone_root0() -> int:
     return _safe_child(_clone_root(), 0)
 
 
-def _clone_root0_0() -> int:
-    return _safe_child(_clone_root0(), 0)
-
-
-def _clone_host() -> int:
-    root = _clone_root()
-    if root <= 0:
-        return 0
-    host = int(GWUI.ResolveObservedContentHostByFrameId(root) or 0)
-    if host > 0:
-        return host
-    return _safe_child(_clone_root0_0(), 0)
-
-
-def _clone_view_root() -> int:
-    host = _clone_host()
-    if host <= 0:
-        return 0
-    return int(UIManager.GetParentID(host) or 0)
-
-
 def _target_parent() -> int:
     if TARGET_PARENT_MODE_INDEX == 0:
         return _clone_root()
     if TARGET_PARENT_MODE_INDEX == 1:
         return _clone_root0()
-    if TARGET_PARENT_MODE_INDEX == 2:
-        return _clone_root0_0()
-    if TARGET_PARENT_MODE_INDEX == 3:
-        return _clone_view_root()
-    if TARGET_PARENT_MODE_INDEX == 4:
-        return _clone_host()
     return 0
 
 
@@ -238,93 +228,149 @@ def _resolved_child_offset(parent_id: int) -> int:
     return int(TARGET_CHILD_OFFSET)
 
 
-def _create_inventory_into_clone() -> None:
+def _callback_donor_frame() -> int:
+    if DONOR_MODE_INDEX == 0:
+        return 0
+    if DONOR_MODE_INDEX == 1:
+        return _target_parent()
+    if DONOR_MODE_INDEX == 2:
+        return _inventory_root()
+    if DONOR_MODE_INDEX == 3:
+        return _devtext_root()
+    return 0
+
+
+def _create_helper_frame_on_clone() -> None:
     global CREATED_FRAME_ID
     global LAST_STATUS
 
+    helper_name = HELPER_TYPES[HELPER_TYPE_INDEX][0]
     parent_mode_name = TARGET_PARENT_MODES[TARGET_PARENT_MODE_INDEX][0]
+    donor_mode_name = DONOR_MODES[DONOR_MODE_INDEX][0]
 
     def _invoke() -> None:
         global CREATED_FRAME_ID
-        source_frame_id = _inventory_root()
         parent_id = _target_parent()
+        donor_frame_id = _callback_donor_frame()
         child_offset = _resolved_child_offset(parent_id)
-        if source_frame_id <= 0:
-            CREATED_FRAME_ID = 0
-            _log("create invoke aborted: inventory source unavailable")
-            return
         if parent_id <= 0:
             CREATED_FRAME_ID = 0
-            _log("create invoke aborted: clone target parent unavailable")
+            _log("create helper invoke aborted: target parent unavailable")
             return
         if child_offset <= 0:
             CREATED_FRAME_ID = 0
-            _log(f"create invoke aborted: no child slot available for parent={parent_id}")
+            _log(f"create helper invoke aborted: no child slot available for parent={parent_id}")
             return
 
-        CREATED_FRAME_ID = int(
-            GWUI.CreateUIComponentFromSourceFrameByFrameId(
-                parent_id,
-                source_frame_id,
-                0x20,
-                child_offset,
-                "PyInventoryIntoDevTextClone",
-                reattach_remaining_callbacks=True,
-                trigger_redraw=False,
+        if HELPER_TYPE_INDEX == 0:
+            CREATED_FRAME_ID = int(
+                GWUI.CreateButtonFrameByFrameId(
+                    parent_id,
+                    0,
+                    child_offset,
+                    "PyButton",
+                    "PyHelperButton",
+                )
+                or 0
             )
-            or 0
-        )
+        elif HELPER_TYPE_INDEX == 1:
+            CREATED_FRAME_ID = int(
+                GWUI.CreateCheckboxFrameByFrameId(
+                    parent_id,
+                    0,
+                    child_offset,
+                    "PyCheckbox",
+                    "PyHelperCheckbox",
+                )
+                or 0
+            )
+        elif HELPER_TYPE_INDEX == 2:
+            CREATED_FRAME_ID = int(
+                GWUI.CreateTextLabelFrameByFrameId(
+                    parent_id,
+                    0,
+                    child_offset,
+                    "PyTextLabel",
+                    "PyHelperTextLabel",
+                )
+                or 0
+            )
+        else:
+            CREATED_FRAME_ID = int(
+                GWUI.CreateScrollableFrameByFrameId(
+                    parent_id,
+                    0,
+                    child_offset,
+                    0,
+                    "PyHelperScrollable",
+                )
+                or 0
+            )
+
         _log(
-            f"create invoke result created_frame_id={CREATED_FRAME_ID} "
-            f"parent={parent_id} child_offset=0x{child_offset:X} mode='{parent_mode_name}'"
+            f"create helper invoke result helper='{helper_name}' created_frame_id={CREATED_FRAME_ID} "
+            f"parent={parent_id} child_offset=0x{child_offset:X}"
         )
+        if CREATED_FRAME_ID > 0 and donor_frame_id > 0:
+            callbacks = GWUI.GetFrameInteractionCallbacksByFrameId(donor_frame_id)
+            added = UIManager.AddFrameUIInteractionCallbacksByFrameId(
+                CREATED_FRAME_ID,
+                callbacks,
+                start_index=0,
+            )
+            _log(
+                f"graft callbacks result donor={donor_frame_id} "
+                f"callback_count={len(callbacks)} added={added}"
+            )
         if CREATED_FRAME_ID > 0:
             GWUI.TriggerFrameRedrawByFrameId(CREATED_FRAME_ID)
             GWUI.TriggerFrameRedrawByFrameId(parent_id)
 
     Py4GW.Game.enqueue(_invoke)
-    LAST_STATUS = f"create inventory into devtext clone enqueued mode='{parent_mode_name}'"
+    LAST_STATUS = (
+        f"create helper enqueued helper='{helper_name}' "
+        f"parent_mode='{parent_mode_name}' donor_mode='{donor_mode_name}'"
+    )
     _log(LAST_STATUS)
-    _schedule_report("state after create inventory into devtext clone")
+    _schedule_report("state after create helper")
 
 
 def _dump_state(prefix: str) -> None:
+    clone_root = _clone_root()
+    clone_root0 = _clone_root0()
     inventory = _inventory_root()
-    root = _clone_root()
-    root0 = _clone_root0()
-    root0_0 = _clone_root0_0()
-    view_root = _clone_view_root()
-    host = _clone_host()
+    devtext = _devtext_root()
     target_parent = _target_parent()
+    donor = _callback_donor_frame()
     created = int(CREATED_FRAME_ID or 0)
     _log(
         f"{prefix} "
+        f"clone_root=({_frame_summary(clone_root)}) "
+        f"root[0]=({_frame_summary(clone_root0)}) "
         f"inventory=({_frame_summary(inventory)}) "
-        f"clone_root=({_frame_summary(root)}) "
-        f"root[0]=({_frame_summary(root0)}) "
-        f"root[0][0]=({_frame_summary(root0_0)}) "
-        f"view_root=({_frame_summary(view_root)}) "
-        f"host=({_frame_summary(host)}) "
+        f"devtext=({_frame_summary(devtext)}) "
         f"target_parent=({_frame_summary(target_parent)}) "
+        f"donor=({_frame_summary(donor)}) "
         f"created=({_frame_summary(created)})"
     )
 
 
-def _draw_parent_mode_selector() -> None:
-    global TARGET_PARENT_MODE_INDEX
-
-    PyImGui.text("target parent mode:")
-    for index, (name, description) in enumerate(TARGET_PARENT_MODES):
-        TARGET_PARENT_MODE_INDEX = int(
+def _draw_radio_group(label: str, options: list[tuple[str, str]], current_index_name: str) -> int:
+    current_index = globals()[current_index_name]
+    PyImGui.text(label)
+    for index, (name, description) in enumerate(options):
+        current_index = int(
             PyImGui.radio_button(
-                f"{name}##clone_parent_mode_{index}",
-                int(TARGET_PARENT_MODE_INDEX),
+                f"{name}##{label}_{index}",
+                int(current_index),
                 int(index),
             )
         )
         if description:
             PyImGui.same_line(0.0, 8.0)
             PyImGui.text_disabled(description)
+    globals()[current_index_name] = current_index
+    return current_index
 
 
 def _draw_window() -> None:
@@ -338,14 +384,14 @@ def _draw_window() -> None:
         return
 
     PyImGui.text(f"revision: {SCRIPT_REVISION}")
-    PyImGui.text("goal: test whether a raw DevText clone can host the inventory create contract")
+    PyImGui.text("goal: retest GWCA helper constructors on a proven empty-clone host with optional callback grafting")
     PyImGui.separator()
     PyImGui.text("flow:")
     PyImGui.text("1) Open Inventory")
     PyImGui.text("2) Ensure DevText")
-    PyImGui.text("3) Create Raw Clone")
-    PyImGui.text("4) Pick the clone parent layer")
-    PyImGui.text("5) Create Inventory Into DevText Clone")
+    PyImGui.text("3) Create Empty Clone")
+    PyImGui.text("4) Pick helper, parent, and donor")
+    PyImGui.text("5) Create Helper Frame")
     PyImGui.text("6) Dump State")
     PyImGui.separator()
 
@@ -361,7 +407,9 @@ def _draw_window() -> None:
     )
     USE_FREE_CHILD_SLOT = PyImGui.checkbox("Use Free Child Slot", USE_FREE_CHILD_SLOT)
 
-    _draw_parent_mode_selector()
+    _draw_radio_group("helper type:", HELPER_TYPES, "HELPER_TYPE_INDEX")
+    _draw_radio_group("target parent mode:", TARGET_PARENT_MODES, "TARGET_PARENT_MODE_INDEX")
+    _draw_radio_group("donor mode:", DONOR_MODES, "DONOR_MODE_INDEX")
     PyImGui.separator()
 
     if PyImGui.button("Open Inventory"):
@@ -370,24 +418,23 @@ def _draw_window() -> None:
     if PyImGui.button("Ensure DevText"):
         _ensure_devtext()
     PyImGui.same_line(0.0, 8.0)
-    if PyImGui.button("Create Raw Clone"):
-        _create_raw_clone()
+    if PyImGui.button("Create Empty Clone"):
+        _create_empty_clone()
     PyImGui.same_line(0.0, 8.0)
-    if PyImGui.button("Create Inventory Into DevText Clone"):
-        _create_inventory_into_clone()
+    if PyImGui.button("Create Helper Frame"):
+        _create_helper_frame_on_clone()
     PyImGui.same_line(0.0, 8.0)
     if PyImGui.button("Dump State"):
         _dump_state("manual state report")
 
     PyImGui.separator()
     PyImGui.text(f"last_status={LAST_STATUS}")
-    PyImGui.text(f"inventory={_inventory_root()}")
     PyImGui.text(f"clone_root={_clone_root()}")
     PyImGui.text(f"root[0]={_clone_root0()}")
-    PyImGui.text(f"root[0][0]={_clone_root0_0()}")
-    PyImGui.text(f"view_root={_clone_view_root()}")
-    PyImGui.text(f"host={_clone_host()}")
+    PyImGui.text(f"inventory={_inventory_root()}")
+    PyImGui.text(f"devtext={_devtext_root()}")
     PyImGui.text(f"target_parent={_target_parent()}")
+    PyImGui.text(f"donor={_callback_donor_frame()}")
     PyImGui.text(
         f"resolved_child_offset=0x{_resolved_child_offset(_target_parent()):X}"
         if _resolved_child_offset(_target_parent()) > 0
@@ -406,9 +453,9 @@ def main() -> None:
         _log("test flow:")
         _log("1) click 'Open Inventory'")
         _log("2) click 'Ensure DevText'")
-        _log("3) click 'Create Raw Clone'")
-        _log("4) pick a clone parent mode")
-        _log("5) click 'Create Inventory Into DevText Clone'")
+        _log("3) click 'Create Empty Clone'")
+        _log("4) pick helper, parent, and donor")
+        _log("5) click 'Create Helper Frame'")
     _process_pending_reports()
     _draw_window()
 

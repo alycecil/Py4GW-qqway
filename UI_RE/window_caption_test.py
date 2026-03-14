@@ -230,7 +230,7 @@ def _create_empty_window() -> None:
 
     engine_y = _to_engine_y_from_top(TARGET_Y, TARGET_HEIGHT)
     frame_id = int(
-        GWUI.CreateEmptyWindow(
+        GWUI.CreateWindow(
             TARGET_X,
             engine_y,
             TARGET_WIDTH,
@@ -269,7 +269,7 @@ def _create_raw_window() -> None:
 
     engine_y = _to_engine_y_from_top(TARGET_Y, TARGET_HEIGHT)
     frame_id = int(
-        GWUI.CreateWindow(
+        GWUI.CreateWindowClone(
             TARGET_X,
             engine_y,
             TARGET_WIDTH,
@@ -319,7 +319,7 @@ def _spawn_raw_window_with_hook_title() -> None:
 
     engine_y = _to_engine_y_from_top(TARGET_Y, TARGET_HEIGHT)
     frame_id = int(
-        GWUI.CreateWindow(
+        GWUI.CreateWindowClone(
             TARGET_X,
             engine_y,
             TARGET_WIDTH,
@@ -366,7 +366,7 @@ def _spawn_empty_window_with_hook_title() -> None:
 
     engine_y = _to_engine_y_from_top(TARGET_Y, TARGET_HEIGHT)
     frame_id = int(
-        GWUI.CreateEmptyWindow(
+        GWUI.CreateWindow(
             TARGET_X,
             engine_y,
             TARGET_WIDTH,
@@ -446,7 +446,7 @@ def _spawn_raw_window_then_string_id_caption() -> None:
 
     engine_y = _to_engine_y_from_top(TARGET_Y, TARGET_HEIGHT)
     frame_id = int(
-        GWUI.CreateWindow(
+        GWUI.CreateWindowClone(
             TARGET_X,
             engine_y,
             TARGET_WIDTH,
@@ -512,7 +512,7 @@ def _spawn_empty_window_then_string_id_caption() -> None:
 
     engine_y = _to_engine_y_from_top(TARGET_Y, TARGET_HEIGHT)
     frame_id = int(
-        GWUI.CreateEmptyWindow(
+        GWUI.CreateWindow(
             TARGET_X,
             engine_y,
             TARGET_WIDTH,
@@ -578,7 +578,7 @@ def _spawn_raw_window_with_literal_caption() -> None:
 
     engine_y = _to_engine_y_from_top(TARGET_Y, TARGET_HEIGHT)
     frame_id = int(
-        GWUI.CreateWindow(
+        GWUI.CreateWindowClone(
             TARGET_X,
             engine_y,
             TARGET_WIDTH,
@@ -644,7 +644,7 @@ def _spawn_empty_window_with_literal_caption() -> None:
 
     engine_y = _to_engine_y_from_top(TARGET_Y, TARGET_HEIGHT)
     frame_id = int(
-        GWUI.CreateEmptyWindow(
+        GWUI.CreateWindow(
             TARGET_X,
             engine_y,
             TARGET_WIDTH,

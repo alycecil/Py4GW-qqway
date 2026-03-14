@@ -26,6 +26,7 @@ class GenericUtilitySkillsList:
         skills.append(GenericResurrectionUtility(event_bus=event_bus, skill=CustomSkill("Resurrection"), current_build=in_game_build))
         skills.append(GenericResurrectionUtility(event_bus=event_bus, skill=CustomSkill("Resurrection_Chant"), current_build=in_game_build))
         skills.append(GenericResurrectionUtility(event_bus=event_bus, skill=CustomSkill("Resurrection_Signet"), current_build=in_game_build))
+        skills.append(GenericResurrectionUtility(event_bus=event_bus, skill=CustomSkill("Rebirth"), current_build=in_game_build))
 
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Vampirism"), current_build=in_game_build, score_definition=ScoreStaticDefinition(50), owned_spirit_model_id=SpiritModelID.VAMPIRISM))
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Destruction"), current_build=in_game_build, score_definition=ScoreStaticDefinition(30), owned_spirit_model_id=SpiritModelID.VAMPIRISM))

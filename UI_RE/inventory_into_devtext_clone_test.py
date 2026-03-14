@@ -8,13 +8,13 @@ from Py4GWCoreLib.enums_src.UI_enums import ControlAction
 from Py4GWCoreLib.GWUI import GWUI
 
 
-MODULE_NAME = "Inventory Into Empty DevText Clone Test"
-SCRIPT_REVISION = "2026-03-08-inventory-into-empty-devtext-clone-test-1"
+MODULE_NAME = "Inventory Into DevText Clone Test"
+SCRIPT_REVISION = "2026-03-08-inventory-into-devtext-clone-test-1"
 WINDOW_OPEN = True
 INITIALIZED = False
 
 READ_DELAY_SECONDS = 0.50
-CLONE_LABEL = "PyInventoryIntoEmptyDevTextClone"
+CLONE_LABEL = "PyInventoryIntoDevTextClone"
 TARGET_X = 0.0
 TARGET_Y = 0.0
 TARGET_WIDTH = 220.0
@@ -27,9 +27,9 @@ LAST_STATUS = "idle"
 PENDING_REPORTS: list[tuple[float, str]] = []
 
 TARGET_PARENT_MODES = [
-    ("clone root", "empty DevText clone root"),
-    ("root[0]", "first child under empty clone root"),
-    ("root[0][0]", "trim boundary child"),
+    ("clone root", "raw DevText clone root"),
+    ("root[0]", "first child under clone root"),
+    ("root[0][0]", "second-layer clone child"),
     ("view root", "parent of observed host"),
     ("observed host", "resolved content host"),
 ]
@@ -137,7 +137,7 @@ def _ensure_devtext() -> None:
     _schedule_report("state after ensure devtext")
 
 
-def _create_empty_clone() -> None:
+def _create_raw_clone() -> None:
     global LAST_STATUS
 
     existing = _clone_root()
@@ -153,7 +153,7 @@ def _create_empty_clone() -> None:
     def _invoke() -> None:
         engine_y = _to_engine_y_from_top(TARGET_Y, TARGET_HEIGHT)
         frame_id = int(
-            GWUI.CreateEmptyWindow(
+            GWUI.CreateWindowClone(
                 TARGET_X,
                 engine_y,
                 TARGET_WIDTH,
@@ -170,14 +170,14 @@ def _create_empty_clone() -> None:
             or 0
         )
         _log(
-            f"create empty clone invoke result frame_id={frame_id} "
+            f"create raw clone invoke result frame_id={frame_id} "
             f"pos=({TARGET_X},{TARGET_Y}) size=({TARGET_WIDTH},{TARGET_HEIGHT})"
         )
 
     Py4GW.Game.enqueue(_invoke)
-    LAST_STATUS = "create empty clone enqueued"
+    LAST_STATUS = "create raw clone enqueued"
     _log(LAST_STATUS)
-    _schedule_report("state after create empty clone")
+    _schedule_report("state after create raw clone")
 
 
 def _inventory_root() -> int:
@@ -238,7 +238,7 @@ def _resolved_child_offset(parent_id: int) -> int:
     return int(TARGET_CHILD_OFFSET)
 
 
-def _create_inventory_into_empty_clone() -> None:
+def _create_inventory_into_clone() -> None:
     global CREATED_FRAME_ID
     global LAST_STATUS
 
@@ -255,7 +255,7 @@ def _create_inventory_into_empty_clone() -> None:
             return
         if parent_id <= 0:
             CREATED_FRAME_ID = 0
-            _log("create invoke aborted: empty clone target parent unavailable")
+            _log("create invoke aborted: clone target parent unavailable")
             return
         if child_offset <= 0:
             CREATED_FRAME_ID = 0
@@ -268,7 +268,7 @@ def _create_inventory_into_empty_clone() -> None:
                 source_frame_id,
                 0x20,
                 child_offset,
-                "PyInventoryIntoEmptyDevTextClone",
+                "PyInventoryIntoDevTextClone",
                 reattach_remaining_callbacks=True,
                 trigger_redraw=False,
             )
@@ -283,9 +283,9 @@ def _create_inventory_into_empty_clone() -> None:
             GWUI.TriggerFrameRedrawByFrameId(parent_id)
 
     Py4GW.Game.enqueue(_invoke)
-    LAST_STATUS = f"create inventory into empty devtext clone enqueued mode='{parent_mode_name}'"
+    LAST_STATUS = f"create inventory into devtext clone enqueued mode='{parent_mode_name}'"
     _log(LAST_STATUS)
-    _schedule_report("state after create inventory into empty devtext clone")
+    _schedule_report("state after create inventory into devtext clone")
 
 
 def _dump_state(prefix: str) -> None:
@@ -317,7 +317,7 @@ def _draw_parent_mode_selector() -> None:
     for index, (name, description) in enumerate(TARGET_PARENT_MODES):
         TARGET_PARENT_MODE_INDEX = int(
             PyImGui.radio_button(
-                f"{name}##empty_clone_parent_mode_{index}",
+                f"{name}##clone_parent_mode_{index}",
                 int(TARGET_PARENT_MODE_INDEX),
                 int(index),
             )
@@ -338,14 +338,14 @@ def _draw_window() -> None:
         return
 
     PyImGui.text(f"revision: {SCRIPT_REVISION}")
-    PyImGui.text("goal: test whether an empty DevText clone can host the same inventory contract as a raw DevText clone")
+    PyImGui.text("goal: test whether a raw DevText clone can host the inventory create contract")
     PyImGui.separator()
     PyImGui.text("flow:")
     PyImGui.text("1) Open Inventory")
     PyImGui.text("2) Ensure DevText")
-    PyImGui.text("3) Create Empty Clone")
-    PyImGui.text("4) Pick the empty-clone parent layer")
-    PyImGui.text("5) Create Inventory Into Empty DevText Clone")
+    PyImGui.text("3) Create Raw Clone")
+    PyImGui.text("4) Pick the clone parent layer")
+    PyImGui.text("5) Create Inventory Into DevText Clone")
     PyImGui.text("6) Dump State")
     PyImGui.separator()
 
@@ -370,11 +370,11 @@ def _draw_window() -> None:
     if PyImGui.button("Ensure DevText"):
         _ensure_devtext()
     PyImGui.same_line(0.0, 8.0)
-    if PyImGui.button("Create Empty Clone"):
-        _create_empty_clone()
+    if PyImGui.button("Create Raw Clone"):
+        _create_raw_clone()
     PyImGui.same_line(0.0, 8.0)
-    if PyImGui.button("Create Inventory Into Empty DevText Clone"):
-        _create_inventory_into_empty_clone()
+    if PyImGui.button("Create Inventory Into DevText Clone"):
+        _create_inventory_into_clone()
     PyImGui.same_line(0.0, 8.0)
     if PyImGui.button("Dump State"):
         _dump_state("manual state report")
@@ -406,9 +406,9 @@ def main() -> None:
         _log("test flow:")
         _log("1) click 'Open Inventory'")
         _log("2) click 'Ensure DevText'")
-        _log("3) click 'Create Empty Clone'")
-        _log("4) pick an empty-clone parent mode")
-        _log("5) click 'Create Inventory Into Empty DevText Clone'")
+        _log("3) click 'Create Raw Clone'")
+        _log("4) pick a clone parent mode")
+        _log("5) click 'Create Inventory Into DevText Clone'")
     _process_pending_reports()
     _draw_window()
 

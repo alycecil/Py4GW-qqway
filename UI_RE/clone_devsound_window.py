@@ -1,19 +1,20 @@
-from Py4GWCoreLib import GWContext, PyImGui, UIManager
+from Py4GWCoreLib import GWContext, PyImGui, Scanner, UIManager
 from Py4GWCoreLib.GWUI import GWUI
 
 
-MODULE_NAME = "Clone DevText Window"
-SCRIPT_REVISION = "2026-03-06-clone-devtext-window-1"
+MODULE_NAME = "Clone DevSound Window"
+SCRIPT_REVISION = "2026-03-06-clone-devsound-window-1"
 WINDOW_OPEN = True
 REVISION_LOGGED = False
 
-FRAME_LABEL = "PyDevTextClone"
+FRAME_LABEL = "PyDevSoundClone"
 TARGET_X = 0.0
 TARGET_Y = 0.0
-TARGET_WIDTH = 100.0
-TARGET_HEIGHT = 300.0
+TARGET_WIDTH = 420.0
+TARGET_HEIGHT = 520.0
 TARGET_FLAGS = 0x6
 LAST_STATUS = "idle"
+DEVSOUND_PROC_CACHE = 0
 
 
 def _log(message: str) -> None:
@@ -55,6 +56,28 @@ def _frame_summary(frame_id: int) -> str:
         return f"frame_id={frame_id} summary_error={exc}"
 
 
+def _resolve_devsound_dialog_proc() -> int:
+    global DEVSOUND_PROC_CACHE
+    if DEVSOUND_PROC_CACHE > 0:
+        return DEVSOUND_PROC_CACHE
+
+    for xref_index in range(8):
+        try:
+            use_addr = int(Scanner.FindNthUseOfStringW("DlgDevSound", xref_index, 0, 0) or 0)
+        except Exception:
+            use_addr = 0
+        if use_addr <= 0:
+            continue
+        try:
+            proc_addr = int(Scanner.ToFunctionStart(use_addr, 0x1200) or 0)
+        except Exception:
+            proc_addr = 0
+        if proc_addr > 0:
+            DEVSOUND_PROC_CACHE = proc_addr
+            return proc_addr
+    return 0
+
+
 def _create_window() -> None:
     global LAST_STATUS
     existing = _find_window()
@@ -69,9 +92,15 @@ def _create_window() -> None:
         _log(LAST_STATUS)
         return
 
+    frame_callback = _resolve_devsound_dialog_proc()
+    if frame_callback <= 0:
+        LAST_STATUS = "resolve DlgDevSound proc failed"
+        _log(LAST_STATUS)
+        return
+
     engine_y = _to_engine_y_from_top(TARGET_Y, TARGET_HEIGHT)
     frame_id = int(
-        GWUI.CreateWindow(
+        GWUI.CreateWindowClone(
             TARGET_X,
             engine_y,
             TARGET_WIDTH,
@@ -81,21 +110,21 @@ def _create_window() -> None:
             child_index=0,
             frame_flags=0,
             create_param=0,
-            frame_callback=0,
+            frame_callback=frame_callback,
             anchor_flags=TARGET_FLAGS,
-            ensure_devtext_source=True,
+            ensure_devtext_source=False,
         )
         or 0
     )
     if frame_id > 0:
         LAST_STATUS = f"created frame_id={frame_id}"
         _log(
-            f"created frame_id={frame_id} source='DlgDevText' "
+            f"created frame_id={frame_id} source='DlgDevSound' proc=0x{frame_callback:X} "
             f"engine_pos=({TARGET_X}, {engine_y}) size=({TARGET_WIDTH}, {TARGET_HEIGHT})"
         )
     else:
         LAST_STATUS = "create failed"
-        _log("create failed source='DlgDevText'")
+        _log(f"create failed source='DlgDevSound' proc=0x{frame_callback:X}")
 
 
 def _close_window() -> None:
@@ -133,7 +162,7 @@ def main() -> None:
         _log(f"script revision={SCRIPT_REVISION}")
 
     if PyImGui.begin(f"{MODULE_NAME}##{MODULE_NAME}", WINDOW_OPEN):
-        PyImGui.text("Clone DevText")
+        PyImGui.text("Clone DevSound")
         TARGET_X = float(PyImGui.input_float("X", TARGET_X))
         TARGET_Y = float(PyImGui.input_float("Y From Top", TARGET_Y))
         TARGET_WIDTH = float(PyImGui.input_float("Width", TARGET_WIDTH))
@@ -150,6 +179,8 @@ def main() -> None:
 
         PyImGui.separator()
         PyImGui.text(f"Window Label: {FRAME_LABEL}")
+        proc_addr = _resolve_devsound_dialog_proc()
+        PyImGui.text(f"DevSound Proc: 0x{proc_addr:X}" if proc_addr > 0 else "DevSound Proc: unresolved")
         PyImGui.text(f"Current: {_frame_summary(_find_window())}")
         PyImGui.text(f"Status: {LAST_STATUS}")
     PyImGui.end()

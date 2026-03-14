@@ -104,7 +104,7 @@ def _create_empty_window() -> None:
         global EMPTY_WINDOW_ID
         global TEXT_LABEL_ID
         EMPTY_WINDOW_ID = int(
-            GWUI.CreateEmptyWindow(
+            GWUI.CreateWindow(
                 120.0,
                 120.0,
                 320.0,
@@ -141,12 +141,12 @@ def _insert_text_label() -> None:
             _log("insert text label invoke aborted: no child slot available")
             return
         TEXT_LABEL_ID = int(
-            GWUI.CreateTextLabelFrameWithPlainTextByFrameId(
+            GWUI.CreateTextLabel(
                 parent,
-                0x300,
-                child_offset,
                 TEXT_LABEL_TEXT,
                 TEXT_LABEL_LABEL,
+                child_offset,
+                0x300,
             )
             or 0
         )
