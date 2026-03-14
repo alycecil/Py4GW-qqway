@@ -72,7 +72,7 @@ class TargetAllyWithMostEnemiesNearby(CustomSkillUtilityBase):
         return vanguard
 
     def _get_lock_key(self, agent_id: int) -> str:
-        return f"ancestors_rage_{agent_id}"
+        return f"ally_short_lock_{agent_id}"
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
