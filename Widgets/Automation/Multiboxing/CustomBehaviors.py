@@ -79,9 +79,16 @@ def draw_dialog_overlay():
                 else:
                     print("clicked without ctrl")
             else:
-                ImGui.begin_tooltip()
-                ImGui.text_colored(f"Ctrl + Click to send dialog {i + 1} on all accounts.", gray_color.color_tuple, 12)
-                ImGui.end_tooltip()
+
+                if pyimgui_io.key_ctrl:
+                    ImGui.begin_tooltip()
+                    ImGui.text_colored(f"(Ctrl) + Click to send dialog {i + 1} on all accounts.", gray_color.color_tuple, 12)
+                    ImGui.end_tooltip()
+                else:
+                    ImGui.begin_tooltip()
+                    ImGui.text_colored(f"Ctrl + Click to send dialog {i + 1} on all accounts.", gray_color.color_tuple, 12)
+                    ImGui.end_tooltip()
+
         else:
             # print("no dialog")
             pass
@@ -89,6 +96,8 @@ def draw_dialog_overlay():
     pass
 
 def gui():
+    draw_dialog_overlay()
+
     # PyImGui.set_next_window_size(260, 650)
     # PyImGui.set_next_window_size(460, 800)
     from Sources.oazix.CustomBehaviors.primitives import constants
@@ -107,7 +116,6 @@ def gui():
 
     global party_forced_state_combo, monitor, widget_window_size, widget_window_pos
 
-    draw_dialog_overlay()
 
     # window_module:ImGui.WindowModule = ImGui.WindowModule("Custom behaviors", window_name="Custom behaviors - Multiboxing over utility-ai algorithm.", window_size=(0, 600), window_flags=PyImGui.WindowFlags.AlwaysAutoResize)
 
