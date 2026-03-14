@@ -141,6 +141,8 @@ class HeroAICommands:
             
             if same_map:
                 GLOBAL_CACHE.ShMem.SendMessage(sender_email, account.AccountEmail, SharedCommandType.SendDialog, (dialog_option, 0, 0, 0))
+            else:
+                print(f"Skipping send dialog for {account}")
                 
     def __leave_party_command(self, accounts: list[AccountStruct]):
         sender_email = Player.GetAccountEmail()        
