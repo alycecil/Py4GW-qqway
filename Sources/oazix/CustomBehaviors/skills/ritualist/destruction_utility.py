@@ -8,6 +8,7 @@ from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.bus.event_type import EventType
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
+from Sources.oazix.CustomBehaviors.primitives.helpers.custom_behavior_helpers import Resources
 from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
 from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
 from Sources.oazix.CustomBehaviors.primitives.scores.comon_score import CommonScore
@@ -44,7 +45,6 @@ class RawSpiritUtility(CustomSkillUtilityBase):
 
         has_rit_lord = Routines.Checks.Effects.HasBuff(Player.GetAgentID(), self.ritual_lord_skill.skill_id)
         if has_rit_lord:
-            print("Warning ritual lord was used but not consumed")
             return 99.01 # aabove high, consume the floating ritual lord
 
         has_soul_twisting = False
@@ -75,8 +75,19 @@ class RawSpiritUtility(CustomSkillUtilityBase):
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
+        if not Routines.Checks.Skills.IsSkillSlotReady(self.custom_skill.skill_slot):
+            yield
+            return BehaviorResult.ACTION_SKIPPED
+
+        if not Resources.has_enough_resources(self.custom_skill):
+            yield
+            return BehaviorResult.ACTION_SKIPPED
+
         if Routines.Checks.Skills.IsSkillSlotReady(self.ritual_lord_skill.skill_slot):
+            print("using ritual lord")
             yield from custom_behavior_helpers.Actions.cast_skill(self.ritual_lord_skill)
+
+            print("using destruction after ritual lord")
 
         result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
 
