@@ -560,6 +560,94 @@ class Targets:
         return spirits[0]
 
     @staticmethod
+    def get_all_possible_ncs_of_model_ordered_by_priority_raw(
+            model_id: int,
+            within_range: float,
+            condition: Callable[[int], bool] | None = None,
+            sort_key: tuple[TargetingOrder, ...] | None = None,
+            range_to_count_enemies: float | None = None,
+            range_to_count_allies: float | None = None
+    ) -> list[SortableAgentData]:
+        with EvalProfiler().measure("ally_targeting"):
+            player_pos: tuple[float, float] = Player.GetXY()
+            all_agent_ids: list[int] = AgentArray.GetAllyArray()
+            all_enemies_ids: list[int] = AgentArray.GetEnemyArray()
+
+            npc_agent_ids: list[int] = Routines.Agents.GetAliveAgentsByModelID(model_id, within_range)
+
+            agent_ids = AgentArray.Filter.ByDistance(npc_agent_ids, player_pos, within_range)
+            if condition is not None: agent_ids = AgentArray.Filter.ByCondition(agent_ids, condition)
+
+            _profiler = EvalProfiler()
+
+            def build_sortable_array(agent_id):
+                agent_pos = Agent.GetXY(agent_id)
+
+                # scan enemies within range
+                enemies_ids = AgentArray.Filter.ByCondition(all_enemies_ids, lambda agent_id: Agent.IsAlive(agent_id))
+                enemies_ids = AgentArray.Filter.ByDistance(enemies_ids, player_pos, within_range)
+                enemies_quantity_within_range = 0
+                allies_quantity_within_range = 0
+
+                if range_to_count_enemies is not None or range_to_count_allies is not None:
+                    with _profiler.measure("ally_neighbor_counting"):
+                        if range_to_count_enemies is not None:
+                            for enemy_id in enemies_ids:
+                                if Utils.Distance(Agent.GetXY(enemy_id), agent_pos) <= range_to_count_enemies:
+                                    enemies_quantity_within_range += 1
+
+                        if range_to_count_allies is not None:
+                            for other_agent_id in all_agent_ids:
+                                if other_agent_id != agent_id and Utils.Distance(Agent.GetXY(other_agent_id), agent_pos) <= range_to_count_allies:
+                                    allies_quantity_within_range += 1
+
+                return SortableAgentData(
+                    agent_id=agent_id,
+                    distance_from_player=Utils.Distance(agent_pos, player_pos),
+                    hp=Agent.GetHealth(agent_id),
+                    is_caster=Agent.IsCaster(agent_id),
+                    is_melee=Agent.IsMelee(agent_id),
+                    is_martial=Agent.IsMartial(agent_id),
+                    enemy_quantity_within_range=enemies_quantity_within_range,
+                    agent_quantity_within_range=allies_quantity_within_range,
+                    energy=Resources.get_energy_percent_in_party(agent_id)
+                )
+
+            data_to_sort = list(map(lambda agent_id: build_sortable_array(agent_id), agent_ids))
+
+            if not sort_key:  # If no sort_key is provided
+                return data_to_sort
+
+            # Iterate over sort_key in reverse order (apply less important sort criteria first)
+            for criterion in reversed(sort_key):
+                if criterion == TargetingOrder.DISTANCE_ASC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: x.distance_from_player)
+                elif criterion == TargetingOrder.DISTANCE_DESC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: -x.distance_from_player)
+                elif criterion == TargetingOrder.HP_ASC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: x.hp)
+                elif criterion == TargetingOrder.HP_DESC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: -x.hp)
+                elif criterion == TargetingOrder.ENERGY_ASC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: x.energy)
+                elif criterion == TargetingOrder.ENERGY_DESC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: -x.energy)
+                elif criterion == TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: -x.agent_quantity_within_range)
+                elif criterion == TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_ASC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: x.agent_quantity_within_range)
+                elif criterion == TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: -x.enemy_quantity_within_range)
+                elif criterion == TargetingOrder.CASTER_THEN_MELEE:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: x.is_caster)
+                elif criterion == TargetingOrder.MELEE_THEN_CASTER:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: x.is_melee)
+                else:
+                    raise ValueError(f"Invalid sorting criterion: {criterion}")
+
+            return data_to_sort
+
+    @staticmethod
     def get_all_possible_allies_ordered_by_priority_raw(
             within_range: float,
             condition: Callable[[int], bool] | None = None,
