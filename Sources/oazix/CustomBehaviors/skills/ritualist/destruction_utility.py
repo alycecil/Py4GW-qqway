@@ -63,7 +63,7 @@ class RawSpiritUtility(CustomSkillUtilityBase):
             has_soul_twisting = False
 
         spirit_agent: custom_behavior_helpers.SpiritAgentData | None = custom_behavior_helpers.Targets.get_first_or_default_from_spirits_raw(
-            within_range=Range.Spirit, 
+            within_range=Range.Nearby,
             spirit_model_ids=[self.owned_spirit_model_id], 
             condition=lambda agent_id: True)
         
@@ -92,8 +92,9 @@ class RawSpiritUtility(CustomSkillUtilityBase):
         result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
 
         if result == BehaviorResult.ACTION_PERFORMED:
-            yield from self.event_bus.publish(EventType.SPIRIT_CREATED, state, data=self.owned_spirit_model_id)
             # if you change this duration it must be shorter than the ritual lord recharge time or youll be wasting spike time
             CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(self.custom_skill.skill_name, 4) # ~6 seconds is highest damage per spike but 4 gives us max casts per soul twisting. I like max casts
-        
+
+            yield from self.event_bus.publish(EventType.SPIRIT_CREATED, state, data=self.owned_spirit_model_id)
+
         return result
