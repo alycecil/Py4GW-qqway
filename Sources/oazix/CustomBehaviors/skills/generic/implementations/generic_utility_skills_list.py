@@ -28,13 +28,19 @@ class GenericUtilitySkillsList:
         skills.append(GenericResurrectionUtility(event_bus=event_bus, skill=CustomSkill("Resurrection_Signet"), current_build=in_game_build))
         skills.append(GenericResurrectionUtility(event_bus=event_bus, skill=CustomSkill("Rebirth"), current_build=in_game_build))
 
+        # Spirit Section
+        ## Ritualist generics
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Vampirism"), current_build=in_game_build, score_definition=ScoreStaticDefinition(50), owned_spirit_model_id=SpiritModelID.VAMPIRISM))
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Agony"), current_build=in_game_build, score_definition=ScoreStaticDefinition(30), owned_spirit_model_id=SpiritModelID.AGONY))
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Bloodsong"), current_build=in_game_build, score_definition=ScoreStaticDefinition(50), owned_spirit_model_id=SpiritModelID.BLOODSONG))
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Shadowsong"), current_build=in_game_build, score_definition=ScoreStaticDefinition(50), owned_spirit_model_id=SpiritModelID.SHADOWSONG))
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Pain"), current_build=in_game_build, score_definition=ScoreStaticDefinition(50), owned_spirit_model_id=SpiritModelID.PAIN))
-        skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Disenchantment"), current_build=in_game_build, score_definition=ScoreStaticDefinition(50), owned_spirit_model_id=SpiritModelID.DISENCHANTMENT))
+        skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Disenchantment"), current_build=in_game_build, score_definition=ScoreStaticDefinition(49), owned_spirit_model_id=SpiritModelID.DISENCHANTMENT))
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Anguish"), current_build=in_game_build, score_definition=ScoreStaticDefinition(50), owned_spirit_model_id=SpiritModelID.ANGUISH))
+        ## PVE generics
+        skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Winds"), current_build=in_game_build, score_definition=ScoreStaticDefinition(10), owned_spirit_model_id=SpiritModelID.WINDS))
+        ## Ranger Generics
+        skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Winter"), current_build=in_game_build, score_definition=ScoreStaticDefinition(20), owned_spirit_model_id=SpiritModelID.WINTER))
 
         skills.append(MinionInvocationFromCorpseUtility(event_bus=event_bus, skill=CustomSkill("Animate_Shambling_Horror"), current_build=in_game_build, score_definition=ScoreStaticDefinition(25)))
         skills.append( MinionInvocationFromCorpseUtility(event_bus=event_bus, skill=CustomSkill("Animate_Bone_Fiend"), current_build=in_game_build, score_definition=ScoreStaticDefinition(25)))
