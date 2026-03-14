@@ -18,7 +18,6 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_pain_utility import CryO
 class BindingChainsUtility(CustomSkillUtilityBase):
     def __init__(self,
         event_bus: EventBus,
-        skill: CustomSkill,
         current_build: list[CustomSkill],
         score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 99 if enemy_qte >= 2 else 30),
         mana_required_to_cast: int = 18,
@@ -27,7 +26,7 @@ class BindingChainsUtility(CustomSkillUtilityBase):
 
         super().__init__(
             event_bus=event_bus,
-            skill=skill,
+            skill=CustomSkill("Binding_Chains"),
             in_game_build=current_build,
             score_definition=score_definition,
             mana_required_to_cast=mana_required_to_cast,
