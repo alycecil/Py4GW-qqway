@@ -3,12 +3,24 @@ import pathlib
 import sys
 
 import Py4GW
+from HeroAI.ui import is_left_mouse_clicked, commands, gray_color
 from Py4GWCoreLib import ImGui, Map, PyImGui, Routines, Color
 from Py4GWCoreLib.Py4GWcorelib import ThrottledTimer
 from Py4GWCoreLib.UIManager import UIManager
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.fps_monitor import FPSMonitor
+from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_utility import CustomBehaviorBaseUtility
+from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
+from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.primitives.widget_monitor import WidgetMonitor
+from Py4GWCoreLib import Player
+from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
+from Py4GWCoreLib.GlobalCache.SharedMemory import SharedMessageStruct
+from Py4GWCoreLib.Py4GWcorelib import ThrottledTimer
+from Py4GWCoreLib.ImGui_src.WindowModule import WindowModule
+
+from HeroAI.cache_data import CacheData
+from HeroAI.settings import Settings
 
 # Iterate through all modules in sys.modules (already imported modules)
 # Iterate over all imported modules and reload them
@@ -34,6 +46,48 @@ widget_window_pos:tuple[float, float] = (0,0)
 MODULE_NAME = "Custom Behaviors: Utility AI"
 MODULE_ICON = "Textures/Module_Icons/Custom Behaviors.png"
 
+def draw_dialog_overlay():
+    global frame_coords, dialog_open, dialog_coords
+
+    account_email = Player.GetAccountEmail()
+    own_data = GLOBAL_CACHE.ShMem.GetAccountDataFromEmail(account_email)
+    if own_data is None:
+        print("no cache data")
+        return
+
+    dialog_open = UIManager.IsNPCDialogVisible()
+    frame_coords = UIManager.GetDialogButtonFrames() if dialog_open else []
+
+    if not frame_coords or not dialog_open:
+        # print("no dialog data")
+        return
+
+    pyimgui_io = PyImGui.get_io()
+    mouse_pos = (pyimgui_io.mouse_pos_x, pyimgui_io.mouse_pos_y)
+
+    sorted_frames = sorted(frame_coords, key=lambda x: (x[1][1], x[1][0]))  # Sort by Y, then X
+
+    # print("dialog open")
+    for i, (frame_id, frame) in enumerate(sorted_frames):
+        if ImGui.is_mouse_in_rect((frame[0], frame[1], frame[2] - frame[0], frame[3] - frame[1]), mouse_pos):
+            if is_left_mouse_clicked():
+                if pyimgui_io.key_ctrl:
+                    accounts = [acc for acc in GLOBAL_CACHE.ShMem.GetAllAccountData() if acc.AccountEmail != account_email]
+                    print(f"sending dialog {i + 1}")
+                    commands.send_dialog(accounts, i + 1)
+                    return
+                else:
+                    print("clicked without ctrl")
+            else:
+                ImGui.begin_tooltip()
+                ImGui.text_colored(f"Ctrl + Click to send dialog {i + 1} on all accounts.", gray_color.color_tuple, 12)
+                ImGui.end_tooltip()
+        else:
+            # print("no dialog")
+            pass
+
+    pass
+
 def gui():
     # PyImGui.set_next_window_size(260, 650)
     # PyImGui.set_next_window_size(460, 800)
@@ -52,6 +106,8 @@ def gui():
     from Sources.oazix.CustomBehaviors.gui.botting import render as botting
 
     global party_forced_state_combo, monitor, widget_window_size, widget_window_pos
+
+    draw_dialog_overlay()
 
     # window_module:ImGui.WindowModule = ImGui.WindowModule("Custom behaviors", window_name="Custom behaviors - Multiboxing over utility-ai algorithm.", window_size=(0, 600), window_flags=PyImGui.WindowFlags.AlwaysAutoResize)
 
