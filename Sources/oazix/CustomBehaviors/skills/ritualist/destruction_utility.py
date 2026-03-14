@@ -41,6 +41,12 @@ class RawSpiritUtility(CustomSkillUtilityBase):
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
+
+        has_rit_lord = Routines.Checks.Effects.HasBuff(Player.GetAgentID(), self.ritual_lord_skill.skill_id)
+        if has_rit_lord:
+            print("Warning ritual lord was used but not consumed")
+            return 99.01 # aabove high, consume the floating ritual lord
+
         has_soul_twisting = False
         # if we have soul twisting care about it.
         if self.soul_twisting_skill.skill_slot is not None and self.soul_twisting_skill.skill_slot > 0:
@@ -76,6 +82,7 @@ class RawSpiritUtility(CustomSkillUtilityBase):
 
         if result == BehaviorResult.ACTION_PERFORMED:
             yield from self.event_bus.publish(EventType.SPIRIT_CREATED, state, data=self.owned_spirit_model_id)
+            # if you change this duration it must be shorter than the ritual lord recharge time or youll be wasting spike time
             CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(self.custom_skill.skill_name, 4) # ~6 seconds is highest damage per spike but 4 gives us max casts per soul twisting. I like max casts
         
         return result
