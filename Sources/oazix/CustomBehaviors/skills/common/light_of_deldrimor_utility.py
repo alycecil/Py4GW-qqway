@@ -53,5 +53,5 @@ class LightOfDeldrimorUtility(CustomSkillUtilityBase):
         enemies = self._get_targets()
         if len(enemies) == 0: return BehaviorResult.ACTION_SKIPPED
         target = enemies[0]
-        result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
+        result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
         return result
