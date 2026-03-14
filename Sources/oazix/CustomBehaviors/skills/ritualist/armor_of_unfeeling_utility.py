@@ -39,6 +39,7 @@ class ArmorOfUnfeelingUtility(CustomSkillUtilityBase):
         if spirit_model_id is None: return
 
         if spirit_model_id == SpiritModelID.DISPLACEMENT: return
+        if spirit_model_id == SpiritModelID.DESTRUCTION: return
 
         if spirit_model_id in self.owned_spirits:
             return
