@@ -40,7 +40,7 @@ class RuptureSoulUtility(CustomSkillUtilityBase):
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
 
         targets = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
-            within_range=Range.Spellcast,
+            within_range=Range.Nearby,
             sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_ASC),
             range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id))
         return targets
@@ -52,7 +52,7 @@ class RuptureSoulUtility(CustomSkillUtilityBase):
 
         # if not Routines.Checks.Skills.IsSkillIDReady(self.target_spirit_skill.skill_id): return None # if target_spirit not-ready, we can't cast
 
-        is_target_spirit_spirit_exist = custom_behavior_helpers.Targets.get_first_or_default_from_spirits_raw(within_range=Range.Spirit, spirit_model_ids=[self.target_spirit_spirit_model_id], condition=lambda agent_id: True)
+        is_target_spirit_spirit_exist = custom_behavior_helpers.Targets.get_first_or_default_from_spirits_raw(within_range=Range.Spellcast, spirit_model_ids=[self.target_spirit_spirit_model_id], condition=lambda agent_id: True)
         if not is_target_spirit_spirit_exist: return None # no cast, if target_spirit spirit not exist
 
         targets = self._get_targets()
