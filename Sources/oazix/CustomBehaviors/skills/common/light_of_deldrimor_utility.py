@@ -44,8 +44,7 @@ class LightOfDeldrimorUtility(CustomSkillUtilityBase):
         targets = self._get_targets()
         if len(targets) == 0: return None
 
-        target = targets[0]
-        return self.score_definition.get_score(target.agent_quantity_within_range)
+        return self.score_definition.get_score(len(targets))
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
