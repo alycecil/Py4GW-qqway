@@ -35,3 +35,6 @@ class AncestorsRageUtility(TargetAllyWithMostEnemiesNearby):
             score_definition=score_definition,
             mana_required_to_cast=mana_required_to_cast,
             allowed_states=allowed_states)
+
+    def _get_lock_key(self, agent_id: int) -> str:
+        return f"ancestors_rage_{agent_id}"
