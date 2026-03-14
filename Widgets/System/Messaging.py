@@ -532,7 +532,7 @@ def SendDialogToTarget(index: int, message: SharedMessageStruct):
 
 # region SendDialog
 def SendDialog(index: int, message: SharedMessageStruct):
-    ConsoleLog(MODULE_NAME, f"Processing SendDialog message: {message}", Console.MessageType.Info, False)
+    ConsoleLog(MODULE_NAME, f"Processing SendDialog message: {message}", Console.MessageType.Info, True)
     GLOBAL_CACHE.ShMem.MarkMessageAsRunning(message.ReceiverEmail, index)
     sender_data = GLOBAL_CACHE.ShMem.GetAccountDataFromEmail(message.SenderEmail)
     if sender_data is None:
