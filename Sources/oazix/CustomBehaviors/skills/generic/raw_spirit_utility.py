@@ -37,6 +37,8 @@ class RawSpiritUtility(CustomSkillUtilityBase):
         self.score_definition: ScoreStaticDefinition = score_definition
         self.owned_spirit_model_id: SpiritModelID = owned_spirit_model_id
 
+        self.ritual_lord_skill = CustomSkill("Ritual_Lord")
+
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
@@ -51,6 +53,10 @@ class RawSpiritUtility(CustomSkillUtilityBase):
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
+
+        if Routines.Checks.Skills.IsSkillSlotReady(self.ritual_lord_skill.skill_slot):
+            yield from custom_behavior_helpers.Actions.cast_skill(self.ritual_lord_skill)
+
         result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
 
         if result == BehaviorResult.ACTION_PERFORMED:
