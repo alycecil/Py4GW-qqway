@@ -44,7 +44,7 @@ class BindingChainsUtility(CustomSkillUtilityBase):
                     within_range=Range.Spellcast,
                     condition=lambda agent_id: not Agent.IsSpirit(agent_id),
                     sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_DESC),
-                    range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id))
+                    range_to_count_enemies=max(GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id), Range.Nearby.value))
         return targets
 
     @override
