@@ -140,7 +140,7 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
                         )
 
                     if len(targets) > 0:
-                        targets=sorted(targets, key=lambda x: -self.distance_from_lead(x.agent_id, leader))
+                        targets=sorted(targets, key=lambda x: self.distance_from_lead(x.agent_id, leader))
                         target = targets[0].agent_id
                         distance_mode = True
                 else:
