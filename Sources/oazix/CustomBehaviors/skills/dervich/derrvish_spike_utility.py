@@ -130,21 +130,19 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         cast_staggering_force = False
         cast_aura_of_thorns = False
 
-        has_dervish_enchantment = self.has_dervish_enchantment()
-        if not has_dervish_enchantment:
-            if (self.is_staggering_force_available()
-                    and Resources.get_player_absolute_energy() > wanted_mana + 10  # todo this better
-            ):
-                wanted_mana = self.mana_required_to_cast + 10
-                print("using spike with staggering_force")
-                cast_staggering_force = True
+        if (self.is_staggering_force_available()
+                and Resources.get_player_absolute_energy() > wanted_mana + 10  # todo this better
+        ):
+            wanted_mana = self.mana_required_to_cast + 10
+            print("using spike with staggering_force")
+            cast_staggering_force = True
 
-            if (self.is_aura_of_thorns_available()
-                  and Resources.get_player_absolute_energy() > wanted_mana + 5  # todo this better
-            ):
-                wanted_mana = wanted_mana + 5
-                print("using spike with aura_of_thorns")
-                cast_aura_of_thorns = True
+        if (self.is_aura_of_thorns_available()
+              and Resources.get_player_absolute_energy() > wanted_mana + 5  # todo this better
+        ):
+            wanted_mana = wanted_mana + 5
+            print("using spike with aura_of_thorns")
+            cast_aura_of_thorns = True
 
         if self.is_shadow_step_available():
             cast_shadow_step = False
@@ -157,8 +155,14 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
                 cast_shadow_step = True
 
             if cast_shadow_step:
-                Utils.Distance(Agent.GetXY(target.agent_id), Player.GetXY())
-                yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.Deaths_Charge, target_agent_id=target.agent_id)
+                # we need a heal or are out of attack range
+                distance = Utils.Distance(Agent.GetXY(target.agent_id), Player.GetXY())
+                player_hp = Agent.GetHealth(Player.GetAgentID())
+                range_to_jump = Range.Nearby.value
+                if Agent.IsCrippled(Player.GetAgentID()):
+                    range_to_jump = Range.Adjacent.value
+                if distance > range_to_jump or player_hp < 0.6:
+                    yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.Deaths_Charge, target_agent_id=target.agent_id)
 
         ping = 150 # todo read from frame
 
