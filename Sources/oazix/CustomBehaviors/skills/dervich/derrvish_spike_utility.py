@@ -169,11 +169,11 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
             agent_x, agent_y = Agent.GetXY(agent_id)
             distance = Utils.Distance((agent_x, agent_y), (pos[0], pos[1]))
             distance_max_distance = distance <= max_distance
-            # if constants.DEBUG:
-            if distance_max_distance:
-                print(f"{Agent.GetNameByID(agent_id)}, agent_id={agent_id} is {distance} gwinches away")
-            else:
-                print(f"EXCLUDING {Agent.GetNameByID(agent_id)}, agent_id={agent_id} is {distance} gwinches away")
+            if constants.DEBUG:
+                if distance_max_distance:
+                    print(f"{Agent.GetNameByID(agent_id)}, agent_id={agent_id} is {distance} gwinches away")
+                else:
+                    print(f"EXCLUDING {Agent.GetNameByID(agent_id)}, agent_id={agent_id} is {distance} gwinches away")
             return distance_max_distance
 
         filtered_by_distance_from_target = lambda agent: _distance_filter(agent.agent_id)
