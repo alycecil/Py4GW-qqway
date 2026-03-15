@@ -4,6 +4,7 @@ from Py4GWCoreLib.enums import Profession, Range
 from Py4GWCoreLib import Agent, Player, Party
 from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
 from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
+from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
@@ -91,7 +92,6 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
             if (current_state == BehaviorState.IDLE or current_state == BehaviorState.FAR_FROM_AGGRO) and not Party.IsPartyLeader():
                 if Party.IsPartyLoaded():
                     leader = Party.GetPartyLeaderID()
-                    target = Party.GetPartyLeaderID()
 
                     targets = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
                         within_range=Range.Spellcast.value,
@@ -108,21 +108,23 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
             target = targets[0].agent_id
 
         if target is None:
-            print("None there?")
+            if constants.DEBUG: print("No one there? I must have gotten stuck")
             return BehaviorResult.ACTION_SKIPPED
 
         if Agent.GetHealth(target) < 0.40:
             print(f"Low hp hop to target {target}")
             pass
+        elif (current_state == BehaviorState.IDLE or current_state == BehaviorState.FAR_FROM_AGGRO) and not Party.IsPartyLeader():
+            pass
         else:
             lock_key = self._get_lock_key(target)
             print(f"Check locked {lock_key}")
             if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, 1):
-                print("ALready locked")
+                if constants.DEBUG: print("Already locked")
                 yield
                 return BehaviorResult.ACTION_SKIPPED
 
-        print(f"TRying to step to {target}")
+        print(f"Trying to step to {target}")
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target)
         return result
 
