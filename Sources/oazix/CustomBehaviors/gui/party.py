@@ -32,6 +32,11 @@ project_root = PathLocator.get_custom_behaviors_root_directory()
 icon_size = 35
 default_dialog_string = "0x84"
 
+@staticmethod
+def set_dialog_id(dialog_string: str):
+    global default_dialog_string
+    default_dialog_string = dialog_string
+
 def draw_party_target_vertical_line() -> None:
     """Draw a vertical indicator for the Party Custom Target only:
     - 3D pillar at the target position (world-space)
@@ -258,21 +263,7 @@ def render():
                 default_dialog_string = ImGui.input_text("Dialog Id", default_dialog_string, 0)
 
                 if PyImGui.button(f"{IconsFontAwesome5.ICON_CROSSHAIRS} Send Dialog"):
-                    try:
-                        dialog_id : int = int(default_dialog_string, 0)
-                        print(f"Starting sending {default_dialog_string} as {dialog_id}")
-                        target = Player.GetTargetID()
-                        if target == 0:
-                            print("No target to interact with.")
-                        else:
-                            sender_email = Player.GetAccountEmail()
-                            accounts = GLOBAL_CACHE.ShMem.GetAllAccountData()
-                            for account in accounts:
-                                print(f"Ordering {account.AccountEmail} to send dialog {dialog_id} to target: {target}")
-                                GLOBAL_CACHE.ShMem.SendMessage(sender_email, account.AccountEmail, SharedCommandType.SendDialogToTarget, (target, dialog_id,0,0))
-                    except Exception as e:
-                        print(f"Well sending {default_dialog_string} failed {e}")
-                        default_dialog_string = "0x84"
+                    send_dialog()
 
     PyImGui.separator()
 
@@ -711,3 +702,26 @@ def render():
     FlagPanel.render_overlay()
     FollowingPanel.render_overlay()
 
+
+def send_dialog():
+    global default_dialog_string
+    try:
+        dialog_id: int = int(default_dialog_string, 0)
+        account = send_dialog_for_all(default_dialog_string, dialog_id)
+    except Exception as e:
+        print(f"Well sending {default_dialog_string} failed {e}")
+        default_dialog_string = "0x84"
+
+@staticmethod
+def send_dialog_for_all(dialog_string: str, dialog_id: int):
+    print(f"Starting sending {default_dialog_string} as {dialog_id}")
+    target = Player.GetTargetID()
+    if target == 0:
+        print("No target to interact with.")
+    else:
+        sender_email = Player.GetAccountEmail()
+        accounts = GLOBAL_CACHE.ShMem.GetAllAccountData()
+        for account in accounts:
+            print(f"Ordering {account.AccountEmail} to send dialog {dialog_id} to target: {target}")
+            GLOBAL_CACHE.ShMem.SendMessage(sender_email, account.AccountEmail, SharedCommandType.SendDialogToTarget,
+                                           (target, dialog_id, 0, 0))
