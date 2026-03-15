@@ -3,8 +3,9 @@ from typing import List, Any, Generator, Callable, override
 import PyImGui
 
 from HeroAI.types import SkillType
-from Py4GWCoreLib import GLOBAL_CACHE, Player, Routines, Range
+from Py4GWCoreLib import GLOBAL_CACHE, Player, Routines, Range, Agent
 from Py4GWCoreLib.enums_src.GameData_enums import Profession
+from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
@@ -87,15 +88,18 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
         has_dervish_enchantment = self.has_dervish_enchantment()
+
         if not has_dervish_enchantment:
-            if (self.staggering_force.skill_slot is not None
-                and Routines.Checks.Skills.IsSkillSlotReady(self.staggering_force.skill_slot)
+
+            staggering_force_available = self.is_staggering_force_available()
+            aura_of_thorns_available = self.is_aura_of_thorns_available()
+
+            if (staggering_force_available
                 and Resources.get_player_absolute_energy() > self.mana_required_to_cast + 10  # todo this better
             ):
                 pass # its fine we have a skill to use for the spike
-            elif (self.aura_of_thorns.skill_slot is not None
-                    and Routines.Checks.Skills.IsSkillSlotReady(self.aura_of_thorns.skill_slot)
-                    and Resources.get_player_absolute_energy() > self.mana_required_to_cast + 5  # todo this better
+            elif (aura_of_thorns_available
+                  and Resources.get_player_absolute_energy() > self.mana_required_to_cast + 5  # todo this better
             ):
                 pass # its fine we have a skill to use for the spike
             else:
@@ -105,6 +109,16 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         if len(targets) == 0: return None
         return self.score_definition.get_score(targets[0].enemy_quantity_within_range)
 
+    def is_staggering_force_available(self):
+        return self.staggering_force.skill_slot is not None and Routines.Checks.Skills.IsSkillSlotReady(
+            self.staggering_force.skill_slot)
+
+    def is_shadow_step_available(self):
+        return self.Deaths_Charge.skill_slot is not None and  Routines.Checks.Skills.IsSkillSlotReady(self.Deaths_Charge.skill_slot)
+
+    def is_aura_of_thorns_available(self):
+        return self.aura_of_thorns.skill_slot is not None and Routines.Checks.Skills.IsSkillSlotReady(self.aura_of_thorns.skill_slot)
+
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
 
@@ -112,29 +126,53 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         if len(enemies) == 0: return BehaviorResult.ACTION_SKIPPED
         target = enemies[0]
 
+        wanted_mana = self.mana_required_to_cast
+        cast_staggering_force = False
+        cast_aura_of_thorns = False
 
         has_dervish_enchantment = self.has_dervish_enchantment()
         if not has_dervish_enchantment:
-            if (self.staggering_force.skill_slot is not None
-                    and Routines.Checks.Skills.IsSkillSlotReady(self.staggering_force.skill_slot)
-                    and Resources.get_player_absolute_energy() > self.mana_required_to_cast + 10  # todo this better
+            if (self.is_staggering_force_available()
+                    and Resources.get_player_absolute_energy() > wanted_mana + 10  # todo this better
             ):
+                wanted_mana = self.mana_required_to_cast + 10
                 print("using spike with staggering_force")
-                yield from custom_behavior_helpers.Actions.cast_skill(self.staggering_force)
-            elif (self.aura_of_thorns.skill_slot is not None
-                  and Routines.Checks.Skills.IsSkillSlotReady(self.aura_of_thorns.skill_slot)
-                  and Resources.get_player_absolute_energy() > self.mana_required_to_cast + 5  # todo this better
-            ):
-                print("using spike with aura_of_thorns")
-                yield from custom_behavior_helpers.Actions.cast_skill(self.aura_of_thorns)
-            else:
-                return None
+                cast_staggering_force = True
 
-        if Resources.get_player_absolute_energy() > self.mana_required_to_cast + 5:
-            # shadowstep?
-            if Routines.Checks.Skills.IsSkillSlotReady(self.Deaths_Charge.skill_slot):
-                # todo maybe distance check?
+            if (self.is_aura_of_thorns_available()
+                  and Resources.get_player_absolute_energy() > wanted_mana + 5  # todo this better
+            ):
+                wanted_mana = wanted_mana + 5
+                print("using spike with aura_of_thorns")
+                cast_aura_of_thorns = True
+
+        if self.is_shadow_step_available():
+            cast_shadow_step = False
+
+            if Resources.get_player_absolute_energy() > wanted_mana + 5:
+                # shadowstep?
+                cast_shadow_step = True
+            elif Resources.get_player_absolute_energy() > wanted_mana and cast_staggering_force and cast_aura_of_thorns:
+                cast_staggering_force = False # prefer slower recharge snare if not enough energy
+                cast_shadow_step = True
+
+            if cast_shadow_step:
+                Utils.Distance(Agent.GetXY(target.agent_id), Player.GetXY())
                 yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.Deaths_Charge, target_agent_id=target.agent_id)
+
+        ping = 150 # todo read from frame
+
+        # Do we need to wait for dervish flash cooldown?
+        if cast_staggering_force and cast_staggering_force:
+            yield from custom_behavior_helpers.Actions.cast_skill(self.staggering_force)
+            yield from custom_behavior_helpers.Helpers.wait_for(1000 + ping) # should add ping here
+            yield from custom_behavior_helpers.Actions.cast_skill(self.aura_of_thorns)
+
+        else:
+            if cast_staggering_force:
+                yield from custom_behavior_helpers.Actions.cast_skill(self.staggering_force)
+            if cast_aura_of_thorns:
+                yield from custom_behavior_helpers.Actions.cast_skill(self.aura_of_thorns)
 
 
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
