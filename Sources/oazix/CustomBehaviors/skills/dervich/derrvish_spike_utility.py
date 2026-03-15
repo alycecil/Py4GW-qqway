@@ -38,6 +38,7 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         self.score_definition: ScorePerAgentQuantityDefinition = score_definition
         self.vow_of_strength: CustomSkill = CustomSkill("Vow_of_Strength")
         self.vow_of_silence: CustomSkill = CustomSkill("Vow_of_Silence")
+        self.Ebon_Dust_Aura: CustomSkill = CustomSkill("Ebon_Dust_Aura")
         self.sand_shards: CustomSkill = CustomSkill("Sand_Shards")
         self.aura_of_thorns: CustomSkill = CustomSkill("Aura_of_Thorns")
         self.staggering_force: CustomSkill = CustomSkill("Staggering_Force")
@@ -63,6 +64,9 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
                 if constants.DEBUG: print("VoStr is top skill. wait for a recast.")
                 return False
             if top_skill_id == self.vow_of_silence.skill_id:
+                if constants.DEBUG: print("VoSilence is top skill. wait for a recast.")
+                return False
+            if top_skill_id == self.Ebon_Dust_Aura.skill_id:
                 if constants.DEBUG: print("VoSilence is top skill. wait for a recast.")
                 return False
             if top_skill_id == self.sand_shards.skill_id:
