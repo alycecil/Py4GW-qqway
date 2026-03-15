@@ -30,6 +30,7 @@ from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_shared_mem
 # Create expandable sections for different UI panels
 project_root = PathLocator.get_custom_behaviors_root_directory()
 icon_size = 35
+default_dialog_string = "0x84"
 
 def draw_party_target_vertical_line() -> None:
     """Draw a vertical indicator for the Party Custom Target only:
@@ -75,6 +76,7 @@ def draw_party_target_vertical_line() -> None:
 
 @staticmethod
 def render():
+    global default_dialog_string
     PyImGui.text(f"[COMMON] Toggle party capabilities :")
 
     shared_data = CustomBehaviorWidgetMemoryManager().GetCustomBehaviorWidgetData()
@@ -252,9 +254,25 @@ def render():
                 if PyImGui.button(f"{IconsFontAwesome5.ICON_TRASH} ResetPartyCustomTarget | id:{shared_data.party_target_id}"):
                     CustomBehaviorParty().set_party_custom_target(None)
 
-            if shared_data.party_target_id is None:
-                if PyImGui.button(f"{IconsFontAwesome5.ICON_CROSSHAIRS} SetPartyCustomTarget"):
-                    CustomBehaviorParty().set_party_custom_target(Player.GetTargetID())
+            if CustomBehaviorParty().is_ready_for_action():
+                default_dialog_string = ImGui.input_text("Dialog Id", default_dialog_string, 0)
+
+                if PyImGui.button(f"{IconsFontAwesome5.ICON_CROSSHAIRS} Send Dialog"):
+                    try:
+                        dialog_id : int = int(default_dialog_string, 0)
+                        print(f"Starting sending {default_dialog_string} as {dialog_id}")
+                        target = Player.GetTargetID()
+                        if target == 0:
+                            print("No target to interact with.")
+                        else:
+                            sender_email = Player.GetAccountEmail()
+                            accounts = GLOBAL_CACHE.ShMem.GetAllAccountData()
+                            for account in accounts:
+                                print(f"Ordering {account.AccountEmail} to send dialog {dialog_id} to target: {target}")
+                                GLOBAL_CACHE.ShMem.SendMessage(sender_email, account.AccountEmail, SharedCommandType.SendDialogToTarget, (target, dialog_id,0,0))
+                    except Exception as e:
+                        print(f"Well sending {default_dialog_string} failed {e}")
+                        default_dialog_string = "0x84"
 
     PyImGui.separator()
 
