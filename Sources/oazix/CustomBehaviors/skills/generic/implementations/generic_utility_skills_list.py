@@ -9,6 +9,9 @@ from Sources.oazix.CustomBehaviors.skills.generic.minion_invocation_from_corpse_
     MinionInvocationFromCorpseUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_spirit_utility import RawSpiritUtility
 from Sources.oazix.CustomBehaviors.skills.generic.stub_utility import StubUtility
+from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_corruption_utility import SignetOfCorruptionUtility
+from Sources.oazix.CustomBehaviors.skills.paragon.spear_of_fury_utility import LuxAttackNearestEnemyHasConditionUtility, \
+    KurzAttackNearestEnemyHasConditionUtility
 
 
 class GenericUtilitySkillsList:
@@ -47,5 +50,23 @@ class GenericUtilitySkillsList:
         skills.append(MinionInvocationFromCorpseUtility(event_bus=event_bus, skill=CustomSkill("Animate_Bone_Horror"), current_build=in_game_build, score_definition=ScoreStaticDefinition(25)))
         skills.append(MinionInvocationFromCorpseUtility(event_bus=event_bus, skill=CustomSkill("Animate_Vampiric_Horror"), current_build=in_game_build, score_definition=ScoreStaticDefinition(25)))
         skills.append(MinionInvocationFromCorpseUtility(event_bus=event_bus, skill=CustomSkill("Animate_Bone_Minions"), current_build=in_game_build, score_definition=ScoreStaticDefinition(25)))
+
+        # PVE SKILLS SECTION
+        skills.append(SignetOfCorruptionUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Signet_of_Corruption_luxon"),
+            current_build=in_game_build))
+        skills.append(SignetOfCorruptionUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Signet_of_Corruption_kurzick"),
+            current_build=in_game_build))
+
+        skills.append(KurzAttackNearestEnemyHasConditionUtility(
+            event_bus=event_bus,
+            current_build=in_game_build))
+        skills.append(LuxAttackNearestEnemyHasConditionUtility(
+            event_bus=event_bus,
+            current_build=in_game_build))
+
 
         return skills
