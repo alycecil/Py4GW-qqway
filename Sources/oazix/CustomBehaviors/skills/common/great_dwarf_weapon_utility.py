@@ -8,7 +8,9 @@ from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorStat
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
+from Sources.oazix.CustomBehaviors.primitives.helpers.lock_key_helper import LockKeyHelper
 from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
+from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.bonds.custom_buff_multiple_target import CustomBuffMultipleTarget
 from Sources.oazix.CustomBehaviors.primitives.skills.bonds.custom_buff_target_per_profession import BuffConfigurationPerProfession
@@ -44,6 +46,9 @@ class GreatDwarfWeaponUtility(CustomSkillUtilityBase):
         self.should_target_ebon_vanguard_assassin = bool(PersistenceLocator().skills.read_or_default(self.custom_skill.skill_name, "should_target_ebon_vanguard_assassin", "0") == "1")
         self.ebon_vanguard_assassin_model_id = 5903
 
+    def _get_lock_key(self, agent_id: int) -> str:
+        return LockKeyHelper.weapon_spell(agent_id)
+
     def _get_target(self) -> int | None:
 
         if self.should_target_ebon_vanguard_assassin:
@@ -57,7 +62,8 @@ class GreatDwarfWeaponUtility(CustomSkillUtilityBase):
                 condition=lambda agent_id: 
                     agent_id != Player.GetAgentID() and 
                     not Agent.IsWeaponSpelled(agent_id) and
-                    self.buff_configuration.get_agent_id_predicate()(agent_id),
+                    self.buff_configuration.get_agent_id_predicate()(agent_id)  and
+                    not CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(self._get_lock_key(agent_id)),
                 sort_key=(TargetingOrder.DISTANCE_DESC, TargetingOrder.CASTER_THEN_MELEE),
                 range_to_count_enemies=None,
                 range_to_count_allies=None)
@@ -74,6 +80,11 @@ class GreatDwarfWeaponUtility(CustomSkillUtilityBase):
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
         target = self._get_target()
         if target is None: return BehaviorResult.ACTION_SKIPPED
+
+        if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(self._get_lock_key(target), 3):
+            yield
+            return BehaviorResult.ACTION_SKIPPED
+
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target)
         return result 
 

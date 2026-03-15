@@ -3,6 +3,9 @@ class LockKeyHelper:
     Centralized helper class for generating lock keys used in party coordination.
     Lock keys prevent multiple party members from targeting the same agent with similar skills.
     """
+    @staticmethod
+    def weapon_spell(agent_id: int) -> str:
+        return f"weapon_spell_{agent_id}"
 
     @staticmethod
     def hex_removal(agent_id: int) -> str:
