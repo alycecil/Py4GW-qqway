@@ -130,7 +130,7 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
 
         vanguard: list[
             custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_ncs_of_model_ordered_by_priority_raw(
-            model_id=self.model_id_filter,
+            model_ids=[self.model_id_filter],
             within_range=Range.Spellcast.value * 1.2,
             sort_key=(TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_ASC),
             range_to_count_allies=None,

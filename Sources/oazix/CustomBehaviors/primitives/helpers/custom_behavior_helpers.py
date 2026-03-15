@@ -561,7 +561,7 @@ class Targets:
 
     @staticmethod
     def get_all_possible_ncs_of_model_ordered_by_priority_raw(
-            model_id: int,
+            model_ids: list[int],
             within_range: float,
             condition: Callable[[int], bool] | None = None,
             sort_key: tuple[TargetingOrder, ...] | None = None,
@@ -578,7 +578,7 @@ class Targets:
             agent_array = AgentArray.GetAgentArray()
             agent_array = AgentArray.Filter.ByDistance(agent_array, player_pos, within_range)
             agent_array = AgentArray.Filter.ByCondition(agent_array, lambda agent_id: Agent.IsAlive(agent_id))
-            agent_array = AgentArray.Filter.ByCondition(agent_array, lambda agent_id: Agent.GetModelID(agent_id) == model_id)
+            agent_array = AgentArray.Filter.ByCondition(agent_array, lambda agent_id: Agent.GetModelID(agent_id) in model_ids)
             agent_array = AgentArray.Sort.ByDistance(agent_array, player_pos)
 
             agent_ids = AgentArray.Filter.ByDistance(agent_array, player_pos, within_range)
