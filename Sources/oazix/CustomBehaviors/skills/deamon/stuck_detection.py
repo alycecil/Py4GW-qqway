@@ -35,8 +35,8 @@ class StuckDetectionUtility(CustomSkillUtilityBase):
 
         self.score_definition: ScoreStaticDefinition = ScoreStaticDefinition(CommonScore.DEAMON.value)
         self.__previous_player_position : tuple[float, float] = (0, 0)
-        self.throttle_timer_aggro = ThrottledTimer(48_000)  # 12 seconds for IN_AGGRO
-        self.throttle_timer_non_aggro = ThrottledTimer(25_000)  # 5 seconds for CLOSE_TO_AGGRO and FAR_FROM_AGGRO
+        self.throttle_timer_aggro = ThrottledTimer(30_000)  # 12 seconds for IN_AGGRO
+        self.throttle_timer_non_aggro = ThrottledTimer(5_000)  # 5 seconds for CLOSE_TO_AGGRO and FAR_FROM_AGGRO
         self.__previous_state: BehaviorState | None = None  # Track state changes
         self.__stuck_count = 0
         self.__moving_samples = 0
