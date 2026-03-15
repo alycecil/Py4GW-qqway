@@ -2,7 +2,7 @@ from typing import Any, Generator, override
 import PyImGui
 from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
 from Py4GWCoreLib.enums import Profession, Range
-from Py4GWCoreLib import Agent, Player, Routines
+from Py4GWCoreLib import Agent, Player, Routines, traceback
 from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
@@ -94,7 +94,18 @@ class GreatDwarfWeaponUtility(CustomSkillUtilityBase):
     
     @override
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
-        self.should_target_ebon_vanguard_assassin = PyImGui.checkbox("should_target_ebon_vanguard_assassin##should_target_ebon_vanguard_assassin", self.should_target_ebon_vanguard_assassin)
+        ebon_vanguard_assassin_targeting = False
+        try:
+            if self.should_target_ebon_vanguard_assassin:
+                ebon_vanguard_assassin_targeting = True
+
+            from Py4GWCoreLib import PyImGui, ImGui, Color
+
+            self.should_target_ebon_vanguard_assassin = PyImGui.checkbox("should_target_ebon_vanguard_assassin##should_target_ebon_vanguard_assassin",
+                                                                         ebon_vanguard_assassin_targeting)
+        except Exception as e:
+            self.should_target_ebon_vanguard_assassin = True
+            print(f"Failed to render ebon vanguard toggle, defaulting to true {e}:{traceback.format_exc()}")
 
     @override
     def has_persistence(self) -> bool:

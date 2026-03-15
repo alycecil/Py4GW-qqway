@@ -1,3 +1,4 @@
+import traceback
 from typing import Any, Generator, override
 from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
 from Py4GWCoreLib.enums import Profession, Range
@@ -42,7 +43,7 @@ class SplinterWeaponUtility(CustomSkillUtilityBase):
         else:
             self.buff_configuration: CustomBuffMultipleTarget = CustomBuffMultipleTarget(event_bus, self.custom_skill, buff_configuration_per_profession= BuffConfigurationPerProfession.BUFF_CONFIGURATION_MARTIAL)
 
-        self.should_target_ebon_vanguard_assassin = bool(PersistenceLocator().skills.read_or_default(self.custom_skill.skill_name, "should_target_ebon_vanguard_assassin", "0") == "1")
+        self.should_target_ebon_vanguard_assassin = bool(PersistenceLocator().skills.read_or_default(self.custom_skill.skill_name, "should_target_ebon_vanguard_assassin", "1") == "1")
         self.ebon_vanguard_assassin_model_id = 5903
 
     def _get_lock_key(self, agent_id: int) -> str:
@@ -93,7 +94,18 @@ class SplinterWeaponUtility(CustomSkillUtilityBase):
 
     @override
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
-        self.should_target_ebon_vanguard_assassin = PyImGui.checkbox("should_target_ebon_vanguard_assassin##should_target_ebon_vanguard_assassin", self.should_target_ebon_vanguard_assassin)
+        ebon_vanguard_assassin_targeting = False
+        try:
+            if self.should_target_ebon_vanguard_assassin:
+                ebon_vanguard_assassin_targeting = True
+
+            from Py4GWCoreLib import PyImGui, ImGui, Color
+
+            self.should_target_ebon_vanguard_assassin = PyImGui.checkbox("should_target_ebon_vanguard_assassin##should_target_ebon_vanguard_assassin",
+                                                                         ebon_vanguard_assassin_targeting)
+        except Exception as e:
+            self.should_target_ebon_vanguard_assassin = True
+            print(f"Failed to render ebon vanguard toggle, defaulting to true {e}:{traceback.format_exc()}")
 
     @override
     def has_persistence(self) -> bool:
