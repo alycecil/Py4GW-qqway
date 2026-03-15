@@ -1,7 +1,7 @@
 from typing import Any, Generator, override
 from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
 from Py4GWCoreLib.enums import Profession, Range
-from Py4GWCoreLib import Agent, Player
+from Py4GWCoreLib import Agent, Player, Routines
 from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
@@ -42,6 +42,9 @@ class SplinterWeaponUtility(CustomSkillUtilityBase):
         else:
             self.buff_configuration: CustomBuffMultipleTarget = CustomBuffMultipleTarget(event_bus, self.custom_skill, buff_configuration_per_profession= BuffConfigurationPerProfession.BUFF_CONFIGURATION_MARTIAL)
 
+        self.should_target_ebon_vanguard_assassin = bool(PersistenceLocator().skills.read_or_default(self.custom_skill.skill_name, "should_target_ebon_vanguard_assassin", "0") == "1")
+        self.ebon_vanguard_assassin_model_id = 5903
+
     def _get_lock_key(self, agent_id: int) -> str:
         return LockKeyHelper.weapon_spell(agent_id)
 
@@ -52,11 +55,17 @@ class SplinterWeaponUtility(CustomSkillUtilityBase):
                 within_range=Range.Spellcast.value * 1.2,
                 condition=lambda agent_id: 
                     agent_id != Player.GetAgentID() and 
-                    self.buff_configuration.get_agent_id_predicate()(agent_id) and not Agent.IsWeaponSpelled(agent_id) and
-                        not CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(self._get_lock_key(agent_id)),
+                    self.buff_configuration.get_agent_id_predicate()(agent_id) and
+                    not Agent.IsWeaponSpelled(agent_id) and
+                    not CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(self._get_lock_key(agent_id)),
                 sort_key=(TargetingOrder.DISTANCE_DESC, TargetingOrder.MELEE_THEN_CASTER),
                 range_to_count_enemies=None,
                 range_to_count_allies=None)
+
+        if (target is None or target <= 0) and self.should_target_ebon_vanguard_assassin:
+            npc_agent_id : int = Routines.Agents.GetNearestAliveAgentByModelID(self.ebon_vanguard_assassin_model_id, Range.Spellcast.value)
+            if npc_agent_id != None and npc_agent_id != 0 and not Agent.IsWeaponSpelled(npc_agent_id):
+                return npc_agent_id
     
         return target
 
@@ -83,16 +92,27 @@ class SplinterWeaponUtility(CustomSkillUtilityBase):
         return self.buff_configuration
 
     @override
+    def customized_debug_ui(self, current_state: BehaviorState) -> None:
+        self.should_target_ebon_vanguard_assassin = PyImGui.checkbox("should_target_ebon_vanguard_assassin##should_target_ebon_vanguard_assassin", self.should_target_ebon_vanguard_assassin)
+
+    @override
     def has_persistence(self) -> bool:
         return True
     
     @override
     def persist_configuration_for_account(self):
         PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "buff_configuration", self.buff_configuration.serialize_to_string())
+        PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "should_target_ebon_vanguard_assassin", "1" if self.should_target_ebon_vanguard_assassin else "0")
         print("configuration saved for account")
 
     @override
     def persist_configuration_as_global(self):
         PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "buff_configuration", self.buff_configuration.serialize_to_string())
+        PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "should_target_ebon_vanguard_assassin", "1" if self.should_target_ebon_vanguard_assassin else "0")
         print("configuration saved as global")
 
+    @override
+    def delete_persisted_configuration(self):
+        PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "buff_configuration")
+        PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "should_target_ebon_vanguard_assassin")
+        print("configuration deleted")
