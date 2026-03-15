@@ -3,7 +3,7 @@ import pathlib
 import sys
 
 import Py4GW
-from Py4GWCoreLib import ImGui, Map, PyImGui, Routines, Color, PyUIManager
+from Py4GWCoreLib import ImGui, Map, PyImGui, Routines, Color, PyUIManager, traceback
 from Py4GWCoreLib import Player
 from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
 from Py4GWCoreLib.Py4GWcorelib import ThrottledTimer
@@ -216,7 +216,8 @@ def main():
             try:
                 gui()
             except Exception as e:
-                print(f'GUI Exception: {e}')
+                print(f'GUI Exception: {e} : {traceback.format_exc()}')
+
 
         daemon()
 
