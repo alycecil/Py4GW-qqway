@@ -45,7 +45,7 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
         targets: list[custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
-            within_range=Range.Spellcast.value * 1.2,
+            within_range=Range.Spellcast.value * 1.1,
             condition=lambda agent_id: 
                 agent_id != Player.GetAgentID() and 
                 Agent.GetHealth(agent_id) < 0.8 and
@@ -90,7 +90,17 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
         if len(targets) == 0:
             if (current_state == BehaviorState.IDLE or current_state == BehaviorState.FAR_FROM_AGGRO) and not Party.IsPartyLeader():
                 if Party.IsPartyLoaded():
+                    leader = Party.GetPartyLeaderID()
                     target = Party.GetPartyLeaderID()
+
+                    targets = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
+                        within_range=Range.Spellcast.value,
+                        condition=lambda agent_id: agent_id != Player.GetAgentID()
+                        )
+
+                    if len(targets) > 0:
+                        targets=sorted(targets, key=lambda x: self.distance_from_lead(x.agent_id, leader))
+                        target = targets[0].agent_id
                 else:
                     print("Party not loaded?")
 
@@ -102,7 +112,7 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
             return BehaviorResult.ACTION_SKIPPED
 
         if Agent.GetHealth(target) < 0.40:
-            print("Low hp")
+            print(f"Low hp hop to target {target}")
             pass
         else:
             lock_key = self._get_lock_key(target)
@@ -112,7 +122,7 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
                 yield
                 return BehaviorResult.ACTION_SKIPPED
 
-        print("TRying to step")
+        print(f"TRying to step to {target}")
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target)
         return result
 
