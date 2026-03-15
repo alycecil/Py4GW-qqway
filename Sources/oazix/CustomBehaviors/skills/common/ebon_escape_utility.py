@@ -113,7 +113,7 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
             if constants.DEBUG: print("No one there? I must have gotten stuck")
             return BehaviorResult.ACTION_SKIPPED
 
-        if Agent.GetHealth(target) < 0.40:
+        if Agent.GetHealth(target) < 0.40 or Agent.GetHealth(Player.GetAgentID()) < 0.60:
             print(f"Low hp hop to target {target}")
             pass
         elif distance_mode and (current_state == BehaviorState.IDLE or current_state == BehaviorState.FAR_FROM_AGGRO) and not Party.IsPartyLeader():
