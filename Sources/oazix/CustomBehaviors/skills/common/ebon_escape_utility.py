@@ -88,6 +88,7 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
     def _execute(self, current_state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
         targets = self._get_targets()
         target: int | None = None
+        distance_mode = False
         if len(targets) == 0:
             if (current_state == BehaviorState.IDLE or current_state == BehaviorState.FAR_FROM_AGGRO) and not Party.IsPartyLeader():
                 if Party.IsPartyLoaded():
@@ -101,6 +102,7 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
                     if len(targets) > 0:
                         targets=sorted(targets, key=lambda x: self.distance_from_lead(x.agent_id, leader))
                         target = targets[0].agent_id
+                        distance_mode = True
                 else:
                     print("Party not loaded?")
 
@@ -114,7 +116,7 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
         if Agent.GetHealth(target) < 0.40:
             print(f"Low hp hop to target {target}")
             pass
-        elif (current_state == BehaviorState.IDLE or current_state == BehaviorState.FAR_FROM_AGGRO) and not Party.IsPartyLeader():
+        elif distance_mode and (current_state == BehaviorState.IDLE or current_state == BehaviorState.FAR_FROM_AGGRO) and not Party.IsPartyLeader():
             pass
         else:
             lock_key = self._get_lock_key(target)
