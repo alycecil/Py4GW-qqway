@@ -210,3 +210,4 @@ cython_debug/
 
 # macOS system files
 .DS_Store
+/Bots/BDS/bds_settings.ini
