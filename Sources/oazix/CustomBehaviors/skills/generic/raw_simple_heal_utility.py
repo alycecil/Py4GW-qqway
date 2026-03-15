@@ -36,22 +36,22 @@ class RawSimpleHealUtility(CustomSkillUtilityBase):
 
     def _save_the_turtle(self) -> list[custom_behavior_helpers.SortableAgentData] | None:
         # underworld
-        TorturedSpirit1 = 2353
-        TorturedSpirit2 = 2354
+        #TorturedSpirit1 = 2353
+        #TorturedSpirit2 = 2354
         # that gd luxon quest
-        THE_BABY_TURTLES = 3587
+        # THE_BABY_TURTLES = 3587
         THE_BABY_TURTLES2 = 3638
         # FOW
-        GRIFFS = 2827
+        # GRIFFS = 2827
 
         important_npcs: list[
             custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_ncs_of_model_ordered_by_priority_raw(
             model_ids=[
-                THE_BABY_TURTLES,
+                #THE_BABY_TURTLES,
                 THE_BABY_TURTLES2,
-                TorturedSpirit1,
-                TorturedSpirit2,
-                GRIFFS
+                #TorturedSpirit1,
+                #TorturedSpirit2,
+                #GRIFFS
             ],
             within_range=Range.Spellcast.value * 1.5,
             sort_key=(TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_ASC),
