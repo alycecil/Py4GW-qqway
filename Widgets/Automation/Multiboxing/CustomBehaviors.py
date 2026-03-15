@@ -3,24 +3,14 @@ import pathlib
 import sys
 
 import Py4GW
-from HeroAI.ui import is_left_mouse_clicked, commands, gray_color
 from Py4GWCoreLib import ImGui, Map, PyImGui, Routines, Color, PyUIManager
+from Py4GWCoreLib import Player
+from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
 from Py4GWCoreLib.Py4GWcorelib import ThrottledTimer
 from Py4GWCoreLib.UIManager import UIManager
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.fps_monitor import FPSMonitor
-from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_utility import CustomBehaviorBaseUtility
-from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
-from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.primitives.widget_monitor import WidgetMonitor
-from Py4GWCoreLib import Player
-from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
-from Py4GWCoreLib.GlobalCache.SharedMemory import SharedMessageStruct
-from Py4GWCoreLib.Py4GWcorelib import ThrottledTimer
-from Py4GWCoreLib.ImGui_src.WindowModule import WindowModule
-
-from HeroAI.cache_data import CacheData
-from HeroAI.settings import Settings
 
 # Iterate through all modules in sys.modules (already imported modules)
 # Iterate over all imported modules and reload them
@@ -71,6 +61,7 @@ def draw_dialog_overlay():
 
     # print("dialog open")
     for i, (frame_id, frame) in enumerate(sorted_frames):
+        from HeroAI.ui import is_left_mouse_clicked, gray_color
         if ImGui.is_mouse_in_rect((frame[0], frame[1], frame[2] - frame[0], frame[3] - frame[1]), mouse_pos):
 
             frame_obj = PyUIManager.UIFrame(frame_id)
@@ -120,8 +111,6 @@ def gui():
     # PyImGui.set_next_window_size(260, 650)
     # PyImGui.set_next_window_size(460, 800)
     from Sources.oazix.CustomBehaviors.primitives import constants
-    from Sources.oazix.CustomBehaviors.primitives.fps_monitor import FPSMonitor
-    from Sources.oazix.CustomBehaviors.primitives.widget_monitor import WidgetMonitor
     from Sources.oazix.CustomBehaviors.gui.current_build import render as current_build_render
     from Sources.oazix.CustomBehaviors.gui.party import render as party
     from Sources.oazix.CustomBehaviors.gui.debug_skillbars import render as debug_skilbars
@@ -202,10 +191,6 @@ previous_map_status = False
 map_change_throttler = ThrottledTimer(1_500)
 
 def main():
-    from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_utility import CustomBehaviorBaseUtility
-    from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
-    from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_shared_memory import CustomBehaviorWidgetMemoryManager
-    from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
     from Sources.oazix.CustomBehaviors.daemon import daemon
 
     global previous_map_status, monitor, widget_window_size, widget_window_pos
