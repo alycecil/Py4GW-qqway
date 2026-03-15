@@ -41,6 +41,7 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         self.sand_shards: CustomSkill = CustomSkill("Sand_Shards")
         self.aura_of_thorns: CustomSkill = CustomSkill("Aura_of_Thorns")
         self.staggering_force: CustomSkill = CustomSkill("Staggering_Force")
+        self.Deaths_Charge: CustomSkill = CustomSkill("Deaths_Charge")
         self.mana_required_to_cast = mana_required_to_cast
 
     def has_dervish_enchantment(self) -> bool:
@@ -124,6 +125,13 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
                 yield from custom_behavior_helpers.Actions.cast_skill(self.aura_of_thorns)
             else:
                 return None
+
+        if Resources.get_player_absolute_energy() > self.mana_required_to_cast + 5:
+            # shadowstep?
+            if Routines.Checks.Skills.IsSkillSlotReady(self.Deaths_Charge.skill_slot):
+                # todo maybe distance check?
+                yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.Deaths_Charge, target_agent_id=target.agent_id)
+
 
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
         return result
