@@ -39,6 +39,7 @@ class MonkHealingBurst_UtilitySkillBar(CustomBehaviorBaseUtility):
         # core skills
 
         self.patient_spirit_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Patient_Spirit"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(8))
+        self.Jameis_Gaze_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Jameis_Gaze"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(6))
         self.healing_burst_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Healing_Burst"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(8))
         self.Signet_of_Rejuvenation_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Signet_of_Rejuvenation"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(6))
         self.Signet_of_Devotion_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Signet_of_Devotion"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(5))
@@ -106,6 +107,8 @@ class MonkHealingBurst_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.by_urals_hammer_utility,
             self.breath_of_the_great_dwarf_utility,
             self.finish_him_utility,
+
+            self.Jameis_Gaze_utility,
 
             self.patient_spirit_utility,
             self.healing_burst_utility,

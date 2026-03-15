@@ -1,6 +1,6 @@
 from collections import deque
 from typing import Any, Callable, Dict, Generator
-from Py4GWCoreLib import IconsFontAwesome5, Map, PyImGui, Player
+from Py4GWCoreLib import IconsFontAwesome5, Map, PyImGui, Player, Agent
 from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
 from Py4GWCoreLib.Pathing import AutoPathing
 from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
@@ -233,7 +233,7 @@ def render():
 
         # Show status if following is active
         if auto_follow_agent.is_running():
-            PyImGui.text(f"Following agent_id: {auto_follow_agent.get_target_agent_id()}")
+            PyImGui.text(f"Following agent_id: {auto_follow_agent.get_target_agent_id()} model={Agent.GetModelID(auto_follow_agent.get_target_agent_id())}")
             PyImGui.text(f"Progress: {auto_follow_agent.get_movement_progress():.1f}%")
 
             # Show agent name and position if available

@@ -44,12 +44,14 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
         else:
             self.buff_configuration: CustomBuffMultipleTarget = CustomBuffMultipleTarget(event_bus, self.custom_skill, buff_configuration_per_profession= BuffConfigurationPerProfession.BUFF_CONFIGURATION_ALL)
 
+
     def _save_the_turtle(self) -> list[custom_behavior_helpers.SortableAgentData] | None:
         # underworld
         TorturedSpirit1 = 2353
         TorturedSpirit2 = 2354
         # that gd luxon quest
         THE_BABY_TURTLES = 3587
+        THE_BABY_TURTLES2 = 3638
         # FOW
         GRIFFS = 2827
 
@@ -57,19 +59,24 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
             custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_ncs_of_model_ordered_by_priority_raw(
             model_ids=[
                 THE_BABY_TURTLES,
+                THE_BABY_TURTLES2,
                 TorturedSpirit1,
                 TorturedSpirit2,
                 GRIFFS
             ],
             within_range=Range.Spellcast.value * 1.5,
-            condition=lambda agent_id:
-                agent_id != Player.GetAgentID() and
-                Agent.GetHealth(agent_id) < 0.7,
             sort_key=(TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_ASC),
             range_to_count_allies=None,
             range_to_count_enemies=max(GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id), Range.Adjacent.value))
 
-        if len(important_npcs) == 0: return None
+        if len(important_npcs) > 0:
+            if constants.DEBUG: print("Turtles detected")
+
+            condition=lambda agent: agent.agent_id != Player.GetAgentID() and Agent.GetHealth(agent.agent_id) < 0.7
+            important_npcs = list(filter(condition, important_npcs))
+
+            if len(important_npcs) > 0:
+                print("I HAVE TURTLES TO SAVE")
 
         return important_npcs
 
