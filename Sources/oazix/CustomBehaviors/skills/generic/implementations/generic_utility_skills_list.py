@@ -95,6 +95,12 @@ class GenericUtilitySkillsList:
         skills.append(KeepSelfEffectUpUtility(event_bus=event_bus, skill=CustomSkill("Elemental_Lord_luxon"), current_build=in_game_build,
                                               score_definition=ScoreStaticDefinition(25), mana_required_to_cast=10,
                                               allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]))
+        skills.append(KeepSelfEffectUpUtility(event_bus=event_bus, skill=CustomSkill("Aura_of_Holy_Might_kurzick"), current_build=in_game_build,
+                                              score_definition=ScoreStaticDefinition(25), mana_required_to_cast=10,
+                                              allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]))
+        skills.append(KeepSelfEffectUpUtility(event_bus=event_bus, skill=CustomSkill("Aura_of_Holy_Might_luxon"), current_build=in_game_build,
+                                              score_definition=ScoreStaticDefinition(25), mana_required_to_cast=10,
+                                              allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]))
 
         # Shouts Section
         # Really should be limited to imbagon but whatever
