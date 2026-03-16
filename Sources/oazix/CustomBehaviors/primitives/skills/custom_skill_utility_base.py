@@ -97,22 +97,22 @@ class CustomSkillUtilityBase:
                     print(f'PreCheck Reject {self.custom_skill.skill_name}')
             return None
         if self.utility_skill_typology == UtilitySkillTypology.COMBAT and not CustomBehaviorParty().get_party_is_combat_enabled():
-            if constants.DEBUG: print(f'Reject Combat Not Enabled {self.custom_skill.skill_name}')
+            if constants.DEBUG: print(f'Reject COMBAT Not Enabled {self.custom_skill.skill_name}')
             return None
         if self.utility_skill_typology == UtilitySkillTypology.FOLLOWING and not CustomBehaviorParty().get_party_is_following_enabled():
-            if constants.DEBUG: print(f'Reject Combat Not Enabled {self.custom_skill.skill_name}')
+            if constants.DEBUG: print(f'Reject FOLLOWING Not Enabled {self.custom_skill.skill_name}')
             return None
         if self.utility_skill_typology == UtilitySkillTypology.LOOTING and not CustomBehaviorParty().get_party_is_looting_enabled():
-            if constants.DEBUG: print(f'Reject Combat Not Enabled {self.custom_skill.skill_name}')
+            if constants.DEBUG: print(f'Reject LOOTING Not Enabled {self.custom_skill.skill_name}')
             return None
         if self.utility_skill_typology == UtilitySkillTypology.CHESTING and not CustomBehaviorParty().get_party_is_chesting_enabled():
-            if constants.DEBUG: print(f'Reject Combat Not Enabled {self.custom_skill.skill_name}')
+            if constants.DEBUG: print(f'Reject CHESTING Not Enabled {self.custom_skill.skill_name}')
             return None
         if self.utility_skill_typology == UtilitySkillTypology.BLESSING and not CustomBehaviorParty().get_party_is_blessing_enabled():
-            if constants.DEBUG: print(f'Reject Combat Not Enabled {self.custom_skill.skill_name}')
+            if constants.DEBUG: print(f'Reject BLESSING Not Enabled {self.custom_skill.skill_name}')
             return None
         if self.utility_skill_typology == UtilitySkillTypology.INVENTORY and not CustomBehaviorParty().get_party_is_inventory_enabled():
-            if constants.DEBUG: print(f'Reject Combat Not Enabled {self.custom_skill.skill_name}')
+            if constants.DEBUG: print(f'Reject INVENTORY Not Enabled {self.custom_skill.skill_name}')
             return None
         if current_state == BehaviorState.IDLE:
             if (self.utility_skill_typology != UtilitySkillTypology.BOTTING
