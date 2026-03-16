@@ -34,8 +34,8 @@ class RitualistWeaponsOfThreeForges_UtilitySkillBar(CustomBehaviorBaseUtility):
         # core
         self.Weapons_of_Three_Forges_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(
             event_bus=self.event_bus, skill=CustomSkill("Weapons_of_Three_Forges"), current_build=in_game_build,
-            renew_before_expiration_in_milliseconds=1750,
-            score_definition=ScoreStaticDefinition(35),  # this should be below ebon vanguard assassin support
+            renew_before_expiration_in_milliseconds=2150,
+            score_definition=ScoreStaticDefinition(90),  # this should be below ebon vanguard assassin support
             allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO])
 
     
