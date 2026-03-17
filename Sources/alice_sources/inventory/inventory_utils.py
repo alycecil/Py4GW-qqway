@@ -64,10 +64,11 @@ class SalvageConfig:
                  gold: InventoryMode = InventoryMode.SELL,
                  specials: InventoryMode = InventoryMode.DEPOSIT,
                  ):
-        self.white = white
-        self.blue = blue
-        self.purple = purple
-        self.gold = gold
+        self.white: InventoryMode = white
+        self.blue: InventoryMode = blue
+        self.purple: InventoryMode = purple
+        self.gold: InventoryMode = gold
+        self.specials: InventoryMode = specials
 
 # colors determine default action,
 #
@@ -93,23 +94,23 @@ class WeaponConfig:
                  q12: InventoryMode = InventoryMode.SELL,
                  q13: InventoryMode = InventoryMode.SELL,
                  specials: InventoryMode = InventoryMode.DEPOSIT,
-                 ):
-        self.white = white
-        self.blue = blue
-        self.purple = purple
-        self.gold = gold
-        self.green = green
-        self.q0 = q0
-        self.q5 = q5
-        self.q6 = q6
-        self.q7 = q7
-        self.q8 = q8
-        self.q9 = q9
-        self.q10 = q10
-        self.q11 = q11
-        self.q12 = q12
-        self.q13 = q13
-        self.specials = specials
+    ):
+        self.white: InventoryMode = white
+        self.blue: InventoryMode = blue
+        self.purple: InventoryMode = purple
+        self.gold: InventoryMode = gold
+        self.green: InventoryMode = green
+        self.q0: InventoryMode = q0
+        self.q5: InventoryMode = q5
+        self.q6: InventoryMode = q6
+        self.q7: InventoryMode = q7
+        self.q8: InventoryMode = q8
+        self.q9: InventoryMode = q9
+        self.q10: InventoryMode = q10
+        self.q11: InventoryMode = q11
+        self.q12: InventoryMode = q12
+        self.q13: InventoryMode = q13
+        self.specials: InventoryMode = specials
 
 
 class WeaponsConfig:
@@ -239,7 +240,11 @@ class InventoryUtils:
 
         return my_items
 
-    def _default_salvage_item(self, item_instance, salvage_config):
+    def _default_salvage_item(self, item_id, item_instance, salvage_config):
+        if item_instance is None:
+            item_instance = Item.item_instance(item_id)
+        if item_instance is None:
+            return InventoryMode.KEEP_DONT_IDENTIFY
         if item_instance.is_rarity_green:
             return InventoryMode.KEEP_DONT_IDENTIFY
         if item_instance.is_rarity_gold:
@@ -255,12 +260,13 @@ class InventoryUtils:
             item_id: int,
             item_instance
     ) -> InventoryMode:
-        print("Salvage Item detected")
+        ConsoleLog("InvUtil","Salvage Item detected")
         if item_instance is None:
             item_instance = Item.item_instance(item_id)
         if item_instance is None:
             return InventoryMode.KEEP_DONT_IDENTIFY
-        default_salvage_item = self._default_salvage_item(item_instance, salvage_config)
+
+        default_salvage_item = self._default_salvage_item(item_id, item_instance, salvage_config)
 
         if salvage_config.specials is not None:
             from Sources.Sasemoi.utils.inventory_utils import filter_valuable_weapon_type
@@ -270,8 +276,9 @@ class InventoryUtils:
                     filter_valuable_rune_type(item_id) or
                     filter_valuable_inscription_type(item_id)
             ):
-                print("!Special!")
+                ConsoleLog("InvUtil","Special")
                 return salvage_config.specials
+
         return default_salvage_item
 
     def _default_apply_action_for_weapon(
@@ -391,7 +398,7 @@ class InventoryUtils:
                 default_action = weapon_config.q7
 
             if self.is_maxed(item_id, item_instance, parsed_modifiers, item_type):
-                print(f"Item {item_id} is maxed")
+                ConsoleLog("InvUtil",f"Item {item_id} is maxed")
                 if parsed_modifiers.requirements == 8:
                     default_action = weapon_config.q8
                 if parsed_modifiers.requirements == 9:
@@ -405,7 +412,7 @@ class InventoryUtils:
                 if parsed_modifiers.requirements == 13:
                     default_action = weapon_config.q13
         else:
-            print("No item requirements known")
+            ConsoleLog("InvUtil","No item requirements known")
 
         # default rules
 
@@ -417,7 +424,7 @@ class InventoryUtils:
                     filter_valuable_rune_type(item_id) or
                     filter_valuable_inscription_type(item_id)
             ):
-                print("!Special!")
+                ConsoleLog("InvUtil","!Special!")
                 return weapon_config.specials
 
         return default_action

@@ -173,10 +173,9 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
             PyImGui.text_colored("Configuration:", (1.0, 1.0, 0.0, 1.0))  # Yellow
             PyImGui.separator()
 
-            if PyImGui.begin_table("inventory_config", 3, int(PyImGui.TableFlags.Borders | PyImGui.TableFlags.RowBg)):
+            if PyImGui.begin_table("inventory_config", 2, int(PyImGui.TableFlags.Borders | PyImGui.TableFlags.RowBg)):
                 PyImGui.table_setup_column("Item name")
                 PyImGui.table_setup_column("action_for_item")
-                PyImGui.table_setup_column("Maxed")
                 PyImGui.table_headers_row()
 
                 inventory_item_ids = self.inventory_utils.get_inventory_items(self.inventory_config)
@@ -187,7 +186,7 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
 
                     PyImGui.table_next_row()
                     PyImGui.table_next_column()
-                    name = GLOBAL_CACHE.Item.GetName(item_instance.item_id)
+                    name = item_instance.name
                     name = f"{name} #{item_instance.item_id}"
                     PyImGui.text(name)
                     PyImGui.text(str(self.describe_item(item_instance)))
@@ -222,7 +221,7 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
         # --- Construct name ---
         name_parts = []
 
-        name = GLOBAL_CACHE.Item.GetName(item_instance.item_id)
+        name = item_instance.name
         name_parts.append(f"{name} #{item_instance.item_id}")
 
         name_parts.append(str(item_instance.quantity))
