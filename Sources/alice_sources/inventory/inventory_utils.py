@@ -33,6 +33,7 @@ from Py4GWCoreLib.enums_src.Item_enums import ItemType
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
 from Sources.Sasemoi.utils.rune_quality_checker import item_has_valuable_rune
 from Sources.marks_sources.mods_parser import MatchedWeaponModInfo, MatchedRuneInfo, parse_modifiers, ModDatabase
+from Sources.oazix.CustomBehaviors.primitives import constants
 
 DEFAULT_ITEM_TYPE_BLOCK_LIST = [7, 17, 6, 3, 4, 44, 45, 10, 13, 20, 16, 29, 19, 34, 11, 33, 21, 8, 31, 43, 30, 255, 9]
 
@@ -245,13 +246,13 @@ class InventoryUtils:
             item_instance = Item.item_instance(item_id)
         if item_instance is None:
             return InventoryMode.KEEP_DONT_IDENTIFY
-        if item_instance.is_rarity_green:
+        if Item.Rarity.IsGreen(item_id):
             return InventoryMode.KEEP_DONT_IDENTIFY
-        if item_instance.is_rarity_gold:
+        if Item.Rarity.IsGold(item_id):
             return salvage_config.gold
-        if item_instance.is_rarity_purple:
+        if Item.Rarity.IsPurple(item_id):
             return salvage_config.purple
-        if item_instance.is_rarity_blue:
+        if Item.Rarity.IsBlue(item_id):
             return salvage_config.blue
         return salvage_config.white
 
@@ -260,7 +261,7 @@ class InventoryUtils:
             item_id: int,
             item_instance
     ) -> InventoryMode:
-        ConsoleLog("InvUtil","Salvage Item detected")
+        if constants.DEBUG: ConsoleLog("InvUtil","Salvage Item detected")
         if item_instance is None:
             item_instance = Item.item_instance(item_id)
         if item_instance is None:
@@ -276,7 +277,7 @@ class InventoryUtils:
                     filter_valuable_rune_type(item_id) or
                     filter_valuable_inscription_type(item_id)
             ):
-                ConsoleLog("InvUtil","Special")
+                if constants.DEBUG: ConsoleLog("InvUtil","Special")
                 return salvage_config.specials
 
         return default_salvage_item
@@ -290,13 +291,13 @@ class InventoryUtils:
             item_instance = Item.item_instance(item_id)
         if item_instance is None:
             return InventoryMode.KEEP_DONT_IDENTIFY
-        if item_instance.is_rarity_green:
+        if Item.Rarity.IsGreen(item_id):
             return weapon_config.green
-        if item_instance.is_rarity_gold:
+        if Item.Rarity.IsGold(item_id):
             return weapon_config.gold
-        if item_instance.is_rarity_purple:
+        if Item.Rarity.IsPurple(item_id):
             return weapon_config.purple
-        if item_instance.is_rarity_blue:
+        if Item.Rarity.IsBlue(item_id):
             return weapon_config.blue
         return weapon_config.white
 
@@ -379,6 +380,7 @@ class InventoryUtils:
             # Forget Me Not max value identifier
             if mod.GetIdentifier() == 10280 and mod.GetArg1() >= 19:
                 return InventoryMode.KEEP
+            # of the profession
             elif mod.GetIdentifier() == 10408:
                 return InventoryMode.KEEP
 
@@ -398,7 +400,7 @@ class InventoryUtils:
                 default_action = weapon_config.q7
 
             if self.is_maxed(item_id, item_instance, parsed_modifiers, item_type):
-                ConsoleLog("InvUtil",f"Item {item_id} is maxed")
+                if constants.DEBUG: ConsoleLog("InvUtil",f"Item {item_id} is maxed")
                 if parsed_modifiers.requirements == 8:
                     default_action = weapon_config.q8
                 if parsed_modifiers.requirements == 9:
@@ -412,7 +414,7 @@ class InventoryUtils:
                 if parsed_modifiers.requirements == 13:
                     default_action = weapon_config.q13
         else:
-            ConsoleLog("InvUtil","No item requirements known")
+            if constants.DEBUG: ConsoleLog("InvUtil","No item requirements known")
 
         # default rules
 
@@ -424,7 +426,7 @@ class InventoryUtils:
                     filter_valuable_rune_type(item_id) or
                     filter_valuable_inscription_type(item_id)
             ):
-                ConsoleLog("InvUtil","!Special!")
+                if constants.DEBUG: ConsoleLog("InvUtil","!Special!")
                 return weapon_config.specials
 
         return default_action
