@@ -30,12 +30,6 @@ from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_shared_mem
 # Create expandable sections for different UI panels
 project_root = PathLocator.get_custom_behaviors_root_directory()
 icon_size = 35
-default_dialog_string = "0x84"
-
-@staticmethod
-def set_dialog_id(dialog_string: str):
-    global default_dialog_string
-    default_dialog_string = dialog_string
 
 def draw_party_target_vertical_line() -> None:
     """Draw a vertical indicator for the Party Custom Target only:
@@ -81,7 +75,6 @@ def draw_party_target_vertical_line() -> None:
 
 @staticmethod
 def render():
-    global default_dialog_string
     PyImGui.text(f"[COMMON] Toggle party capabilities :")
 
     shared_data = CustomBehaviorWidgetMemoryManager().GetCustomBehaviorWidgetData()
@@ -100,7 +93,6 @@ def render():
         PyImGui.table_setup_column("FlagClear",    PyImGui.TableColumnFlags.WidthFixed,   46.0)
 
         PyImGui.table_next_row(PyImGui.TableRowFlags.NoFlag, 42.0)
-
 
         # All
         PyImGui.table_next_column()
@@ -258,12 +250,6 @@ def render():
             else:
                 if PyImGui.button(f"{IconsFontAwesome5.ICON_TRASH} ResetPartyCustomTarget | id:{shared_data.party_target_id}"):
                     CustomBehaviorParty().set_party_custom_target(None)
-
-            if CustomBehaviorParty().is_ready_for_action():
-                default_dialog_string = ImGui.input_text("Dialog Id", default_dialog_string, 0)
-
-                if PyImGui.button(f"{IconsFontAwesome5.ICON_CROSSHAIRS} Send Dialog"):
-                    send_dialog()
 
     PyImGui.separator()
 
@@ -702,26 +688,3 @@ def render():
     FlagPanel.render_overlay()
     FollowingPanel.render_overlay()
 
-
-def send_dialog():
-    global default_dialog_string
-    try:
-        dialog_id: int = int(default_dialog_string, 0)
-        account = send_dialog_for_all(default_dialog_string, dialog_id)
-    except Exception as e:
-        print(f"Well sending {default_dialog_string} failed {e}")
-        default_dialog_string = "0x84"
-
-@staticmethod
-def send_dialog_for_all(dialog_string: str, dialog_id: int):
-    print(f"Starting sending {default_dialog_string} as {dialog_id}")
-    target = Player.GetTargetID()
-    if target == 0:
-        print("No target to interact with.")
-    else:
-        sender_email = Player.GetAccountEmail()
-        accounts = GLOBAL_CACHE.ShMem.GetAllAccountData()
-        for account in accounts:
-            print(f"Ordering {account.AccountEmail} to send dialog {dialog_id} to target: {target}")
-            GLOBAL_CACHE.ShMem.SendMessage(sender_email, account.AccountEmail, SharedCommandType.SendDialogToTarget,
-                                           (target, dialog_id, 0, 0))

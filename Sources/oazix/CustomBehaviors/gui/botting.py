@@ -2,20 +2,81 @@ import Py4GW
 import PyImGui
 import os
 
+from Py4GWCoreLib import Player
 from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
 from Py4GWCoreLib.EnemyBlacklist import draw_blacklist_ui
 from Py4GWCoreLib.ImGui_src.IconsFontAwesome5 import IconsFontAwesome5
+from Py4GWCoreLib.enums_src.Multiboxing_enums import SharedCommandType
 from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
 from Sources.oazix.CustomBehaviors.PathLocator import PathLocator
 from Sources.oazix.CustomBehaviors.primitives.botting.botting_manager import BottingManager
 from Sources.oazix.CustomBehaviors.primitives.custom_behavior_loader import CustomBehaviorLoader
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
+from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
+import os
+from Py4GWCoreLib import IconsFontAwesome5, ImGui, PyImGui
+from Py4GWCoreLib.Overlay import Overlay
+
+from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
+from Py4GWCoreLib.Py4GWcorelib import Utils
+from Py4GWCoreLib.Map import Map
+from Py4GWCoreLib.Agent import Agent
+from Py4GWCoreLib.Player import Player
+from Py4GWCoreLib.enums import SharedCommandType
+from Py4GWCoreLib.enums_src.GameData_enums import ProfessionShort, ProfessionShort_Names
+from Sources.Nikon_Scripts import Enemies
+from Sources.oazix.CustomBehaviors.PathLocator import PathLocator
+from Sources.oazix.CustomBehaviors.gui.flag_panel.flag_panel import FlagPanel
+from Sources.oazix.CustomBehaviors.gui.flag_panel.flag_custom_grid_placement import FlagCustomGridPlacement
+from Sources.oazix.CustomBehaviors.gui.flag_panel.flag_backward_grid_placement import FlagBackwardGridPlacement
+from Sources.oazix.CustomBehaviors.gui.flag_panel.flag_stacked_placement import FlagStackedPlacement
+from Sources.oazix.CustomBehaviors.gui.following_panel.following_panel import FollowingPanel
+from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
+from Sources.oazix.CustomBehaviors.primitives import constants
+from Sources.oazix.CustomBehaviors.primitives.following_behavior_priority import FollowingBehaviorPriority
+from Sources.oazix.CustomBehaviors.primitives.custom_behavior_loader import CustomBehaviorLoader
+from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers, custom_behavior_helpers_party
+from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
+from Sources.oazix.CustomBehaviors.primitives.parties.party_command_contants import PartyCommandConstants
+from Sources.oazix.CustomBehaviors.primitives.parties.party_flagging_manager import PartyFlaggingManager
+from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_typology_color import UtilitySkillTypologyColor
+from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_shared_memory import CustomBehaviorWidgetMemoryManager
 
 # Global state for bot selection and control
 _selected_bot_index = 0
 _bot_scripts_cache = None
 _last_scan_time = 0
 _show_utility_skills_config = False
+
+default_dialog_string: str = "0x84"
+
+@staticmethod
+def set_dialog_id(dialog_string: str):
+    global default_dialog_string
+    default_dialog_string = dialog_string
+
+def send_dialog():
+    global default_dialog_string
+    try:
+        dialog_id: int = int(default_dialog_string, 0)
+        account = send_dialog_for_all(default_dialog_string, dialog_id)
+    except Exception as e:
+        print(f"Well sending {default_dialog_string} failed {e}")
+        default_dialog_string = "0x84"
+
+@staticmethod
+def send_dialog_for_all(dialog_string: str, dialog_id: int):
+    print(f"Starting sending {default_dialog_string} as {dialog_id}")
+    target = Player.GetTargetID()
+    if target == 0:
+        print("No target to interact with.")
+    else:
+        sender_email = Player.GetAccountEmail()
+        accounts = GLOBAL_CACHE.ShMem.GetAllAccountData()
+        for account in accounts:
+            print(f"Ordering {account.AccountEmail} to send dialog {dialog_id} ({dialog_string}) to target: {target}")
+            GLOBAL_CACHE.ShMem.SendMessage(sender_email, account.AccountEmail, SharedCommandType.SendDialogToTarget,
+                                           (target, dialog_id, 0, 0))
 
 def _scan_bot_scripts():
     """
@@ -52,7 +113,7 @@ def _scan_bot_scripts():
     return bot_scripts
 
 def render():
-    global _selected_bot_index
+    global _selected_bot_index, default_dialog_string
 
     if CustomBehaviorLoader()._botting_daemon_fsm is not None and CustomBehaviorLoader().custom_combat_behavior is not None:
         PyImGui.text(f"CustomBehavior FSM Management")
@@ -79,6 +140,13 @@ def render():
     _render_enemy_blacklist()
     _render_utility_skills_config()
     _render_bot_scripts_table()
+
+    if CustomBehaviorParty().is_ready_for_action():
+        default_dialog_string = ImGui.input_text("Dialog Id", default_dialog_string, 0)
+
+        if PyImGui.button(f"{IconsFontAwesome5.ICON_CROSSHAIRS} Send Dialog"):
+            from Sources.oazix.CustomBehaviors.gui.party import send_dialog
+            send_dialog()
 
 
 def _render_enemy_blacklist():
