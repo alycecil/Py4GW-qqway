@@ -11,7 +11,7 @@ from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, ItemArray, Routines, Range, M
 from Py4GWCoreLib.Pathing import AutoPathing
 from Py4GWCoreLib.Py4GWcorelib import Utils
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
-from Sources.alice_sources.inventory.inventory_utils import InventoryUtilsConfig, InventoryUtils, InventoryMode
+from .inventory_utils import InventoryUtilsConfig, InventoryUtils, InventoryMode
 from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
@@ -387,12 +387,18 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
             sell = self.get_items_to_sell(self.include_salvage_items())
             if len(sell) > 0:
                 ConsoleLog("MerchantRefillIfNeededUtility", f"get_items_to_sell = {sell}", Console.MessageType.Info)
-                # yield from Routines.Yield.Merchant.SellItems(sell)
+                yield from Routines.Yield.Merchant.SellItems(sell)
             else:
                 if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"Nothing to sell", Console.MessageType.Info)
         elif merchant_type == MerchantType.XUNLAI_CHEST:
             ConsoleLog("MerchantRefillIfNeededUtility", f"Opening Xunlai", Console.MessageType.Info)
-            pass
+
+            deposit = self.get_items_to_deposit()
+            if len(deposit) > 0:
+                ConsoleLog("MerchantRefillIfNeededUtility", f"get_items_to_deposit = {deposit}", Console.MessageType.Info)
+                yield from Routines.Yield.Items.DepositItems(deposit,constants.DEBUG)
+            else:
+                if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"Nothing to sell", Console.MessageType.Info)
         else:
             ConsoleLog("MerchantRefillIfNeededUtility", f"Unknown merchant type {merchant_type}", Console.MessageType.Info)
 
@@ -430,6 +436,11 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
 
         lock_key = self.generic_player_lock_key()
 
+        if not self.npc_visited[MerchantType.XUNLAI_CHEST]:
+            if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10):
+                return BehaviorResult.ACTION_SKIPPED
+            yield from self._visit(MerchantType.XUNLAI_CHEST)
+            return BehaviorResult.ACTION_PERFORMED
         if not self.npc_visited[MerchantType.MERCHANT]:
             if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10) == False:
                 return BehaviorResult.ACTION_SKIPPED
@@ -449,9 +460,6 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
             if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10) == False:
                 return BehaviorResult.ACTION_SKIPPED
             yield from self._visit(MerchantType.CRAFTING_MATERIAL_TRADER)
-            return BehaviorResult.ACTION_PERFORMED
-        if not self.npc_visited[MerchantType.XUNLAI_CHEST]:
-            yield from self._visit(MerchantType.XUNLAI_CHEST)
             return BehaviorResult.ACTION_PERFORMED
 
         return BehaviorResult.ACTION_SKIPPED

@@ -14,7 +14,7 @@ from Py4GWCoreLib.enums_src.Item_enums import Bags, Rarity
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
 from Py4GWCoreLib.py4gwcorelib_src.ActionQueue import ActionQueueManager
 from Py4GWCoreLib.py4gwcorelib_src.Console import ConsoleLog
-from Sources.alice_sources.inventory.inventory_utils import InventoryUtilsConfig, InventoryUtils, InventoryMode
+from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryUtilsConfig, InventoryUtils, InventoryMode
 from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
@@ -217,8 +217,9 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
             PyImGui.separator()
 
             if PyImGui.begin_table("inventory_config", 2, int(PyImGui.TableFlags.Borders | PyImGui.TableFlags.RowBg)):
-                PyImGui.table_setup_column("Item name")
-                PyImGui.table_setup_column("action_for_item")
+                PyImGui.table_setup_column("Item name", PyImGui.TableColumnFlags.WidthStretch)
+                PyImGui.table_setup_column("action_for_item", PyImGui.TableColumnFlags.WidthFixed, 150)
+
                 PyImGui.table_headers_row()
 
                 inventory_item_ids = self.inventory_utils.get_inventory_items(self.inventory_config)
@@ -249,8 +250,8 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
             PyImGui.separator()
 
         if PyImGui.begin_table("inventory_config_salvage", 2, int(PyImGui.TableFlags.Borders | PyImGui.TableFlags.RowBg)):
-            PyImGui.table_setup_column("Item name")
-            PyImGui.table_setup_column("action_for_item")
+            PyImGui.table_setup_column("Item name", PyImGui.TableColumnFlags.WidthStretch)
+            PyImGui.table_setup_column("action_for_item", PyImGui.TableColumnFlags.WidthFixed, 150)
             PyImGui.table_headers_row()
 
             inventory_item_ids = self.get_salvageable_items()

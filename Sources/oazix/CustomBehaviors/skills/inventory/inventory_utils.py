@@ -366,11 +366,11 @@ class InventoryUtils:
         if parsed_modifiers is None:
             prefix, suffix, inherent, parsed_modifiers = self.get_mods_from_item(item_instance)
 
-        res : bool = False
+        res : bool | None = None
 
         if item_type == ItemType.Wand or item_type == ItemType.Staff:
             min_dmg, max_dmg = parsed_modifiers.damage
-            res = min_dmg >= 11 and max_dmg >= 22
+            res = min_dmg >= 11 and max_dmg >= 21 # i like 21 wands too
 
         if item_type == ItemType.Axe:
             min_dmg, max_dmg = parsed_modifiers.damage
@@ -406,17 +406,23 @@ class InventoryUtils:
             max_armor, min_armor = parsed_modifiers.shield_armor
             res = (max_armor >= 16 or min_armor >= 16)
 
-        if not res:
-            res = len(parsed_modifiers.max_runes) > 0 or len(parsed_modifiers.max_weapon_mods) > 0
-            if res:
+        if item_type == ItemType.Offhand:
+            return True
+
+        if res is None or res:
+            res2 = len(parsed_modifiers.max_runes) > 0 or len(parsed_modifiers.max_weapon_mods) > 0
+            if res2:
                 if constants.DEBUG: ConsoleLog("InvUtil",f"Item {item_id} is not normal max of {item_type} but has max mods, marking true.")
                 return True
 
-        if res:
+        if res is not None and res:
             return res
 
-        if constants.DEBUG: ConsoleLog("InvUtil",f"Item {item_id} is of unknown item type: {item_type}")
-        return True
+        if res is None:
+            if constants.DEBUG: ConsoleLog("InvUtil",f"Item {item_id} is of unknown item type: {item_type}")
+            return True
+
+        return False
 
     def _apply_action_for_weapon(
             self, weapon_config: WeaponConfig,

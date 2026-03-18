@@ -115,8 +115,9 @@ def main():
             add_row("Stack Size", str(item.quantity) if item else "N/A")
 
             try:
-                from Sources.alice_sources.inventory.inventory_utils import InventoryUtilsConfig, InventoryUtils
                 from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
+                from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryUtilsConfig
+                from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryUtils
 
                 inventory_config: InventoryUtilsConfig = InventoryUtilsConfig()
                 data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")
@@ -129,7 +130,6 @@ def main():
                 add_row("Inventory action", str(action) if action else "N/A")
             except Exception as e:
                 add_row("Inventory action", f"Error={e}")
-
                 
             PyImGui.end_table()
         style.CellPadding.pop_style_var_direct()
