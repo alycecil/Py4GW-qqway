@@ -63,6 +63,13 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
         lock_key = self.generic_player_lock_key()
         CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10)
 
+        data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")
+        if data is not None:
+            from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import string_to_dict
+            self.inventory_config: InventoryUtilsConfig = string_to_dict(data)
+        else:
+            self.inventory_config: InventoryUtilsConfig = InventoryUtilsConfig()
+
         yield
 
     def get_salvageable_items(
