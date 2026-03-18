@@ -70,6 +70,8 @@ def bot_routine(bot: Botting) -> None:
     bot.States.AddHeader(BOT_NAME)
     bot.Templates.Multibox_Aggressive()
     bot.Templates.Routines.PrepareForFarm(map_id_to_travel=OUTPOST_TO_TRAVEL)
+
+    bot.Wait.ForTime(60000)
     
     bot.Party.SetHardMode(True)
     bot.Move.XYAndExitMap(-5490, 13672, 200) # Mount Qinkai
