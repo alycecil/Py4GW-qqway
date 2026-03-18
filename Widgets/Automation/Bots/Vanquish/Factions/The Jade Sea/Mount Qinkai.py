@@ -58,7 +58,7 @@ Vanquish_Path:list[tuple[float, float]] = [
     ]
 
 bot = Botting(BOT_NAME,
-              upkeep_honeycomb_active=True)
+              upkeep_honeycomb_active=False)
                 
 def bot_routine(bot: Botting) -> None:
     global Vanquish_Path
