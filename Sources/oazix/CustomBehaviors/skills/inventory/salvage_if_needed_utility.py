@@ -82,16 +82,15 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
         my_items = []
         inventory_item_ids = self.inventory_utils.get_inventory_items(self.inventory_utils_config)
         for item_id in inventory_item_ids:
-            item_instance = Item.item_instance(item_id)
 
             if Item.Rarity.IsGreen(item_id):
                 continue
 
             is_white = Item.Rarity.IsWhite(item_id)
 
-            if is_white or item_instance.is_identified:
-                if item_instance.is_salvageable:
-                    action_for_item: InventoryMode = self.get_action_for_item(item_id, item_instance)
+            if is_white or Item.Usage.IsIdentified(item_id):
+                if Item.Usage.IsSalvageable(item_id):
+                    action_for_item: InventoryMode = self.get_action_for_item(item_id)
                     if action_for_item == InventoryMode.SALVAGE:
                         my_items.append(item_id)
                     elif include_merchant_items and (action_for_item == InventoryMode.SELL_DONT_IDENTIFY or action_for_item == InventoryMode.SELL):
@@ -153,47 +152,50 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
         lock_key = self.generic_player_lock_key()
 
         if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10):
-            ConsoleLog("SalvageIfNeededUtility", "Could not get lock")
+            if constants.DEBUG: ConsoleLog("SalvageIfNeededUtility", "Could not get lock")
             yield
             return BehaviorResult.ACTION_SKIPPED
 
-        ConsoleLog("SalvageIfNeededUtility", "Got lock")
+        if constants.DEBUG: ConsoleLog("SalvageIfNeededUtility", "Got lock")
         inventory_item_ids = self.get_salvageable_items()
 
         if inventory_item_ids is None or len(inventory_item_ids) == 0:
-            ConsoleLog("SalvageIfNeededUtility", "Nothing to salvage")
+            if constants.DEBUG: ConsoleLog("SalvageIfNeededUtility", "Nothing to salvage")
             yield
             return BehaviorResult.ACTION_SKIPPED
 
         random.shuffle(inventory_item_ids)
 
-        ConsoleLog("Salvager",f"Salvagables: {inventory_item_ids}")
+        if constants.DEBUG: ConsoleLog("Salvager",f"Salvagables: {inventory_item_ids}")
 
         salvaged_something = False
+        salvage_me = []
 
         for item_id in inventory_item_ids:
-            item_instance = Item.item_instance(item_id)
 
             require_materials_confirmation = Item.Rarity.IsPurple(item_id) or Item.Rarity.IsGold(item_id)
 
             if require_materials_confirmation:
-                ConsoleLog("Salvager",f"I want to salvage {self.describe_item(item_instance)} but it requires confirmation and I am a scaredy bot.")
+                if constants.DEBUG: ConsoleLog("Salvager",f"I want to salvage {self.describe_item(item_id)} but it requires confirmation and I am a scaredy bot.")
                 continue
             else:
                 salvage_kit = Inventory.GetFirstSalvageKit(use_lesser=True, model_id=ModelID.Salvage_Kit.value)
                 if salvage_kit == 0:
-                    ConsoleLog("AutoSalvage", "No Salvage Kit found in inventory.",)
+                    if constants.DEBUG: ConsoleLog("AutoSalvage", "No Salvage Kit found in inventory.",)
                     break
 
                 # ActionQueueManager().AddAction("ACTION", Inventory.SalvageItem, item_id, salvage_kit)
 
-                ConsoleLog("Salvager",f"I want to salvage {self.describe_item(item_instance)}")
+                if constants.DEBUG: ConsoleLog("Salvager",f"I want to salvage {self.describe_item(item_id)}")
 
-                yield from Routines.Yield.Items.SalvageItems([item_id], log=constants.DEBUG)
+                salvage_me.append(item_id)
+
                 salvaged_something = True
                 break
 
         if salvaged_something:
+            ConsoleLog("Salvager",f"Salvaging {len(inventory_item_ids)} items")
+            yield from Routines.Yield.Items.SalvageItems(salvage_me, log=constants.DEBUG)
             yield
             return BehaviorResult.ACTION_PERFORMED
         else:
@@ -224,22 +226,20 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
                 inventory_item_ids = self.inventory_utils.get_inventory_items(self.inventory_utils_config)
 
                 for item_id in inventory_item_ids:
-                    item_instance = Item.item_instance(item_id)
-                    action_for_item: InventoryMode = self.get_action_for_item(item_id, item_instance)
+                    action_for_item: InventoryMode = self.get_action_for_item(item_id)
 
                     PyImGui.table_next_row()
                     PyImGui.table_next_column()
-                    name = item_instance.name
-                    name = f"{name} #{item_instance.item_id}"
+                    name = f"Item #{item_id}"
                     PyImGui.text(name)
-                    PyImGui.text(str(self.describe_item(item_instance)))
+                    PyImGui.text(str(self.describe_item(item_id)))
 
                     PyImGui.table_next_column()
                     if action_for_item == InventoryMode.SALVAGE:
                         PyImGui.text_colored("Salvage", (1.0, 1.0, 0.0, 1.0))  # Yellow
                         # TODO Button
                     else:
-                        PyImGui.text(str(action_for_item))
+                        PyImGui.text(str(action_for_item.name))
 
                 PyImGui.end_table()
 
@@ -256,15 +256,13 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
             inventory_item_ids = self.get_salvageable_items()
 
             for item_id in inventory_item_ids:
-                item_instance = Item.item_instance(item_id)
-                action_for_item: InventoryMode = self.get_action_for_item(item_id, item_instance)
+                action_for_item: InventoryMode = self.get_action_for_item(item_id)
 
                 PyImGui.table_next_row()
                 PyImGui.table_next_column()
-                name = item_instance.name
-                name = f"{name} #{item_instance.item_id}"
+                name = f"Item #{item_id}"
                 PyImGui.text(name)
-                PyImGui.text(str(self.describe_item(item_instance)))
+                PyImGui.text(str(self.describe_item(item_id)))
 
                 PyImGui.table_next_column()
                 if action_for_item == InventoryMode.SALVAGE:
@@ -275,8 +273,8 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
 
             PyImGui.end_table()
 
-    def get_action_for_item(self, item_id, item_instance) -> InventoryMode:
-        action_for_item = self.inventory_utils.get_action_for_item(self.inventory_utils_config, item_id, item_instance)
+    def get_action_for_item(self, item_id) -> InventoryMode:
+        action_for_item = self.inventory_utils.get_action_for_item(self.inventory_utils_config, item_id)
 
         if Inventory.GetFreeSlotCount() <= 2:
             if (action_for_item == InventoryMode.SELL_DONT_IDENTIFY or
@@ -285,32 +283,24 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
 
         return action_for_item
 
-    def describe_item(self, item_instance) -> str:
-        prefix, suffix, inherent, parsed_modifiers = self.inventory_utils.get_mods_from_item(item_instance)
+    def describe_item(self, item_id) -> str:
+        prefix, suffix, inherent, parsed_modifiers = self.inventory_utils.get_mods_from_item(item_id)
 
         # --- Construct name ---
         name_parts = []
 
-        name = item_instance.name
-        name_parts.append(f"{name} #{item_instance.item_id}")
+        name = GLOBAL_CACHE.Item.GetName(item_id)
+        name_parts.append(f"{name} #{item_id}")
 
-        name_parts.append(str(item_instance.quantity))
+        name_parts.append(str(GLOBAL_CACHE.Item.Properties.GetQuantity(item_id)))
 
-        blocklisted = item_instance.model_id in self.inventory_utils_config.block_list_model_id
+        model_id = GLOBAL_CACHE.Item.GetModelID(item_id)
+        blocklisted = model_id in self.inventory_utils_config.block_list_model_id
         postFix = " (Blocklisted)" if blocklisted else ""
-        name_parts.append(f"model={item_instance.model_id}{postFix}")
-
-        if prefix:
-            name_parts.append(f'| {prefix}')
-
-        if suffix:
-            name_parts.append(f"| {suffix}")
-
-        if inherent:
-            name_parts.append(f"| {inherent}")
+        name_parts.append(f"model={model_id}{postFix}")
 
         name_parts.append(parsed_modifiers.summary())
 
-        return " \n".join(name_parts)
+        return "\r\n".join(name_parts)
 
 

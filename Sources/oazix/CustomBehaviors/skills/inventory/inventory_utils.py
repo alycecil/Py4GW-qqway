@@ -235,19 +235,20 @@ class InventoryUtils:
 
             # Loop over items
             for item_id in item_array:
-                item_instance = Item.item_instance(item_id)
 
-                if item_instance.is_customized or Item.Properties.IsCustomized(item_id):
+                if Item.Properties.IsCustomized(item_id):
                     # dont touch this stuff, the player loves it.
                     continue
 
-                if item_instance.item_type.ToInt() in inventory_config.block_list_item_type:
+                item_type_to_int, item1_type_name = GLOBAL_CACHE.Item.GetItemType(item_id)
+
+                if item_type_to_int in inventory_config.block_list_item_type:
                     continue
 
-                if item_instance.model_id in inventory_config.block_list_model_id:
+                if GLOBAL_CACHE.Item.GetModelID(item_id) in inventory_config.block_list_model_id:
                     continue
 
-                slot = item_instance.slot
+                slot = GLOBAL_CACHE.Item.GetSlot(item_id)
                 if (bag_id, slot) in slot_blacklist:
                     continue
 
@@ -255,10 +256,9 @@ class InventoryUtils:
 
         return my_items
 
-    def _default_salvage_item(self, item_id, item_instance, salvage_config):
-        if item_instance is None:
-            item_instance = Item.item_instance(item_id)
-        if item_instance is None:
+    def _default_salvage_item(self, item_id, salvage_config):
+        item_type_to_int, item1_type_name = GLOBAL_CACHE.Item.GetItemType(item_id)
+        if item_type_to_int == 0:
             return InventoryMode.KEEP_DONT_IDENTIFY
         if Item.Rarity.IsGreen(item_id):
             return InventoryMode.KEEP_DONT_IDENTIFY
@@ -272,16 +272,13 @@ class InventoryUtils:
 
     def _apply_action_for_salvage(
             self, salvage_config: SalvageConfig,
-            item_id: int,
-            item_instance
+            item_id: int
     ) -> InventoryMode:
-        if constants.DEBUG: ConsoleLog("InvUtil","Salvage Item detected")
-        if item_instance is None:
-            item_instance = Item.item_instance(item_id)
-        if item_instance is None:
+        item_type_to_int, item1_type_name = GLOBAL_CACHE.Item.GetItemType(item_id)
+        if item_type_to_int == 0:
             return InventoryMode.KEEP_DONT_IDENTIFY
 
-        default_salvage_item = self._default_salvage_item(item_id, item_instance, salvage_config)
+        default_salvage_item = self._default_salvage_item(item_id, salvage_config)
 
         if salvage_config.specials is not None:
             from Sources.Sasemoi.utils.inventory_utils import filter_valuable_weapon_type
@@ -298,13 +295,12 @@ class InventoryUtils:
 
     def _default_apply_action_for_weapon(
             self, weapon_config: WeaponConfig,
-            item_id: int,
-            item_instance
+            item_id: int
     ) -> InventoryMode:
-        if item_instance is None:
-            item_instance = Item.item_instance(item_id)
-        if item_instance is None:
+        item_type_to_int, item1_type_name = GLOBAL_CACHE.Item.GetItemType(item_id)
+        if item_type_to_int == 0:
             return InventoryMode.KEEP_DONT_IDENTIFY
+
         if Item.Rarity.IsGreen(item_id):
             return weapon_config.green
         if Item.Rarity.IsGold(item_id):
@@ -315,8 +311,9 @@ class InventoryUtils:
             return weapon_config.blue
         return weapon_config.white
 
-    def get_mods_from_item(self, item) -> tuple[str | None, str | None, str | None, ParsedModifierResult]:
+    def get_mods_from_item(self, item_id) -> tuple[str | None, str | None, str | None, ParsedModifierResult]:
         modifiers = []
+        item = Item.item_instance(item_id)
         for mod in item.modifiers:
             modifiers.append(
                 [
@@ -326,10 +323,11 @@ class InventoryUtils:
                 ]
             )
         # 2. Parse any item's raw modifiers
+        item_type_to_int, item1_type_name = GLOBAL_CACHE.Item.GetItemType(item_id)
         result: ParsedModifierResult = parse_modifiers(
             modifiers=modifiers,
-            item_type=item.item_type.ToInt(),
-            model_id=item.model_id,
+            item_type=item_type_to_int,
+            model_id=GLOBAL_CACHE.Item.GetModelID(item_id),
             db=self.MOD_DB,
         )
 
@@ -350,21 +348,20 @@ class InventoryUtils:
         elif result.prefix and isinstance(result.suffix, MatchedRuneInfo):
             suffix = result.suffix.rune.name
 
-        return (prefix, suffix, inherent, result)
+        return prefix, suffix, inherent, result
 
     def is_maxed(
             self, item_id,
-            item_instance,
             parsed_modifiers: ParsedModifierResult,
             item_type: ItemType
     ):
-        if item_instance is None:
-            item_instance = Item.item_instance(item_id)
-        if item_instance is None:
-            return InventoryMode.KEEP_DONT_IDENTIFY
+
+        item_type_to_int, item1_type_name = GLOBAL_CACHE.Item.GetItemType(item_id)
+        if item_type_to_int == 0:
+            return True
 
         if parsed_modifiers is None:
-            prefix, suffix, inherent, parsed_modifiers = self.get_mods_from_item(item_instance)
+            prefix, suffix, inherent, parsed_modifiers = self.get_mods_from_item(item_id)
 
         res : bool | None = None
 
@@ -427,21 +424,26 @@ class InventoryUtils:
     def _apply_action_for_weapon(
             self, weapon_config: WeaponConfig,
             item_id: int,
-            item_instance,
             item_type: ItemType
     ) -> InventoryMode:
-        if item_instance is None:
-            item_instance = Item.item_instance(item_id)
-        if item_instance is None:
+        item_type_to_int, item1_type_name = GLOBAL_CACHE.Item.GetItemType(item_id)
+        if item_type_to_int == 0:
             return InventoryMode.KEEP_DONT_IDENTIFY
-        default_action = self._default_apply_action_for_weapon(weapon_config, item_id, item_instance)
-        prefix, suffix, inherent, parsed_modifiers = self.get_mods_from_item(item_instance)
+
+        default_action = self._default_apply_action_for_weapon(weapon_config, item_id)
+        prefix, suffix, inherent, parsed_modifiers = self.get_mods_from_item(item_id)
 
         if parsed_modifiers.is_highly_salvageable:  # todo make configure-able
+            if constants.DEBUG: ConsoleLog("InvUtil",f"is_highly_salvageable #{item_id}")
             default_action = InventoryMode.SALVAGE
         if parsed_modifiers.has_increased_value:  # todo make configure-able
+            if constants.DEBUG: ConsoleLog("InvUtil",f"has_increased_value #{item_id}")
             default_action = InventoryMode.SELL
 
+        item_instance = Item.item_instance(item_id)
+        if item_instance is None:
+            if constants.DEBUG: ConsoleLog("InvUtil",f"no item instance, the item is probably already gone but lets not freak out #{item_id}")
+            return InventoryMode.KEEP_DONT_IDENTIFY
         for mod in item_instance.modifiers:
             # Forget Me Not max value identifier
             if mod.GetIdentifier() == 10280 and mod.GetArg1() >= 19:
@@ -465,7 +467,7 @@ class InventoryUtils:
                 # todo check max
                 default_action = weapon_config.q7
 
-            if self.is_maxed(item_id, item_instance, parsed_modifiers, item_type):
+            if self.is_maxed(item_id, parsed_modifiers, item_type):
                 if constants.DEBUG: ConsoleLog("InvUtil",f"Item {item_id} is maxed")
                 if parsed_modifiers.requirements == 8:
                     default_action = weapon_config.q8
@@ -501,49 +503,47 @@ class InventoryUtils:
             self,
             inventory_config: InventoryUtilsConfig,
             item_id: int,
-            item_instance,
             item_type: ItemType
     ) -> InventoryMode:
 
         if item_type == ItemType.Salvage:
-            return self._apply_action_for_salvage(inventory_config.salvage_config, item_id, item_instance)
+            return self._apply_action_for_salvage(inventory_config.salvage_config, item_id)
 
         if item_type == ItemType.Axe:
-            return self._apply_action_for_weapon(inventory_config.weapons_config.axe, item_id, item_instance, item_type)
+            return self._apply_action_for_weapon(inventory_config.weapons_config.axe, item_id, item_type)
         if item_type == ItemType.Bow:
-            return self._apply_action_for_weapon(inventory_config.weapons_config.bow, item_id, item_instance, item_type)
+            return self._apply_action_for_weapon(inventory_config.weapons_config.bow, item_id, item_type)
         if item_type == ItemType.Offhand:
-            return self._apply_action_for_weapon(inventory_config.weapons_config.offhand, item_id, item_instance, item_type)
+            return self._apply_action_for_weapon(inventory_config.weapons_config.offhand, item_id, item_type)
         if item_type == ItemType.Hammer:
-            return self._apply_action_for_weapon(inventory_config.weapons_config.hammer, item_id, item_instance, item_type)
+            return self._apply_action_for_weapon(inventory_config.weapons_config.hammer, item_id, item_type)
         if item_type == ItemType.Wand:
-            return self._apply_action_for_weapon(inventory_config.weapons_config.wand, item_id, item_instance, item_type)
+            return self._apply_action_for_weapon(inventory_config.weapons_config.wand, item_id, item_type)
         if item_type == ItemType.Shield:
-            return self._apply_action_for_weapon(inventory_config.weapons_config.shield, item_id, item_instance, item_type)
+            return self._apply_action_for_weapon(inventory_config.weapons_config.shield, item_id, item_type)
         if item_type == ItemType.Staff:
-            return self._apply_action_for_weapon(inventory_config.weapons_config.staff, item_id, item_instance, item_type)
+            return self._apply_action_for_weapon(inventory_config.weapons_config.staff, item_id, item_type)
         if item_type == ItemType.Sword:
-            return self._apply_action_for_weapon(inventory_config.weapons_config.sword, item_id, item_instance, item_type)
+            return self._apply_action_for_weapon(inventory_config.weapons_config.sword, item_id, item_type)
         if item_type == ItemType.Daggers:
-            return self._apply_action_for_weapon(inventory_config.weapons_config.daggers, item_id, item_instance, item_type)
+            return self._apply_action_for_weapon(inventory_config.weapons_config.daggers, item_id, item_type)
         if item_type == ItemType.Scythe:
-            return self._apply_action_for_weapon(inventory_config.weapons_config.scythe, item_id, item_instance, item_type)
+            return self._apply_action_for_weapon(inventory_config.weapons_config.scythe, item_id, item_type)
         if item_type == ItemType.Spear:
-            return self._apply_action_for_weapon(inventory_config.weapons_config.spear, item_id, item_instance, item_type)
+            return self._apply_action_for_weapon(inventory_config.weapons_config.spear, item_id, item_type)
 
         return InventoryMode.KEEP_DONT_IDENTIFY
 
     def get_action_for_item(
             self,
             inventory_config: InventoryUtilsConfig,
-            item_id: int,
-            item_instance
+            item_id: int
     ) -> InventoryMode:
         # Strict types
-        if item_instance.model_id in inventory_config.block_list_model_id:
+        if GLOBAL_CACHE.Item.GetModelID(item_id) in inventory_config.block_list_model_id:
             return InventoryMode.KEEP_DONT_IDENTIFY
 
-        item_type_to_int = item_instance.item_type.ToInt()
+        item_type_to_int, item1_type_name = GLOBAL_CACHE.Item.GetItemType(item_id)
         if item_type_to_int in inventory_config.block_list_item_type:
             return InventoryMode.KEEP_DONT_IDENTIFY
 
@@ -568,7 +568,7 @@ class InventoryUtils:
             ItemType.Spear,
         ]:
             if item_type_to_int == item_type:
-                return self._get_action_for_item(inventory_config, item_id, item_instance, item_type)
+                return self._get_action_for_item(inventory_config, item_id, item_type)
 
         # I dunno what this is
         return InventoryMode.KEEP_DONT_IDENTIFY

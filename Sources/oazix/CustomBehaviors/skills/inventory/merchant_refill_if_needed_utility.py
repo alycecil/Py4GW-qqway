@@ -27,7 +27,6 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base i
 from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_execution_strategy import UtilitySkillExecutionStrategy
 from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_typology import UtilitySkillTypology
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
-from Widgets.Coding.Py4GW_DEMO import item_id
 
 
 class MerchantType(Enum):
@@ -183,8 +182,8 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         if len(agent_ids) == 0: return None
         return agent_ids[0]
 
-    def get_action_for_item(self, item_id, item_instance) -> InventoryMode:
-        action_for_item = self.inventory_utils.get_action_for_item(self.inventory_utils_config, item_id, item_instance)
+    def get_action_for_item(self, item_id) -> InventoryMode:
+        action_for_item = self.inventory_utils.get_action_for_item(self.inventory_utils_config, item_id)
 
         if Inventory.GetFreeSlotCount() <= 2:
             if (action_for_item == InventoryMode.SELL_DONT_IDENTIFY or
@@ -206,12 +205,8 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         inventory_item_ids = self.inventory_utils.get_inventory_items(self.inventory_utils_config)
         if constants.DEBUG: ConsoleLog("get_items_to_deposit", f"Inventory List filtered = {inventory_item_ids}", Console.MessageType.Info)
         for my_item_id in inventory_item_ids:
-            item_instance = Item.item_instance(my_item_id)
 
-            if Item.Rarity.IsGreen(my_item_id):
-                continue
-
-            action_for_item: InventoryMode = self.inventory_utils.get_action_for_item(self.inventory_utils_config, my_item_id, item_instance)
+            action_for_item: InventoryMode = self.inventory_utils.get_action_for_item(self.inventory_utils_config, my_item_id)
             if action_for_item == InventoryMode.DEPOSIT:
                 my_items.append(my_item_id)
             else:
@@ -223,7 +218,6 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         my_items = []
         inventory_item_ids = self.inventory_utils.get_inventory_items(self.inventory_utils_config)
         for item_id in inventory_item_ids:
-            item_instance = Item.item_instance(item_id)
 
             if Item.Rarity.IsGreen(item_id):
                 continue
@@ -232,8 +226,8 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
             is_blue = Item.Rarity.IsBlue(item_id)
 
             if is_white or is_blue:
-                if item_instance.value > 0:
-                    action_for_item: InventoryMode = self.inventory_utils.get_action_for_item(self.inventory_utils_config, item_id, item_instance)
+                if GLOBAL_CACHE.Item.Properties.GetValue(item_id) > 0:
+                    action_for_item: InventoryMode = self.inventory_utils.get_action_for_item(self.inventory_utils_config, item_id)
                     if action_for_item == InventoryMode.SELL_DONT_IDENTIFY:
                         my_items.append(item_id)
                     if action_for_item == InventoryMode.SELL:
@@ -353,7 +347,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
 
         lock_key = self._lock_key(target_agent_id)
         visit_duration_in_seconds = self.visit_duration_in_seconds_config[merchant_type]
-        if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=visit_duration_in_seconds) == False:
+        if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key,timeout_seconds=visit_duration_in_seconds):
             ConsoleLog("MerchantRefillIfNeededUtility", f"Merchant Locked for Player, wait {visit_duration_in_seconds} seconds", Console.MessageType.Info)
             return
 
@@ -455,22 +449,22 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
             yield from self._visit(MerchantType.XUNLAI_CHEST)
             return BehaviorResult.ACTION_PERFORMED
         if not self.npc_visited[MerchantType.MERCHANT]:
-            if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10) == False:
+            if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10):
                 return BehaviorResult.ACTION_SKIPPED
             yield from self._visit(MerchantType.MERCHANT)
             return BehaviorResult.ACTION_PERFORMED
         if not self.npc_visited[MerchantType.RUNE_TRADER]:
-            if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10) == False:
+            if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10):
                 return BehaviorResult.ACTION_SKIPPED
             yield from self._visit(MerchantType.RUNE_TRADER)
             return BehaviorResult.ACTION_PERFORMED
         if not self.npc_visited[MerchantType.RARE_MATERIAL_TRADER]:
-            if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10) == False:
+            if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10):
                 return BehaviorResult.ACTION_SKIPPED
             yield from self._visit(MerchantType.RARE_MATERIAL_TRADER)
             return BehaviorResult.ACTION_PERFORMED
         if not self.npc_visited[MerchantType.CRAFTING_MATERIAL_TRADER]:
-            if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10) == False:
+            if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10):
                 return BehaviorResult.ACTION_SKIPPED
             yield from self._visit(MerchantType.CRAFTING_MATERIAL_TRADER)
             return BehaviorResult.ACTION_PERFORMED
@@ -583,15 +577,13 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
             inventory_item_ids = self.get_items_to_deposit()
 
             for inv_item_id in inventory_item_ids:
-                item_instance = Item.item_instance(inv_item_id)
-                action_for_item: InventoryMode = self.get_action_for_item(inv_item_id, item_instance)
+                action_for_item: InventoryMode = self.get_action_for_item(inv_item_id)
 
                 PyImGui.table_next_row()
                 PyImGui.table_next_column()
-                name = item_instance.name
-                name = f"{name} #{inv_item_id}"
+                name = f"Item #{inv_item_id}"
                 PyImGui.text(name)
-                PyImGui.text(str(self.describe_item(item_instance)))
+                PyImGui.text(str(self.describe_item(inv_item_id)))
 
                 PyImGui.table_next_column()
                 PyImGui.text_colored("Deposit", (1.0, 1.0, 0.0, 1.0))  # Yellow
@@ -599,44 +591,32 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
             inventory_item_ids = self.get_items_to_sell(self.include_salvage_items())
 
             for inv_item_id in inventory_item_ids:
-                item_instance = Item.item_instance(inv_item_id)
-                action_for_item: InventoryMode = self.get_action_for_item(inv_item_id, item_instance)
+                action_for_item: InventoryMode = self.get_action_for_item(inv_item_id)
 
                 PyImGui.table_next_row()
                 PyImGui.table_next_column()
-                name = item_instance.name
-                name = f"{name} #{inv_item_id}"
+                name = f"Item #{inv_item_id}"
                 PyImGui.text(name)
-                PyImGui.text(str(self.describe_item(item_instance)))
+                PyImGui.text(str(self.describe_item(inv_item_id)))
 
                 PyImGui.table_next_column()
                 PyImGui.text_colored("Sell", (1.0, 1.0, 0.0, 1.0))  # Yellow~
 
             PyImGui.end_table()
 
-    def describe_item(self, item_instance) -> str:
-        prefix, suffix, inherent, parsed_modifiers = self.inventory_utils.get_mods_from_item(item_instance)
+    def describe_item(self, item_id) -> str:
+        prefix, suffix, inherent, parsed_modifiers = self.inventory_utils.get_mods_from_item(item_id)
 
         # --- Construct name ---
         name_parts = []
 
-        name = item_instance.name
-        name_parts.append(f"{name} #{item_instance.item_id}")
+        name = GLOBAL_CACHE.Item.GetName(item_id)
+        name_parts.append(f"{name} #{item_id}")
 
-        name_parts.append(str(item_instance.quantity))
-
-        blocklisted = item_instance.model_id in self.inventory_utils_config.block_list_model_id
+        model_id = GLOBAL_CACHE.Item.GetModelID(item_id)
+        blocklisted = model_id in self.inventory_utils_config.block_list_model_id
         postFix = " (Blocklisted)" if blocklisted else ""
-        name_parts.append(f"model={item_instance.model_id}{postFix}")
-
-        if prefix:
-            name_parts.append(f'| {prefix}')
-
-        if suffix:
-            name_parts.append(f"| {suffix}")
-
-        if inherent:
-            name_parts.append(f"| {inherent}")
+        name_parts.append(f"model={model_id}{postFix}")
 
         name_parts.append(parsed_modifiers.summary())
 
