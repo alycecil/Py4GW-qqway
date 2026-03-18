@@ -7,10 +7,11 @@ from typing import Any, Generator, override
 
 import PyImGui
 
-from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, ItemArray, Routines, Range, Map, Agent, Player, Inventory
+from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, ItemArray, Routines, Range, Map, Agent, Player, Inventory, Item
 from Py4GWCoreLib.Pathing import AutoPathing
 from Py4GWCoreLib.Py4GWcorelib import Utils
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
+from Sources.alice_sources.inventory.inventory_utils import InventoryUtilsConfig, InventoryUtils, InventoryMode
 from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
@@ -26,6 +27,8 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base i
 from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_execution_strategy import UtilitySkillExecutionStrategy
 from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_typology import UtilitySkillTypology
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
+from Widgets.Coding.Py4GW_DEMO import item_id
+
 
 class MerchantType(Enum):
     MERCHANT = 1
@@ -102,13 +105,31 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         else:
             self.inventory_config: InventoryConfig = InventoryConfig()
 
+        data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")
+        if data is not None:
+            self.inventory_utils_config: InventoryUtilsConfig = string_to_dict(data)
+        else:
+            self.inventory_utils_config: InventoryUtilsConfig = InventoryUtilsConfig()
+
+        self.inventory_utils: InventoryUtils = InventoryUtils()
 
     def map_changed(self, message: EventMessage) -> Generator[Any, Any, Any]:
+        # give us some eepy time
+        lock_key = self.generic_player_lock_key()
+        CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10)
+
+        data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")
+        if data is not None:
+            self.inventory_utils_config: InventoryUtilsConfig = string_to_dict(data)
+        else:
+            self.inventory_utils_config: InventoryUtilsConfig = InventoryUtilsConfig()
+
         self.npc_visited[MerchantType.XUNLAI_CHEST] = False
         self.npc_visited[MerchantType.MERCHANT] = False
         self.npc_visited[MerchantType.RUNE_TRADER] = False
         self.npc_visited[MerchantType.RARE_MATERIAL_TRADER] = False
         self.npc_visited[MerchantType.CRAFTING_MATERIAL_TRADER] = False
+
         yield
 
     @override
@@ -163,8 +184,60 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         if len(agent_ids) == 0: return None
         return agent_ids[0]
 
-    def hasItemsToMerch(self) -> bool:
+    def get_action_for_item(self, item_id, item_instance) -> InventoryMode:
+        action_for_item = self.inventory_utils.get_action_for_item(self.inventory_utils_config, item_id, item_instance)
+
+        if Inventory.GetFreeSlotCount() <= 2:
+            if (action_for_item == InventoryMode.SELL_DONT_IDENTIFY or
+                    action_for_item == InventoryMode.SELL):
+                return InventoryMode.SALVAGE
+
+        return action_for_item
+
+    def include_salvage_items(self) -> bool:
+        # TODO inventory full?
         return False
+
+    def hasItemsToMerch(self) -> bool:
+        return len(self.get_items_to_sell(self.include_salvage_items())) > 0
+
+    def get_items_to_deposit(self):
+        my_items = []
+        inventory_item_ids = self.inventory_utils.get_inventory_items(self.inventory_utils_config)
+        for item_id in inventory_item_ids:
+            item_instance = Item.item_instance(item_id)
+
+            if Item.Rarity.IsGreen(item_id):
+                continue
+
+            action_for_item: InventoryMode = self.inventory_utils.get_action_for_item(self.inventory_utils_config, item_id, item_instance)
+            if action_for_item == InventoryMode.DEPOSIT:
+                my_items.append(item_id)
+
+        return my_items
+
+    def get_items_to_sell(self, include_salvage_items: bool = False) -> list[int]:
+        my_items = []
+        inventory_item_ids = self.inventory_utils.get_inventory_items(self.inventory_utils_config)
+        for item_id in inventory_item_ids:
+            item_instance = Item.item_instance(item_id)
+
+            if Item.Rarity.IsGreen(item_id):
+                continue
+
+            is_white = Item.Rarity.IsWhite(item_id)
+            is_blue = Item.Rarity.IsBlue(item_id)
+
+            if is_white or is_blue:
+                if item_instance.value > 0:
+                    action_for_item: InventoryMode = self.inventory_utils.get_action_for_item(self.inventory_utils_config, item_id, item_instance)
+                    if action_for_item == InventoryMode.SELL_DONT_IDENTIFY:
+                        my_items.append(item_id)
+                    if action_for_item == InventoryMode.SELL:
+                        my_items.append(item_id)
+                    elif include_salvage_items and (action_for_item == InventoryMode.SALVAGE):
+                        my_items.append(item_id)
+        return my_items
 
     def _needsToVisit(self, merchant_type: MerchantType) -> bool:
         from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
@@ -175,6 +248,8 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
                     or self.hasItemsToMerch()):
                 if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", "I need to visit the Merchant", Console.MessageType.Info)
                 return True
+        elif merchant_type == MerchantType.XUNLAI_CHEST:
+            return True
         else:
             # TODO specific logic for other vendors
             return True
@@ -308,6 +383,13 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
                 yield from Routines.Yield.Merchant.BuySalvageKits(buy, constants.DEBUG, ModelID.Expert_Salvage_Kit, flush_queue=False)
             else:
                 if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"I have all the expert salvage kits i could want", Console.MessageType.Info)
+
+            sell = self.get_items_to_sell(self.include_salvage_items())
+            if len(sell) > 0:
+                ConsoleLog("MerchantRefillIfNeededUtility", f"get_items_to_sell = {sell}", Console.MessageType.Info)
+                # yield from Routines.Yield.Merchant.SellItems(sell)
+            else:
+                if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"Nothing to sell", Console.MessageType.Info)
         elif merchant_type == MerchantType.XUNLAI_CHEST:
             ConsoleLog("MerchantRefillIfNeededUtility", f"Opening Xunlai", Console.MessageType.Info)
             pass

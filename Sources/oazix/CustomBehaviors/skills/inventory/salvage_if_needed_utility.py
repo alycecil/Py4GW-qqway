@@ -140,7 +140,6 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
         ConsoleLog("Salvager",f"Nothing to salvage")
         return False
 
-
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
