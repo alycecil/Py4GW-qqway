@@ -303,6 +303,8 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
         if inherent:
             name_parts.append(f"| {inherent}")
 
+        name_parts.append(parsed_modifiers.summary())
+
         return " \n".join(name_parts)
 
 
