@@ -194,8 +194,8 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         return action_for_item
 
     def include_salvage_items(self) -> bool:
-        # TODO inventory full?
-        return False
+        free_slots = GLOBAL_CACHE.Inventory.GetFreeSlotCount()
+        return free_slots < 5  # Todo configurable
 
     def hasItemsToMerch(self) -> bool:
         return len(self.get_items_to_sell(self.include_salvage_items())) > 0

@@ -106,40 +106,6 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
             return False # leave the inventory alone while in town, thats merchant utilities time to shine
         return True
 
-    def salvage_something(self) -> bool:
-        inventory_item_ids = self.get_salvageable_items()
-
-        if inventory_item_ids is None or len(inventory_item_ids) == 0:
-            return False
-
-        random.shuffle(inventory_item_ids)
-
-        ConsoleLog("Salvager",f"Salvagables: {inventory_item_ids}")
-
-        for item_id in inventory_item_ids:
-            item_instance = Item.item_instance(item_id)
-
-            require_materials_confirmation = Item.Rarity.IsPurple(item_id) or Item.Rarity.IsGold(item_id)
-
-            if require_materials_confirmation:
-                ConsoleLog("Salvager",f"I want to salvage {self.describe_item(item_instance)} but it requires confirmation")
-                continue
-            else:
-                salvage_kit = Inventory.GetFirstSalvageKit(use_lesser=True, model_id=ModelID.Salvage_Kit.value)
-                if salvage_kit == 0:
-                    ConsoleLog("AutoSalvage", "No Salvage Kit found in inventory.",)
-                    return False
-
-                # ActionQueueManager().AddAction("ACTION", Inventory.SalvageItem, item_id, salvage_kit)
-
-                ConsoleLog("Salvager",f"I want to salvage {self.describe_item(item_instance)} with salvage_kit={salvage_kit}")
-
-                return True
-
-        #if constants.DEBUG:
-        ConsoleLog("Salvager",f"Nothing to salvage")
-        return False
-
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
@@ -192,13 +158,46 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
             return BehaviorResult.ACTION_SKIPPED
 
         ConsoleLog("SalvageIfNeededUtility", "Got lock")
+        inventory_item_ids = self.get_salvageable_items()
 
-        salvaged_something = self.salvage_something()
+        if inventory_item_ids is None or len(inventory_item_ids) == 0:
+            ConsoleLog("SalvageIfNeededUtility", "Nothing to salvage")
+            yield
+            return BehaviorResult.ACTION_SKIPPED
+
+        random.shuffle(inventory_item_ids)
+
+        ConsoleLog("Salvager",f"Salvagables: {inventory_item_ids}")
+
+        salvaged_something = False
+
+        for item_id in inventory_item_ids:
+            item_instance = Item.item_instance(item_id)
+
+            require_materials_confirmation = Item.Rarity.IsPurple(item_id) or Item.Rarity.IsGold(item_id)
+
+            if require_materials_confirmation:
+                ConsoleLog("Salvager",f"I want to salvage {self.describe_item(item_instance)} but it requires confirmation and I am a scaredy bot.")
+                continue
+            else:
+                salvage_kit = Inventory.GetFirstSalvageKit(use_lesser=True, model_id=ModelID.Salvage_Kit.value)
+                if salvage_kit == 0:
+                    ConsoleLog("AutoSalvage", "No Salvage Kit found in inventory.",)
+                    break
+
+                # ActionQueueManager().AddAction("ACTION", Inventory.SalvageItem, item_id, salvage_kit)
+
+                ConsoleLog("Salvager",f"I want to salvage {self.describe_item(item_instance)}")
+
+                yield from Routines.Yield.Items.SalvageItems([item_id], log=constants.DEBUG)
+                salvaged_something = True
+                break
+
         if salvaged_something:
             yield
             return BehaviorResult.ACTION_PERFORMED
         else:
-            ConsoleLog("SalvageIfNeededUtility", "Nothing to salvage")
+            ConsoleLog("SalvageIfNeededUtility", "Nothing we can salvage")
             yield
             return BehaviorResult.ACTION_SKIPPED
 
