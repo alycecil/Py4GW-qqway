@@ -201,17 +201,21 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         return len(self.get_items_to_sell(self.include_salvage_items())) > 0
 
     def get_items_to_deposit(self):
+        from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
         my_items = []
         inventory_item_ids = self.inventory_utils.get_inventory_items(self.inventory_utils_config)
-        for item_id in inventory_item_ids:
-            item_instance = Item.item_instance(item_id)
+        if constants.DEBUG: ConsoleLog("get_items_to_deposit", f"Inventory List filtered = {inventory_item_ids}", Console.MessageType.Info)
+        for my_item_id in inventory_item_ids:
+            item_instance = Item.item_instance(my_item_id)
 
-            if Item.Rarity.IsGreen(item_id):
+            if Item.Rarity.IsGreen(my_item_id):
                 continue
 
-            action_for_item: InventoryMode = self.inventory_utils.get_action_for_item(self.inventory_utils_config, item_id, item_instance)
+            action_for_item: InventoryMode = self.inventory_utils.get_action_for_item(self.inventory_utils_config, my_item_id, item_instance)
             if action_for_item == InventoryMode.DEPOSIT:
-                my_items.append(item_id)
+                my_items.append(my_item_id)
+            else:
+                if constants.DEBUG: ConsoleLog("get_items_to_deposit", f"Ignoring item #{my_item_id} its a {action_for_item}", Console.MessageType.Info)
 
         return my_items
 
@@ -335,7 +339,8 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
 
             visit_duration_in_seconds = self.visit_duration_in_seconds_config[merchant_type]
             ConsoleLog("MerchantRefillIfNeededUtility", f"Merchant {merchant_type.name} waiting at for {visit_duration_in_seconds}s.", Console.MessageType.Info)
-            yield from custom_behavior_helpers.Helpers.wait_for(visit_duration_in_seconds * 1000)
+            milliseconds = visit_duration_in_seconds * random.randint(800, 1600)
+            yield from custom_behavior_helpers.Helpers.wait_for(milliseconds)
 
             ConsoleLog("MerchantRefillIfNeededUtility", f"Merchant {merchant_type.name} wait complete.", Console.MessageType.Info)
             self.npc_visited[merchant_type] = True
@@ -398,6 +403,15 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
                 yield from Routines.Yield.Items.DepositItems(deposit,constants.DEBUG)
             else:
                 if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"Nothing to sell", Console.MessageType.Info)
+
+            from Py4GWCoreLib.py4gwcorelib_src.AutoInventoryHandler import AutoInventoryHandler
+            inventory_handler = AutoInventoryHandler()
+            current_state =  inventory_handler.module_active
+            inventory_handler.module_active = False
+            yield from inventory_handler.IdentifyItems()
+            yield from inventory_handler.DepositItemsAuto()
+            yield from Routines.Yield.Items.DepositGold(inventory_handler.keep_gold, log =False)
+            inventory_handler.module_active = current_state
         else:
             ConsoleLog("MerchantRefillIfNeededUtility", f"Unknown merchant type {merchant_type}", Console.MessageType.Info)
 
@@ -558,6 +572,75 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
                     PyImGui.bullet_text(f"{merchant_type.name}: (ID: {agent_id}, dist: {distance:.0f})")
                 else:
                     PyImGui.bullet_text(f"{merchant_type.name}: Not found")
+            # Status section
+            PyImGui.separator()
+
+        if PyImGui.begin_table("inventory_config_salvage", 2, int(PyImGui.TableFlags.Borders | PyImGui.TableFlags.RowBg)):
+            PyImGui.table_setup_column("Item name", PyImGui.TableColumnFlags.WidthStretch)
+            PyImGui.table_setup_column("action_for_item", PyImGui.TableColumnFlags.WidthFixed, 150)
+            PyImGui.table_headers_row()
+
+            inventory_item_ids = self.get_items_to_deposit()
+
+            for inv_item_id in inventory_item_ids:
+                item_instance = Item.item_instance(inv_item_id)
+                action_for_item: InventoryMode = self.get_action_for_item(inv_item_id, item_instance)
+
+                PyImGui.table_next_row()
+                PyImGui.table_next_column()
+                name = item_instance.name
+                name = f"{name} #{inv_item_id}"
+                PyImGui.text(name)
+                PyImGui.text(str(self.describe_item(item_instance)))
+
+                PyImGui.table_next_column()
+                PyImGui.text_colored("Deposit", (1.0, 1.0, 0.0, 1.0))  # Yellow
+
+            inventory_item_ids = self.get_items_to_sell(self.include_salvage_items())
+
+            for inv_item_id in inventory_item_ids:
+                item_instance = Item.item_instance(inv_item_id)
+                action_for_item: InventoryMode = self.get_action_for_item(inv_item_id, item_instance)
+
+                PyImGui.table_next_row()
+                PyImGui.table_next_column()
+                name = item_instance.name
+                name = f"{name} #{inv_item_id}"
+                PyImGui.text(name)
+                PyImGui.text(str(self.describe_item(item_instance)))
+
+                PyImGui.table_next_column()
+                PyImGui.text_colored("Sell", (1.0, 1.0, 0.0, 1.0))  # Yellow~
+
+            PyImGui.end_table()
+
+    def describe_item(self, item_instance) -> str:
+        prefix, suffix, inherent, parsed_modifiers = self.inventory_utils.get_mods_from_item(item_instance)
+
+        # --- Construct name ---
+        name_parts = []
+
+        name = item_instance.name
+        name_parts.append(f"{name} #{item_instance.item_id}")
+
+        name_parts.append(str(item_instance.quantity))
+
+        blocklisted = item_instance.model_id in self.inventory_utils_config.block_list_model_id
+        postFix = " (Blocklisted)" if blocklisted else ""
+        name_parts.append(f"model={item_instance.model_id}{postFix}")
+
+        if prefix:
+            name_parts.append(f'| {prefix}')
+
+        if suffix:
+            name_parts.append(f"| {suffix}")
+
+        if inherent:
+            name_parts.append(f"| {inherent}")
+
+        name_parts.append(parsed_modifiers.summary())
+
+        return " \n".join(name_parts)
 
 
 # TODO move to common lib

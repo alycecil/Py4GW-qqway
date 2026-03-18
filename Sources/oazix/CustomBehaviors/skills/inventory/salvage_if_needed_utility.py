@@ -49,12 +49,12 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
 
         self.score_definition: ScoreStaticDefinition = ScoreStaticDefinition(CommonScore.INVENTORY.value)
 
-        data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")
+        data: str | None = PersistenceLocator().skills.read("my_inventory_utils_config", "inventory_utils_config")
         if data is not None:
             from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import string_to_dict
-            self.inventory_config: InventoryUtilsConfig = string_to_dict(data)
+            self.inventory_utils_config: InventoryUtilsConfig = string_to_dict(data)
         else:
-            self.inventory_config: InventoryUtilsConfig = InventoryUtilsConfig()
+            self.inventory_utils_config: InventoryUtilsConfig = InventoryUtilsConfig()
 
         self.inventory_utils: InventoryUtils = InventoryUtils()
 
@@ -63,12 +63,12 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
         lock_key = self.generic_player_lock_key()
         CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10)
 
-        data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")
+        data: str | None = PersistenceLocator().skills.read("my_inventory_utils_config", "inventory_utils_config")
         if data is not None:
             from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import string_to_dict
-            self.inventory_config: InventoryUtilsConfig = string_to_dict(data)
+            self.inventory_utils_config: InventoryUtilsConfig = string_to_dict(data)
         else:
-            self.inventory_config: InventoryUtilsConfig = InventoryUtilsConfig()
+            self.inventory_utils_config: InventoryUtilsConfig = InventoryUtilsConfig()
 
         yield
 
@@ -80,7 +80,7 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
         Returns a list of all item IDs in the player's inventory excluding banlist items that qualify as salvagable
         '''
         my_items = []
-        inventory_item_ids = self.inventory_utils.get_inventory_items(self.inventory_config)
+        inventory_item_ids = self.inventory_utils.get_inventory_items(self.inventory_utils_config)
         for item_id in inventory_item_ids:
             item_instance = Item.item_instance(item_id)
 
@@ -131,20 +131,20 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
     def persist_configuration_for_account(self):
         from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
         from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import dict_to_string
-        PersistenceLocator().skills.write_for_account("my_inventory_config", "inventory_config", dict_to_string(self.inventory_config.__dict__))
+        PersistenceLocator().skills.write_for_account("my_inventory_utils_config", "inventory_utils_config", dict_to_string(self.inventory_utils_config.__dict__))
         ConsoleLog("SalvageIfNeededUtility", "configuration saved for account", Console.MessageType.Info)
 
     @override
     def persist_configuration_as_global(self):
         from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
         from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import dict_to_string
-        PersistenceLocator().skills.write_global("my_inventory_config", "inventory_config", dict_to_string(self.inventory_config.__dict__))
+        PersistenceLocator().skills.write_global("my_inventory_utils_config", "inventory_utils_config", dict_to_string(self.inventory_utils_config.__dict__))
         ConsoleLog("SalvageIfNeededUtility", "configuration saved as global", Console.MessageType.Info)
 
     @override
     def delete_persisted_configuration(self):
         from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
-        PersistenceLocator().skills.delete("my_inventory_config", "inventory_config")
+        PersistenceLocator().skills.delete("my_inventory_utils_config", "inventory_utils_config")
         ConsoleLog("SalvageIfNeededUtility", "configuration deleted", Console.MessageType.Info)
 
     @override
@@ -215,13 +215,13 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
             PyImGui.text_colored("Configuration:", (1.0, 1.0, 0.0, 1.0))  # Yellow
             PyImGui.separator()
 
-            if PyImGui.begin_table("inventory_config", 2, int(PyImGui.TableFlags.Borders | PyImGui.TableFlags.RowBg)):
+            if PyImGui.begin_table("inventory_utils_config", 2, int(PyImGui.TableFlags.Borders | PyImGui.TableFlags.RowBg)):
                 PyImGui.table_setup_column("Item name", PyImGui.TableColumnFlags.WidthStretch)
                 PyImGui.table_setup_column("action_for_item", PyImGui.TableColumnFlags.WidthFixed, 150)
 
                 PyImGui.table_headers_row()
 
-                inventory_item_ids = self.inventory_utils.get_inventory_items(self.inventory_config)
+                inventory_item_ids = self.inventory_utils.get_inventory_items(self.inventory_utils_config)
 
                 for item_id in inventory_item_ids:
                     item_instance = Item.item_instance(item_id)
@@ -248,7 +248,7 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
             # Status section
             PyImGui.separator()
 
-        if PyImGui.begin_table("inventory_config_salvage", 2, int(PyImGui.TableFlags.Borders | PyImGui.TableFlags.RowBg)):
+        if PyImGui.begin_table("inventory_utils_config_salvage", 2, int(PyImGui.TableFlags.Borders | PyImGui.TableFlags.RowBg)):
             PyImGui.table_setup_column("Item name", PyImGui.TableColumnFlags.WidthStretch)
             PyImGui.table_setup_column("action_for_item", PyImGui.TableColumnFlags.WidthFixed, 150)
             PyImGui.table_headers_row()
@@ -276,7 +276,7 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
             PyImGui.end_table()
 
     def get_action_for_item(self, item_id, item_instance) -> InventoryMode:
-        action_for_item = self.inventory_utils.get_action_for_item(self.inventory_config, item_id, item_instance)
+        action_for_item = self.inventory_utils.get_action_for_item(self.inventory_utils_config, item_id, item_instance)
 
         if Inventory.GetFreeSlotCount() <= 2:
             if (action_for_item == InventoryMode.SELL_DONT_IDENTIFY or
@@ -296,7 +296,7 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
 
         name_parts.append(str(item_instance.quantity))
 
-        blocklisted = item_instance.model_id in self.inventory_config.block_list_model_id
+        blocklisted = item_instance.model_id in self.inventory_utils_config.block_list_model_id
         postFix = " (Blocklisted)" if blocklisted else ""
         name_parts.append(f"model={item_instance.model_id}{postFix}")
 

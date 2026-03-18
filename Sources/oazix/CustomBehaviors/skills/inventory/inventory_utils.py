@@ -221,7 +221,7 @@ class InventoryUtils:
             self,
             inventory_config: InventoryUtilsConfig,
             slot_blacklist: list[tuple[int, int]] = [],
-            bags=range(Bags.Backpack, Bags.Bag2)
+            bags=range(Bags.Backpack, Bags.Bag2+1)
     ) -> list[int]:
         '''
         Returns a list of all item IDs in the player's inventory excluding banlist items
@@ -237,7 +237,7 @@ class InventoryUtils:
             for item_id in item_array:
                 item_instance = Item.item_instance(item_id)
 
-                if item_instance.is_customized:
+                if item_instance.is_customized or Item.Properties.IsCustomized(item_id):
                     # dont touch this stuff, the player loves it.
                     continue
 
