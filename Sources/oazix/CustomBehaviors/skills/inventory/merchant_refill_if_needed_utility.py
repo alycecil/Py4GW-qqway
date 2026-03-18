@@ -135,13 +135,12 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
     @override
     def are_common_pre_checks_valid(self, current_state: BehaviorState) -> bool:
         if self.allowed_states is not None and current_state not in self.allowed_states: return False
-        if not Map.IsOutpost(): return False
-        if not Map.IsGuildHall(): return False # be discret...
-        return True
+        if Map.IsOutpost() or Map.IsGuildHall(): return True # be discret...
+        return False
 
     def _is_merchant_agent(self, agent_id: int) -> bool:
         """Check if the agent is a merchant by checking for merchant tags in multiple languages."""
-        merchant_tags = ['Merchant', 'Marchand', 'Kauffrau']
+        merchant_tags = ['Merchant', 'Marchand', 'Kauffrau', 'Cyrus [Merchant]',]
         agent_name = Agent.GetNameByID(agent_id)
         return any(merchant_tag in agent_name for merchant_tag in merchant_tags)
 
