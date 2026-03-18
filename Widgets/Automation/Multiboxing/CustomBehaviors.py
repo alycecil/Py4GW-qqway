@@ -69,7 +69,7 @@ def draw_dialog_overlay():
                 dialog_int = frame_obj.field105_0x1c4
                 to_hex = f"0x{dialog_int:X}"
 
-                from Sources.oazix.CustomBehaviors.gui.party import set_dialog_id
+                from Sources.oazix.CustomBehaviors.gui.botting import set_dialog_id
                 set_dialog_id(to_hex)
 
             if is_left_mouse_clicked():
