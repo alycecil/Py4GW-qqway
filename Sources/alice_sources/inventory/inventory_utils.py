@@ -409,13 +409,13 @@ class InventoryUtils:
         if not res:
             res = len(parsed_modifiers.max_runes) > 0 or len(parsed_modifiers.max_weapon_mods) > 0
             if res:
-                ConsoleLog("InvUtil",f"Item {item_id} is not normal max of {item_type} but has max mods, marking true.")
+                if constants.DEBUG: ConsoleLog("InvUtil",f"Item {item_id} is not normal max of {item_type} but has max mods, marking true.")
                 return True
 
         if res:
             return res
 
-        ConsoleLog("InvUtil",f"Item {item_id} is of unknown item type: {item_type}")
+        if constants.DEBUG: ConsoleLog("InvUtil",f"Item {item_id} is of unknown item type: {item_type}")
         return True
 
     def _apply_action_for_weapon(
