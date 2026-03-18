@@ -56,6 +56,20 @@ class InventoryMode(Enum):
     SELL = 20
     SELL_DONT_IDENTIFY = 21
 
+# class PrefixConfig:
+#     def __init__(self,
+#                  zealous: InventoryMode = InventoryMode.DEPOSIT,
+#                  vamparic: InventoryMode = InventoryMode.SELL,
+#                  purple: InventoryMode = InventoryMode.SELL,
+#                  gold: InventoryMode = InventoryMode.KEEP,
+#                  specials: InventoryMode = InventoryMode.DEPOSIT,
+#                  ):
+#         self.white: InventoryMode = white
+#         self.blue: InventoryMode = blue
+#         self.purple: InventoryMode = purple
+#         self.gold: InventoryMode = gold
+#         self.specials: InventoryMode = specials
+
 
 class SalvageConfig:
     def __init__(self,
@@ -301,7 +315,7 @@ class InventoryUtils:
             return weapon_config.blue
         return weapon_config.white
 
-    def get_mods_from_item(self, item):
+    def get_mods_from_item(self, item) -> tuple[str | None, str | None, str | None, ParsedModifierResult]:
         modifiers = []
         for mod in item.modifiers:
             modifiers.append(
@@ -352,11 +366,57 @@ class InventoryUtils:
         if parsed_modifiers is None:
             prefix, suffix, inherent, parsed_modifiers = self.get_mods_from_item(item_instance)
 
+        res : bool = False
+
         if item_type == ItemType.Wand or item_type == ItemType.Staff:
             min_dmg, max_dmg = parsed_modifiers.damage
-            return min_dmg == 11 and max_dmg == 22
+            res = min_dmg >= 11 and max_dmg >= 22
 
-        return False
+        if item_type == ItemType.Axe:
+            min_dmg, max_dmg = parsed_modifiers.damage
+            res = min_dmg >= 6 and max_dmg >= 28
+
+        if item_type == ItemType.Bow:
+            min_dmg, max_dmg = parsed_modifiers.damage
+            res = min_dmg >= 15 and max_dmg >= 28
+
+        if item_type == ItemType.Daggers:
+            min_dmg, max_dmg = parsed_modifiers.damage
+            res = min_dmg >= 7 and max_dmg >= 17
+
+        if item_type == ItemType.Hammer:
+            min_dmg, max_dmg = parsed_modifiers.damage
+            res = min_dmg >= 19 and max_dmg >= 35
+
+        if item_type == ItemType.Sword:
+            min_dmg, max_dmg = parsed_modifiers.damage
+            res = min_dmg >= 15 and max_dmg >= 22
+
+        if item_type == ItemType.Spear:
+            min_dmg, max_dmg = parsed_modifiers.damage
+            res = min_dmg >= 14 and max_dmg >= 27
+
+        if item_type == ItemType.Scythe:
+            min_dmg, max_dmg = parsed_modifiers.damage
+            res = min_dmg > 9 or (
+                    min_dmg >= 9 and max_dmg >= 41
+            )
+
+        if item_type == ItemType.Shield:
+            max_armor, min_armor = parsed_modifiers.shield_armor
+            res = (max_armor >= 16 or min_armor >= 16)
+
+        if not res:
+            res = len(parsed_modifiers.max_runes) > 0 or len(parsed_modifiers.max_weapon_mods) > 0
+            if res:
+                ConsoleLog("InvUtil",f"Item {item_id} is not normal max of {item_type} but has max mods, marking true.")
+                return True
+
+        if res:
+            return res
+
+        ConsoleLog("InvUtil",f"Item {item_id} is of unknown item type: {item_type}")
+        return True
 
     def _apply_action_for_weapon(
             self, weapon_config: WeaponConfig,
@@ -479,6 +539,12 @@ class InventoryUtils:
 
         item_type_to_int = item_instance.item_type.ToInt()
         if item_type_to_int in inventory_config.block_list_item_type:
+            return InventoryMode.KEEP_DONT_IDENTIFY
+
+        if GLOBAL_CACHE.Item.Properties.IsCustomized(item_id):
+            return InventoryMode.KEEP_DONT_IDENTIFY
+
+        if item_id < 1:
             return InventoryMode.KEEP_DONT_IDENTIFY
 
         for item_type in [
