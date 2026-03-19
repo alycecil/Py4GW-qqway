@@ -82,7 +82,7 @@ def draw_dialog_overlay():
 
                     # this is the field in toolbox:
                     # PyUIManager.UIFrame(frame_id).field105_0x1c4
-                    from Sources.oazix.CustomBehaviors.gui.party import send_dialog_for_all
+                    from Sources.oazix.CustomBehaviors.gui.botting import send_dialog_for_all
                     send_dialog_for_all(to_hex, dialog_int)
 
                     return

@@ -145,7 +145,6 @@ def render():
         default_dialog_string = ImGui.input_text("Dialog Id", default_dialog_string, 0)
 
         if PyImGui.button(f"{IconsFontAwesome5.ICON_CROSSHAIRS} Send Dialog"):
-            from Sources.oazix.CustomBehaviors.gui.party import send_dialog
             send_dialog()
 
 
