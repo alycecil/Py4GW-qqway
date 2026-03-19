@@ -125,8 +125,7 @@ def main():
                     from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import string_to_dict
                     inventory_config: InventoryUtilsConfig = string_to_dict(data)
 
-                item_instance = Item.item_instance(hovered_item_id)
-                action = InventoryUtils().get_action_for_item(inventory_config, hovered_item_id, item_instance)
+                action = InventoryUtils().get_action_for_item(inventory_config, hovered_item_id)
                 add_row("Inventory action", str(action) if action else "N/A")
             except Exception as e:
                 add_row("Inventory action", f"Error={e}")

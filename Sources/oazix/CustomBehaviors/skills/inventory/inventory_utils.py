@@ -453,7 +453,7 @@ class InventoryUtils:
                 return InventoryMode.KEEP
 
             # todo result.attribute
-        if parsed_modifiers.requirements is not None:
+        if not Item.Rarity.IsWhite(item_id) and parsed_modifiers.requirements is not None:
             if parsed_modifiers.requirements == 0:
                 # todo check max
                 default_action = weapon_config.q0
