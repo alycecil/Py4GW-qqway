@@ -960,8 +960,8 @@ class BTNodes:
                         ModelID.Lunar_Fortune_2017_Rooster,
                         ModelID.Lunar_Fortune_2018_Dog,
                         ModelID.Birthday_Cupcake,
-                        ModelID.Zaishen_Key,
-                        ModelID.Lockpick,
+                        ModelID.Candy_Apple,
+                        ModelID.Candy_Corn,
                     ]:
                         return -5000
 
