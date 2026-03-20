@@ -8,10 +8,12 @@ import Py4GW
 import PyInventory
 from PyItem import DyeColor
 
+from Py4GWCoreLib import GLOBAL_CACHE
 from Py4GWCoreLib.Inventory import Inventory
 from Py4GWCoreLib.Item import Bag, Item
 from Py4GWCoreLib.Merchant import Trading
 from Py4GWCoreLib.UIManager import UIManager
+from Py4GWCoreLib.enums_src.GameData_enums import Attribute
 from Py4GWCoreLib.enums_src.Item_enums import MAX_STACK_SIZE, ItemType, Rarity
 from Py4GWCoreLib.enums_src.Item_enums import MAX_STACK_SIZE
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
@@ -919,17 +921,103 @@ class BTNodes:
             bags : list[Bag] = INVENTORY_BAGS,         
             aftercast_ms: int = 150,
         ):
+            from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryUtils, InventoryUtilsConfig
+            inventory_utils_config: InventoryUtilsConfig = InventoryUtilsConfig()
+            from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
+            data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")
+            if data is not None:
+                inventory_utils_config: InventoryUtilsConfig = string_to_dict(data)
+
             def _sort(node: BehaviorTree.Node):
                 snapshot = ITEM_CACHE.get_bags_snapshot(bags)
 
+                def _item_type_with_overrrides(item, item_typeOrder):
+                    if item.model_id in [
+                        ModelID.Grail_Of_Might,
+                    ]:
+                        return -5009
+                    if item.model_id in [
+                        ModelID.Armor_Of_Salvation,
+                    ]:
+                        return -5008
+                    if item.model_id in [
+                        ModelID.Essence_Of_Celerity,
+                    ]:
+                        return -5007
+
+                    if item.model_id in [
+                        ModelID.War_Supplies,
+                        ModelID.Lunar_Fortune_2007_Pig,
+                        ModelID.Lunar_Fortune_2008_Rat,
+                        ModelID.Lunar_Fortune_2009_Ox,
+                        ModelID.Lunar_Fortune_2010_Tiger,
+                        ModelID.Lunar_Fortune_2011_Rabbit,
+                        ModelID.Lunar_Fortune_2012_Dragon,
+                        ModelID.Lunar_Fortune_2013_Snake,
+                        ModelID.Lunar_Fortune_2014_Horse,
+                        ModelID.Lunar_Fortune_2015_Sheep,
+                        ModelID.Lunar_Fortune_2016_Monkey,
+                        ModelID.Lunar_Fortune_2017_Rooster,
+                        ModelID.Lunar_Fortune_2018_Dog,
+                        ModelID.Birthday_Cupcake,
+                        ModelID.Zaishen_Key,
+                        ModelID.Lockpick,
+                    ]:
+                        return -5000
+
+                    if item.model_id in [
+                        ModelID.Proof_Of_Legend,
+                        ModelID.Proof_Of_Triumph,
+                    ]:
+                        return -4000
+
+                    if item.model_id in [
+                        ModelID.Assassin_Elite_Tome,
+                        ModelID.Dervish_Elite_Tome,
+                        ModelID.Elementalist_Elite_Tome,
+                        ModelID.Mesmer_Elite_Tome,
+                        ModelID.Monk_Elite_Tome,
+                        ModelID.Necromancer_Elite_Tome,
+                        ModelID.Paragon_Elite_Tome,
+                        ModelID.Ranger_Elite_Tome,
+                        ModelID.Ritualist_Elite_Tome,
+                        ModelID.Warrior_Elite_Tome,
+                        ModelID.Assassin_Tome,
+                        ModelID.Dervish_Tome,
+                        ModelID.Elementalist_Tome,
+                        ModelID.Mesmer_Tome,
+                        ModelID.Monk_Tome,
+                        ModelID.Necromancer_Tome,
+                        ModelID.Paragon_Tome,
+                        ModelID.Ranger_Tome,
+                        ModelID.Ritualist_Tome,
+                        ModelID.Warrior_Tome,
+                    ]:
+                        return -1000
+
+                    if item.model_id in [
+                        ModelID.Gold_Zaishen_Coin,
+                        ModelID.Silver_Zaishen_Coin,
+                        ModelID.Copper_Zaishen_Coin,
+                        ModelID.Armbrace_Of_Truth,
+                        ModelID.Glob_Of_Ectoplasm,
+                        ModelID.Zaishen_Key,
+                        ModelID.Lockpick,
+                    ]:
+                        return -500
+
+                    item_type = item.item_type
+                    return item_typeOrder.index(item_type)
+
                 # TODO: Here we want to implement our sorting configuration, for now this is just the default behavior
                 item_typeOrder = [
+                    int(ItemType.Costume),
+                    int(ItemType.Usable),
                     int(ItemType.Kit),
                     int(ItemType.Key),
-                    int(ItemType.Usable),
                     int(ItemType.Trophy),
+                    int(ItemType.Materials_Zcoins),
                     int(ItemType.Quest_Item),
-                    int(ItemType.Materials_Zcoins)
                 ]
 
                 # then everything else
@@ -949,10 +1037,16 @@ class BTNodes:
                     items,
                     key=lambda item: (
                         item.item_type == ItemType.Unknown,
-                        item_typeOrder.index(item.item_type),
-                        item.model_id,
+                        InventoryUtils().get_action_for_item(inventory_utils_config, item.id).value,
+                        _item_type_with_overrrides(item, item_typeOrder),
+                        item.attribute == Attribute.None_,
+                        item.attribute.value,
+                        -item.requirement,
                         -item.rarity.value,
+                        item.model_id,
                         -item.quantity,
+                        # GLOBAL_CACHE.Item.GetName(item.id),
+                        0 if item.prefix is None else item.prefix.id,
                         -item.value,
                         item.color.value,
                         item.id
