@@ -8,7 +8,7 @@ import Py4GW
 import PyInventory
 from PyItem import DyeColor
 
-from Py4GWCoreLib import GLOBAL_CACHE
+from Py4GWCoreLib import GLOBAL_CACHE, traceback
 from Py4GWCoreLib.Inventory import Inventory
 from Py4GWCoreLib.Item import Bag, Item
 from Py4GWCoreLib.Merchant import Trading
@@ -931,137 +931,163 @@ class BTNodes:
             def _sort(node: BehaviorTree.Node):
                 snapshot = ITEM_CACHE.get_bags_snapshot(bags)
 
-                def _item_type_with_overrrides(item, item_typeOrder):
-                    if item.model_id in [
-                        ModelID.Grail_Of_Might,
-                    ]:
-                        return -5009
-                    if item.model_id in [
-                        ModelID.Armor_Of_Salvation,
-                    ]:
-                        return -5008
-                    if item.model_id in [
-                        ModelID.Essence_Of_Celerity,
-                    ]:
-                        return -5007
+                try:
 
-                    if item.model_id in [
-                        ModelID.War_Supplies,
-                        ModelID.Lunar_Fortune_2007_Pig,
-                        ModelID.Lunar_Fortune_2008_Rat,
-                        ModelID.Lunar_Fortune_2009_Ox,
-                        ModelID.Lunar_Fortune_2010_Tiger,
-                        ModelID.Lunar_Fortune_2011_Rabbit,
-                        ModelID.Lunar_Fortune_2012_Dragon,
-                        ModelID.Lunar_Fortune_2013_Snake,
-                        ModelID.Lunar_Fortune_2014_Horse,
-                        ModelID.Lunar_Fortune_2015_Sheep,
-                        ModelID.Lunar_Fortune_2016_Monkey,
-                        ModelID.Lunar_Fortune_2017_Rooster,
-                        ModelID.Lunar_Fortune_2018_Dog,
-                        ModelID.Birthday_Cupcake,
-                        ModelID.Candy_Apple,
-                        ModelID.Candy_Corn,
-                    ]:
-                        return -5000
+                    # TODO: Here we want to implement our sorting configuration, for now this is just the default behavior
+                    item_typeOrder = [
+                        int(ItemType.Costume),
+                        int(ItemType.Usable),
+                        int(ItemType.Kit),
+                        int(ItemType.Key),
+                        int(ItemType.Trophy),
+                        int(ItemType.Materials_Zcoins),
+                        int(ItemType.Quest_Item),
+                    ]
 
-                    if item.model_id in [
-                        ModelID.Proof_Of_Legend,
-                        ModelID.Proof_Of_Triumph,
-                    ]:
-                        return -4000
+                    # then everything else
+                    item_typeOrder += [int(item)
+                                    for item in ItemType if int(item) not in item_typeOrder]
 
-                    if item.model_id in [
-                        ModelID.Assassin_Elite_Tome,
-                        ModelID.Dervish_Elite_Tome,
-                        ModelID.Elementalist_Elite_Tome,
-                        ModelID.Mesmer_Elite_Tome,
-                        ModelID.Monk_Elite_Tome,
-                        ModelID.Necromancer_Elite_Tome,
-                        ModelID.Paragon_Elite_Tome,
-                        ModelID.Ranger_Elite_Tome,
-                        ModelID.Ritualist_Elite_Tome,
-                        ModelID.Warrior_Elite_Tome,
-                        ModelID.Assassin_Tome,
-                        ModelID.Dervish_Tome,
-                        ModelID.Elementalist_Tome,
-                        ModelID.Mesmer_Tome,
-                        ModelID.Monk_Tome,
-                        ModelID.Necromancer_Tome,
-                        ModelID.Paragon_Tome,
-                        ModelID.Ranger_Tome,
-                        ModelID.Ritualist_Tome,
-                        ModelID.Warrior_Tome,
-                    ]:
-                        return -1000
+                    index_to_bag_map : dict[int, tuple[Bag, int]] = {}
+                    index = 0
 
-                    if item.model_id in [
-                        ModelID.Gold_Zaishen_Coin,
-                        ModelID.Silver_Zaishen_Coin,
-                        ModelID.Copper_Zaishen_Coin,
-                        ModelID.Armbrace_Of_Truth,
-                        ModelID.Glob_Of_Ectoplasm,
-                        ModelID.Zaishen_Key,
-                        ModelID.Lockpick,
-                    ]:
-                        return -500
+                    for bag in bags:
+                        for slot in snapshot.get(bag, {}).keys():
+                            index_to_bag_map[index] = (bag, slot)
+                            index += 1
 
-                    item_type = item.item_type
-                    return item_typeOrder.index(item_type)
-
-                # TODO: Here we want to implement our sorting configuration, for now this is just the default behavior
-                item_typeOrder = [
-                    int(ItemType.Costume),
-                    int(ItemType.Usable),
-                    int(ItemType.Kit),
-                    int(ItemType.Key),
-                    int(ItemType.Trophy),
-                    int(ItemType.Materials_Zcoins),
-                    int(ItemType.Quest_Item),
-                ]
-
-                # then everything else
-                item_typeOrder += [int(item)
-                                for item in ItemType if int(item) not in item_typeOrder]
-                
-                index_to_bag_map : dict[int, tuple[Bag, int]] = {}
-                index = 0
-                
-                for bag in bags:
-                    for slot in snapshot.get(bag, {}).keys():
-                        index_to_bag_map[index] = (bag, slot)
-                        index += 1
-                            
-                items = [item for bag in bags for slot, item in snapshot.get(bag, {}).items() if item and item.is_valid]
-                sorted_items = sorted(
-                    items,
-                    key=lambda item: (
-                        item.item_type == ItemType.Unknown,
-                        InventoryUtils().get_action_for_item(inventory_utils_config, item.id).value,
-                        _item_type_with_overrrides(item, item_typeOrder),
-                        item.attribute == Attribute.None_,
-                        item.attribute.value,
-                        -item.requirement,
-                        -item.rarity.value,
-                        item.model_id,
-                        -item.quantity,
-                        # GLOBAL_CACHE.Item.GetName(item.id),
-                        0 if item.prefix is None else item.prefix.id,
-                        -item.value,
-                        item.color.value,
-                        item.id
+                    items = [item for bag in bags for slot, item in snapshot.get(bag, {}).items() if item and item.is_valid]
+                    sorted_items = sorted(
+                        items,
+                        key=lambda item: method_setup(item, item_typeOrder)
                     )
+
+                    for index, item in enumerate(sorted_items):
+                        bag, slot = index_to_bag_map.get(index, (None, None))
+
+                        if bag is None or slot is None:
+                            continue
+
+                        Inventory.MoveItem(item.id, bag.value, slot, item.quantity)
+
+                    return BehaviorTree.NodeState.SUCCESS
+                except Exception as e:
+                    from Py4GWCoreLib.py4gwcorelib_src.Console import ConsoleLog
+                    ConsoleLog("SortBags", f"Sorting Failed: {e}, {traceback.format_exc()}")
+                    return BehaviorTree.NodeState.FAILURE
+
+            def method_setup(item, item_typeOrder):
+                def _item_type_with_overrrides(item, item_typeOrder):
+                    try:
+                        if item.model_id in [
+                            ModelID.Grail_Of_Might,
+                        ]:
+                            return -5009
+                        if item.model_id in [
+                            ModelID.Armor_Of_Salvation,
+                        ]:
+                            return -5008
+                        if item.model_id in [
+                            ModelID.Essence_Of_Celerity,
+                        ]:
+                            return -5007
+
+                        if item.model_id in [
+                            ModelID.War_Supplies,
+                            ModelID.Lunar_Fortune_2007_Pig,
+                            ModelID.Lunar_Fortune_2008_Rat,
+                            ModelID.Lunar_Fortune_2009_Ox,
+                            ModelID.Lunar_Fortune_2010_Tiger,
+                            ModelID.Lunar_Fortune_2011_Rabbit,
+                            ModelID.Lunar_Fortune_2012_Dragon,
+                            ModelID.Lunar_Fortune_2013_Snake,
+                            ModelID.Lunar_Fortune_2014_Horse,
+                            ModelID.Lunar_Fortune_2015_Sheep,
+                            ModelID.Lunar_Fortune_2016_Monkey,
+                            ModelID.Lunar_Fortune_2017_Rooster,
+                            ModelID.Lunar_Fortune_2018_Dog,
+                            ModelID.Birthday_Cupcake,
+                            ModelID.Candy_Apple,
+                            ModelID.Candy_Corn,
+                        ]:
+                            return -5000
+
+                        if item.model_id in [
+                            ModelID.Proof_Of_Legend,
+                            ModelID.Proof_Of_Triumph,
+                        ]:
+                            return -4000
+
+                        if item.model_id in [
+                            ModelID.Assassin_Elite_Tome,
+                            ModelID.Dervish_Elite_Tome,
+                            ModelID.Elementalist_Elite_Tome,
+                            ModelID.Mesmer_Elite_Tome,
+                            ModelID.Monk_Elite_Tome,
+                            ModelID.Necromancer_Elite_Tome,
+                            ModelID.Paragon_Elite_Tome,
+                            ModelID.Ranger_Elite_Tome,
+                            ModelID.Ritualist_Elite_Tome,
+                            ModelID.Warrior_Elite_Tome,
+                            ModelID.Assassin_Tome,
+                            ModelID.Dervish_Tome,
+                            ModelID.Elementalist_Tome,
+                            ModelID.Mesmer_Tome,
+                            ModelID.Monk_Tome,
+                            ModelID.Necromancer_Tome,
+                            ModelID.Paragon_Tome,
+                            ModelID.Ranger_Tome,
+                            ModelID.Ritualist_Tome,
+                            ModelID.Warrior_Tome,
+                        ]:
+                            return -1000
+
+                        if item.model_id in [
+                            ModelID.Gold_Zaishen_Coin,
+                            ModelID.Silver_Zaishen_Coin,
+                            ModelID.Copper_Zaishen_Coin,
+                            ModelID.Armbrace_Of_Truth,
+                            ModelID.Glob_Of_Ectoplasm,
+                            ModelID.Zaishen_Key,
+                            ModelID.Lockpick,
+                        ]:
+                            return -500
+
+                        item_type = item.item_type
+                        return item_typeOrder.index(item_type)
+                    except Exception as e:
+                        from Py4GWCoreLib.py4gwcorelib_src.Console import ConsoleLog
+                        ConsoleLog("SortBags", f"Sorting Failed for {item}: {e}")
+                        return 0
+
+                unknown = item.item_type == ItemType.Unknown
+                item_id = item.id
+                item_id__value = InventoryUtils().get_action_for_item(inventory_utils_config, item_id).value
+                overrrides = _item_type_with_overrrides(item, item_typeOrder)
+                attribute_none_ = item.attribute == Attribute.None_
+                item_attribute_value = item.attribute.value
+                item_requirement = -item.requirement
+                item_rarity_value = -item.rarity.value
+                item_model_id = item.model_id
+                item_quantity = -item.quantity
+                item_value = -item.value
+                item_color_value = item.color.value
+
+                return (
+                    unknown,
+                    item_id__value,
+                    overrrides,
+                    attribute_none_,
+                    item_attribute_value,
+                    item_requirement,
+                    item_rarity_value,
+                    item_model_id,
+                    item_quantity,
+                    # GLOBAL_CACHE.Item.GetName(item.id),
+                    item_value,
+                    item_color_value,
+                    item_id
                 )
-                
-                for index, item in enumerate(sorted_items):
-                    bag, slot = index_to_bag_map.get(index, (None, None))
-                    
-                    if bag is None or slot is None:
-                        continue
-                
-                    Inventory.MoveItem(item.id, bag.value, slot, item.quantity)
-                
-                return BehaviorTree.NodeState.SUCCESS
 
             return BehaviorTree.ActionNode(name="Inventory.SortBags", action_fn=_sort, aftercast_ms=aftercast_ms)
 

@@ -215,6 +215,7 @@ def _tick_tree():
 
 			except Exception as e:
 				Py4GW.Console.Log(MODULE_NAME, f"Error ticking behavior tree: {e}")
+				Py4GW.Console.Log(bot_vars.window_module.module_name, f"Stack trace: {traceback.format_exc()}", Py4GW.Console.MessageType.Error)
 
 
 def main():
