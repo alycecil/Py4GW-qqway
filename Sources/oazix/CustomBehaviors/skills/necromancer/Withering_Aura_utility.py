@@ -88,7 +88,7 @@ class Withering_Aura_Utility(CustomSkillUtilityBase):
         target = self._get_target()
         if target is None: return BehaviorResult.ACTION_SKIPPED
 
-        if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(self._get_lock_key(target), 3):
+        if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(self._get_lock_key(target), 10):
             yield
             return BehaviorResult.ACTION_SKIPPED
 
