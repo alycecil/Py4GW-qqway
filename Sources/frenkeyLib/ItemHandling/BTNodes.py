@@ -1009,6 +1009,8 @@ class BTNodes:
                             ModelID.Birthday_Cupcake,
                             ModelID.Candy_Apple,
                             ModelID.Candy_Corn,
+                            ModelID.Golden_Egg,
+                            ModelID.Slice_Of_Pumpkin_Pie,
                         ]:
                             return -5000
 
