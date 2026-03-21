@@ -93,9 +93,9 @@ class CustomBehaviorLoader:
                 try:
                     # Dynamically import the module
                     module = importlib.import_module(module_name)
-                    if constants.DEBUG: print(f"Loaded module: {module.__name__}")
+                    if constants.DEBUG: print(f"Loaded sebmodule: {module.__name__}")
                     loaded_modules.append(module)
-                except ImportError as e:
+                except Exception as e:
                     print(f"Failed to import module {module_name}: {e}")
 
             return loaded_modules
