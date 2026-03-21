@@ -343,7 +343,7 @@ class Actions:
         return BehaviorResult.ACTION_SKIPPED
 
     @staticmethod
-    def cast_skill_to_lambda(skill: CustomSkill, select_target: Optional[Callable[[], int | None]], call_target: bool = False) -> Generator[Any, Any, BehaviorResult]:
+    def cast_skill_to_lambda(skill: CustomSkill, select_target: Optional[Callable[[], int | None]], call_target: bool = False, after_cast_delay: bool = True) -> Generator[Any, Any, BehaviorResult]:
 
         if not Routines.Checks.Skills.IsSkillSlotReady(skill.skill_slot):
             yield
@@ -370,7 +370,10 @@ class Actions:
         if call_target:
             yield from Routines.Yield.Keybinds.CallTarget(False)
         if constants.DEBUG: print(f"cast_skill_to_target {skill.skill_name} to {target_agent_id}")
-        yield from Helpers.delay_aftercast(skill)
+        if after_cast_delay:
+            yield from Helpers.delay_aftercast(skill)
+        else:
+            yield from Helpers.wait_for(223) # just fuck off for a split second
         return BehaviorResult.ACTION_PERFORMED
 
     @staticmethod
@@ -378,8 +381,8 @@ class Actions:
         return (yield from Actions.cast_skill_to_lambda(skill, select_target=lambda: target_agent_id, call_target=call_target))
 
     @staticmethod
-    def cast_skill(skill: CustomSkill) -> Generator[Any, Any, BehaviorResult]:
-        return (yield from Actions.cast_skill_to_lambda(skill, select_target=None))
+    def cast_skill(skill: CustomSkill, after_cast_delay: bool = True) -> Generator[Any, Any, BehaviorResult]:
+        return (yield from Actions.cast_skill_to_lambda(skill, select_target=None, after_cast_delay=after_cast_delay))
 
     @staticmethod
     def cast_effect_before_expiration(skill: CustomSkill, time_before_expire: int) -> Generator[Any, Any, BehaviorResult]:

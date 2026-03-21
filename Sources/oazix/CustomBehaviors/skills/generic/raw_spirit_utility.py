@@ -55,7 +55,7 @@ class RawSpiritUtility(CustomSkillUtilityBase):
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
 
         if Routines.Checks.Skills.IsSkillSlotReady(self.ritual_lord_skill.skill_slot):
-            yield from custom_behavior_helpers.Actions.cast_skill(self.ritual_lord_skill)
+            yield from custom_behavior_helpers.Actions.cast_skill(self.ritual_lord_skill, after_cast_delay=False)
 
         result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
 

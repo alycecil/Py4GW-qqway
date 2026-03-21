@@ -85,7 +85,7 @@ class RawSpiritUtility(CustomSkillUtilityBase):
 
         if Routines.Checks.Skills.IsSkillSlotReady(self.ritual_lord_skill.skill_slot):
             print("using ritual lord")
-            yield from custom_behavior_helpers.Actions.cast_skill(self.ritual_lord_skill)
+            yield from custom_behavior_helpers.Actions.cast_skill(self.ritual_lord_skill, after_cast_delay=False)
 
             print("using destruction after ritual lord")
 
