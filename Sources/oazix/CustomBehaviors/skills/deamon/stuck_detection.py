@@ -24,7 +24,7 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition imp
 from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_typology import UtilitySkillTypology
 
 class StuckDetectionUtility(CustomSkillUtilityBase):
-    def __init__(self, event_bus: EventBus, current_build: list[CustomSkill], threshold: int = 80) -> None:
+    def __init__(self, event_bus: EventBus, current_build: list[CustomSkill], threshold: int = 20) -> None:
         super().__init__(
             event_bus=event_bus,
             skill=CustomSkill("stuck_detection"),
