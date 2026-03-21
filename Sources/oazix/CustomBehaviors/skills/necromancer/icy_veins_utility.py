@@ -20,7 +20,7 @@ class IcyVeinsUtility(CustomSkillUtilityBase):
         current_build: list[CustomSkill],
         score_definition: ScoreStaticDefinition = ScoreStaticDefinition(40),
         mana_required_to_cast: int = 15,
-        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
+        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO,BehaviorState.CLOSE_TO_AGGRO],
     ) -> None:
         super().__init__(
             event_bus=event_bus,
@@ -60,7 +60,7 @@ class IcyVeinsUtility(CustomSkillUtilityBase):
             if constants.DEBUG: print("No candidates")
             return None
 
-        mult = 0.5
+        mult = 0.95
         if self.nature_has_been_attempted_last(previously_attempted_skills):
             mult = 0.25
 
@@ -74,7 +74,6 @@ class IcyVeinsUtility(CustomSkillUtilityBase):
 
         scored = self.score_definition.get_score() * mult
 
-        # default max is 61.28 but in case of overrides
         if scored > 99:
             scored = 99
 
