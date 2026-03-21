@@ -41,6 +41,15 @@ class IcyVeinsUtility(CustomSkillUtilityBase):
         Return enemy agent IDs ordered by priority (lowest HP, then distance) within shout/spellcast range.
         """
 
+        priority = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority(
+            within_range=Range.Spellcast, condition=lambda agent_id: (not Agent.IsSpirit(agent_id)
+                                                                      and not Agent.IsHexed(agent_id)
+                                                                      and 0.05 < Agent.GetHealth(agent_id) < 0.6),
+            sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC), )
+
+        if len(priority) > 0:
+            return priority
+
         return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority(
             within_range=Range.Spellcast,
             condition=lambda agent_id: not Agent.IsSpirit(agent_id),
@@ -69,7 +78,7 @@ class IcyVeinsUtility(CustomSkillUtilityBase):
             mult += 0.51
 
         # if the lowest hp target is below 50% health lets try and get that eoe like effect
-        if Agent.GetHealth(target) < 0.5:
+        if Agent.GetHealth(target) < 0.6:
             mult += 0.51
 
         scored = self.score_definition.get_score() * mult
