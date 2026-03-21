@@ -4,10 +4,12 @@ from pyexpat import features
 
 from Py4GWCoreLib import GLOBAL_CACHE, Agent, Range, Routines, Player
 from Sources.Nikon_Scripts.BotUtilities import GameAreas
+from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
+from Sources.oazix.CustomBehaviors.primitives.helpers.sortable_agent_data import SortableAgentData
 from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import \
     ScorePerAgentQuantityDefinition
@@ -20,7 +22,7 @@ class ToxicChillUtility(CustomSkillUtilityBase):
     def __init__(self,
                  event_bus: EventBus,
                  current_build: list[CustomSkill],
-                 score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda feature_count: 80 if feature_count >= 2 else 50 if feature_count >= 1 else 10),
+                 score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda feature_count: 85 if feature_count >= 2 else 71 if feature_count >= 1 else 10),
                  ) -> None:
 
         super().__init__(
@@ -31,29 +33,28 @@ class ToxicChillUtility(CustomSkillUtilityBase):
         
         self.score_definition: ScorePerAgentQuantityDefinition = score_definition
 
-
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
-        priority_targets = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
+        priority_targets : list[SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
             within_range=Range.Spellcast,
-            condition=lambda agent_id: not Agent.IsPoisoned(agent_id) and (Agent.IsEnchanted(agent_id)
-                                                                           or Agent.IsHexed(agent_id)),
+            condition=lambda agent_id: not Agent.IsPoisoned(agent_id) and (Agent.IsEnchanted(agent_id) or Agent.IsHexed(agent_id)),
         )
         if len(priority_targets) >= 0:
+            if constants.DEBUG: print("Toxic_Chill: Priority targets detected")
             return self._sort_targets(priority_targets)
 
-        targets = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
+        targets : list[SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
             within_range=Range.Spellcast,
         )
 
         return self._sort_targets(targets)
 
-    def _sort_targets(self, targets):
+    def _sort_targets(self, targets : list[SortableAgentData]):
         targets = sorted(
             targets,
-            key=lambda agent_id: (
-                not Agent.IsPoisoned(agent_id),
-                (Agent.IsEnchanted(agent_id) and Agent.IsHexed(agent_id)),
-                (Agent.IsEnchanted(agent_id) or Agent.IsHexed(agent_id))
+            key=lambda agent: (
+                not Agent.IsPoisoned(agent.agent_id),
+                (Agent.IsEnchanted(agent.agent_id) and Agent.IsHexed(agent.agent_id)),
+                (Agent.IsEnchanted(agent.agent_id) or Agent.IsHexed(agent.agent_id))
             )
         )
         return targets
@@ -62,7 +63,19 @@ class ToxicChillUtility(CustomSkillUtilityBase):
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
         targets = self._get_targets()
-        if len(targets) == 0: return None
+        if len(targets) == 0:
+            if constants.DEBUG: print("Toxic_Chill: No Targets")
+            return None
+
+        agent = targets[0]
+        if agent is None:
+            if constants.DEBUG: print("Toxic_Chill: No Target Agent")
+            return None
+
+        agent_id = agent.agent_id
+        if agent_id is None or agent_id <= 0:
+            if constants.DEBUG: print("Toxic_Chill: No Target Agent Id")
+            return None
 
         target_features = 0
         enchanted = Agent.IsEnchanted(agent_id)
@@ -82,10 +95,7 @@ class ToxicChillUtility(CustomSkillUtilityBase):
         if len(enemies) == 0: return BehaviorResult.ACTION_SKIPPED
         target = enemies[0]
 
-        try:
-            result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
-        finally:
-            CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
+        result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
         return result
 
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
