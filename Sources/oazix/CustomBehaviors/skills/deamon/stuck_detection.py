@@ -24,7 +24,7 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition imp
 from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_typology import UtilitySkillTypology
 
 class StuckDetectionUtility(CustomSkillUtilityBase):
-    def __init__(self, event_bus: EventBus, current_build: list[CustomSkill], threshold: int = 80) -> None:
+    def __init__(self, event_bus: EventBus, current_build: list[CustomSkill], threshold: int = 20) -> None:
         super().__init__(
             event_bus=event_bus,
             skill=CustomSkill("stuck_detection"),
@@ -35,8 +35,8 @@ class StuckDetectionUtility(CustomSkillUtilityBase):
 
         self.score_definition: ScoreStaticDefinition = ScoreStaticDefinition(CommonScore.DEAMON.value)
         self.__previous_player_position : tuple[float, float] = (0, 0)
-        self.throttle_timer_aggro = ThrottledTimer(30_000)  # 12 seconds for IN_AGGRO
-        self.throttle_timer_non_aggro = ThrottledTimer(5_000)  # 5 seconds for CLOSE_TO_AGGRO and FAR_FROM_AGGRO
+        self.throttle_timer_aggro = ThrottledTimer(30_000)  # 30 seconds for IN_AGGRO
+        self.throttle_timer_non_aggro = ThrottledTimer(15_000)  # 15 seconds for CLOSE_TO_AGGRO and FAR_FROM_AGGRO
         self.__previous_state: BehaviorState | None = None  # Track state changes
         self.__stuck_count = 0
         self.__moving_samples = 0
