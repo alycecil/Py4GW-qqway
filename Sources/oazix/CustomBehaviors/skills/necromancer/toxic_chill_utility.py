@@ -64,16 +64,16 @@ class ToxicChillUtility(CustomSkillUtilityBase):
         targets = self._get_targets()
         if len(targets) == 0: return None
 
-        features = 0
+        target_features = 0
         enchanted = Agent.IsEnchanted(agent_id)
         hexed = Agent.IsHexed(agent_id)
-        if (enchanted or hexed):
-            features += 1
-        if (enchanted and hexed):
-            features += 1 # almost certainly going to poison
-        if features > 0 and Agent.IsPoisoned(agent_id):
-            features = 0
-        return self.score_definition.get_score(features)
+        if enchanted or hexed:
+            target_features += 1
+        if enchanted and hexed:
+            target_features += 1 # almost certainly going to poison
+        if target_features > 0 and Agent.IsPoisoned(agent_id):
+            target_features = 0
+        return self.score_definition.get_score(target_features)
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
