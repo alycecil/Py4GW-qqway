@@ -67,6 +67,14 @@ class GreatDwarfWeaponUtility(CustomSkillUtilityBase):
                 sort_key=(TargetingOrder.DISTANCE_DESC, TargetingOrder.CASTER_THEN_MELEE),
                 range_to_count_enemies=None,
                 range_to_count_allies=None)
+
+        if target is not None and target > 0:
+            return target
+
+        # Fallback if no other target
+        npc_agent_id : int = Routines.Agents.GetNearestAliveAgentByModelID(self.ebon_vanguard_assassin_model_id, Range.Spellcast.value)
+        if npc_agent_id != None and npc_agent_id != 0 and not Agent.IsWeaponSpelled(npc_agent_id):
+            return npc_agent_id
     
         return target
 
