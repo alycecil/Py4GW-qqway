@@ -18,7 +18,7 @@ class NecrosisUtility(CustomSkillUtilityBase):
     def __init__(self,
                 event_bus: EventBus,
                 current_build: list[CustomSkill],
-                score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 15 if enemy_qte >= 3 else 45 if enemy_qte >= 2 else 69),
+                score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 24 if enemy_qte >= 3 else 45 if enemy_qte >= 2 else 69),
         ) -> None:
 
         super().__init__(
@@ -28,6 +28,23 @@ class NecrosisUtility(CustomSkillUtilityBase):
             score_definition=score_definition)
         
         self.score_definition: ScorePerAgentQuantityDefinition = score_definition
+
+    def _get_candidates(self) -> tuple[int, ...]:
+        """
+        Return enemy agent IDs ordered by priority (lowest HP, then distance) within shout/spellcast range.
+        """
+
+        return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority(
+            within_range=Range.Spellcast,
+            condition=lambda agent_id: Agent.IsHexed(agent_id) or Agent.IsConditioned(agent_id),
+            sort_key=(TargetingOrder.HP_ASC, TargetingOrder.CASTER_THEN_MELEE, TargetingOrder.DISTANCE_ASC),
+        )
+
+    def _get_best_target(self) -> int | None:
+        candidates = self._get_candidates()
+        if not candidates:
+            return None
+        return candidates[0]
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
@@ -40,17 +57,10 @@ class NecrosisUtility(CustomSkillUtilityBase):
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any | None, Any | None, BehaviorResult]:
 
-        # todo make sure condi or hex will last long enough
-        condition = lambda agent_id: Agent.IsHexed(agent_id) or Agent.IsConditioned(agent_id)
+        target = self._get_best_target()
+        if target is None:
+            return BehaviorResult.ACTION_SKIPPED
 
-        action: Callable[[], Generator[Any, Any, BehaviorResult]] = lambda: (yield from custom_behavior_helpers.Actions.cast_skill_to_lambda(
-            skill=self.custom_skill,
-            select_target=lambda: custom_behavior_helpers.Targets.get_first_or_default_from_enemy_ordered_by_priority(
-                within_range=Range.Spellcast,
-                condition=lambda agent_id: condition(agent_id),
-                sort_key=(TargetingOrder.HP_ASC, TargetingOrder.CASTER_THEN_MELEE)
-            )
-        ))
+        result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target)
 
-        result: BehaviorResult = yield from custom_behavior_helpers.Helpers.wait_for_or_until_completion(2500, action)
         return result
