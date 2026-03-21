@@ -119,7 +119,7 @@ class LootUtility(CustomSkillUtilityBase):
         while True:
 
             if GLOBAL_CACHE.Inventory.GetFreeSlotCount() < 1: break
-            loot_array:list[int] = LootConfig().GetfilteredLootArray(Range.Earshot.value, multibox_loot=True)
+            loot_array:list[int] = LootConfig().GetfilteredLootArray(Range.Longbow.value, multibox_loot=True)
             if len(loot_array) == 0: break
             item_id = loot_array.pop(0)
             if item_id is None or item_id == 0:
