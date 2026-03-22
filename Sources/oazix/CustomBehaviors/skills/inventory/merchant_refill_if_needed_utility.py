@@ -658,6 +658,8 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
     def sort_inventory(self):
         from Py4GWCoreLib.py4gwcorelib_src.Console import Console, ConsoleLog
 
+        # TODO
+
         visit_duration_in_seconds = self.visit_duration_in_seconds_config[MerchantType.SORT_INVENTORY]
         ConsoleLog("MerchantRefillIfNeededUtility",
                    f"{MerchantType.SORT_INVENTORY.name} waiting at for {visit_duration_in_seconds}s.",
@@ -675,6 +677,8 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
 
     def sort_storage(self):
         from Py4GWCoreLib.py4gwcorelib_src.Console import Console, ConsoleLog
+
+        # TODO
 
         visit_duration_in_seconds = self.visit_duration_in_seconds_config[MerchantType.SORT_STORAGE]
         ConsoleLog("MerchantRefillIfNeededUtility",
