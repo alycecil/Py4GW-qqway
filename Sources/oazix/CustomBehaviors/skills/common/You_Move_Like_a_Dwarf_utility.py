@@ -53,6 +53,7 @@ class You_Move_Like_a_Dwarf_Utility(CustomSkillUtilityBase):
             sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_ASC, TargetingOrder.DISTANCE_ASC),
             range_to_count_enemies=max(GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id), Range.Nearby.value), # aim for groups
             condition=lambda agent_id: (
+                    not Agent.IsKnockedDown(agent_id) and
                     not CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(self._get_lock_key(agent_id)) # Spread mode won't target those already locked
             )
         )
