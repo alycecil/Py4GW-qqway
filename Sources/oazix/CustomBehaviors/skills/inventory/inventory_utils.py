@@ -103,7 +103,7 @@ class WeaponConfig:
                  q6: InventoryMode = InventoryMode.KEEP,
                  q7: InventoryMode = InventoryMode.KEEP,
                  q8: InventoryMode = InventoryMode.KEEP,
-                 q9: InventoryMode = InventoryMode.DEPOSIT,
+                 q9: InventoryMode = InventoryMode.SELL,
                  q10: InventoryMode = InventoryMode.SELL,
                  q11: InventoryMode = InventoryMode.SELL,
                  q12: InventoryMode = InventoryMode.SELL,
@@ -468,18 +468,13 @@ class InventoryUtils:
                 if constants.DEBUG: ConsoleLog("InvUtil",f"Item {item_id} is maxed")
 
                 if parsed_modifiers.requirements == 0:
-                    # todo check max
                     default_action = weapon_config.q0
                 if parsed_modifiers.requirements == 5:
-                    # todo check max
                     default_action = weapon_config.q5
                 if parsed_modifiers.requirements == 6:
-                    # todo check max
                     default_action = weapon_config.q6
                 if parsed_modifiers.requirements == 7:
-                    # todo check max
                     default_action = weapon_config.q7
-
                 if parsed_modifiers.requirements == 8:
                     default_action = weapon_config.q8
                 if parsed_modifiers.requirements == 9:
