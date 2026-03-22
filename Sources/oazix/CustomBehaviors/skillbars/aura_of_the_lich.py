@@ -1,30 +1,18 @@
 from typing import override
 
-from Py4GWCoreLib.enums import SpiritModelID
-from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
-from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
-from Sources.oazix.CustomBehaviors.primitives.scores.score_per_health_gravity_definition import ScorePerHealthGravityDefinition
+from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import \
+    ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_utility import CustomBehaviorBaseUtility
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
-from Sources.oazix.CustomBehaviors.skills.common.auto_attack_utility import AutoAttackUtility
-from Sources.oazix.CustomBehaviors.skills.common.breath_of_the_great_dwarf_utility import BreathOfTheGreatDwarfUtility
-from Sources.oazix.CustomBehaviors.skills.common.by_urals_hammer_utility import ByUralsHammerUtility
-from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_honor_utility import EbonBattleStandardOfHonorUtility
-from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
-from Sources.oazix.CustomBehaviors.skills.common.great_dwarf_weapon_utility import GreatDwarfWeaponUtility
-from Sources.oazix.CustomBehaviors.skills.common.i_am_unstoppable_utility import IAmUnstoppableUtility
-from Sources.oazix.CustomBehaviors.skills.generic.generic_resurrection_utility import GenericResurrectionUtility
+from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import \
+    EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
-from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
-from Sources.oazix.CustomBehaviors.skills.generic.raw_spirit_utility import RawSpiritUtility
+from Sources.oazix.CustomBehaviors.skills.generic.preparation_utility import PreparationUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.aura_of_the_lich_utility import Aura_of_the_Lich_Utility
-from Sources.oazix.CustomBehaviors.skills.paragon.fall_back_utility import FallBackUtility
-from Sources.oazix.CustomBehaviors.skills.ritualist.armor_of_unfeeling_utility import ArmorOfUnfeelingUtility
-from Sources.oazix.CustomBehaviors.skills.ritualist.gaze_of_fury_utility import GazeOfFuryUtility
-from Sources.oazix.CustomBehaviors.skills.ritualist.signet_of_spirits_utility import SignetOfSpiritsUtility
-from Sources.oazix.CustomBehaviors.skills.ritualist.summon_spirit_utility import SummonSpiritUtility
+from Sources.oazix.CustomBehaviors.skills.necromancer.necrosis_utility import NecrosisUtility
+
 
 class Aura_of_the_Lich_UtilitySkillBar(CustomBehaviorBaseUtility):
 
@@ -33,14 +21,50 @@ class Aura_of_the_Lich_UtilitySkillBar(CustomBehaviorBaseUtility):
         in_game_build = list(self.skillbar_management.get_in_game_build().values())
 
         # core
-        self.elite_skill_utility: CustomSkillUtilityBase = Aura_of_the_Lich_Utility(event_bus=self.event_bus, current_build=in_game_build)
+        self.elite_skill_utility: CustomSkillUtilityBase = Aura_of_the_Lich_Utility(
+            event_bus=self.event_bus,
+            current_build=in_game_build
+        )
 
-    
+        self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(
+            event_bus=self.event_bus,
+            score_definition=ScoreStaticDefinition(71),
+            current_build=in_game_build,
+            mana_required_to_cast=15
+        )
+
+        self.necrosis_utility: CustomSkillUtilityBase = NecrosisUtility(
+            event_bus=self.event_bus,
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 69),
+        )
+
+        self.serpents_quickness_prep_utility: CustomSkillUtilityBase = PreparationUtility(
+            event_bus=self.event_bus,
+            prep_skill=CustomSkill("Serpents_Quickness"),
+            target_utilities=[self.elite_skill_utility,
+                              self.necrosis_utility,
+                              ],
+            current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(94)
+        )
+
+        self.dwarven_stability_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(
+            event_bus=self.event_bus,
+            current_build=in_game_build,
+            skill=CustomSkill("Dwarven_Stability"),
+            score_definition=ScoreStaticDefinition(95)
+        )
+
     @property
     @override
     def custom_skills_in_behavior(self) -> list[CustomSkillUtilityBase]:
         return [
             self.elite_skill_utility,
+            self.necrosis_utility,
+            self.serpents_quickness_prep_utility,
+            self.dwarven_stability_utility,
+            self.ebon_vanguard_assassin_support,
         ]
 
     @property
