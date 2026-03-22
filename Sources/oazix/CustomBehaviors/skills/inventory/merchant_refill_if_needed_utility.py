@@ -157,7 +157,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
     @override
     def are_common_pre_checks_valid(self, current_state: BehaviorState) -> bool:
         if self.allowed_states is not None and current_state not in self.allowed_states: return False
-        # if Map.IsOutpost() or Map.IsGuildHall(): return True # be discret...
+        if Map.IsOutpost() or Map.IsGuildHall(): return True # be discret...
         return False
 
     def _is_merchant_agent(self, agent_id: int) -> bool:
@@ -339,6 +339,9 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         if constants.DEBUG: Player.ChangeTarget(target_agent_id)
         target_position : tuple[float, float] = Agent.GetXY(target_agent_id)
         if Utils.Distance(target_position, Player.GetXY()) > 150:
+            milliseconds = random.randint(800, 4600)
+            yield from custom_behavior_helpers.Helpers.wait_for(milliseconds)
+
             path3d = yield from AutoPathing().get_path_to(target_position[0], target_position[1], smooth_by_los=True, margin=100.0, step_dist=322.0)
             path2d:list[tuple[float, float]]  = [(x, y) for (x, y, *_ ) in path3d]
 
