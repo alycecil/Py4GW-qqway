@@ -139,20 +139,24 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         else:
             self.inventory_utils_config: InventoryUtilsConfig = InventoryUtilsConfig()
 
-        self.npc_visited[MerchantType.XUNLAI_CHEST] = False
-        self.npc_visited[MerchantType.MERCHANT] = False
-        self.npc_visited[MerchantType.RUNE_TRADER] = False
-        self.npc_visited[MerchantType.RARE_MATERIAL_TRADER] = False
-        self.npc_visited[MerchantType.CRAFTING_MATERIAL_TRADER] = False
         self.npc_visited[MerchantType.SORT_STORAGE] = False
         self.npc_visited[MerchantType.SORT_INVENTORY] = False
+        if Map.IsGuildHall():
+            self.npc_visited[MerchantType.XUNLAI_CHEST] = False
+            self.npc_visited[MerchantType.MERCHANT] = False
+            self.npc_visited[MerchantType.RUNE_TRADER] = False
+            self.npc_visited[MerchantType.RARE_MATERIAL_TRADER] = False
+            self.npc_visited[MerchantType.CRAFTING_MATERIAL_TRADER] = False
+        elif Map.IsOutpost():
+            self.npc_visited[MerchantType.XUNLAI_CHEST] = False
+            # self.npc_visited[MerchantType.MERCHANT] = False
 
         yield
 
     @override
     def are_common_pre_checks_valid(self, current_state: BehaviorState) -> bool:
         if self.allowed_states is not None and current_state not in self.allowed_states: return False
-        if Map.IsOutpost() or Map.IsGuildHall(): return True # be discret...
+        # if Map.IsOutpost() or Map.IsGuildHall(): return True # be discret...
         return False
 
     def _is_merchant_agent(self, agent_id: int) -> bool:
