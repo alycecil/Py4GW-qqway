@@ -56,9 +56,11 @@ class IcyVeinsUtility(CustomSkillUtilityBase):
         elif health < .5:
             score_max = 90
             score_min = 20
+            score_offset += 10
         elif health < .75:
             score_max = 75
             score_min = 20
+            score_offset += 5
 
         if 0.1 < health < 0.6:
             score_offset += 20
