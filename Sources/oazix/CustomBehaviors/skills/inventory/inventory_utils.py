@@ -354,59 +354,66 @@ class InventoryUtils:
 
     def is_maxed(
             self, item_id,
-            parsed_modifiers: ParsedModifierResult,
-            item_type: ItemType
+            parsed_modifiers: ParsedModifierResult = None,
+            item_type: ItemType = None
     ):
 
         item_type_to_int, item1_type_name = GLOBAL_CACHE.Item.GetItemType(item_id)
         if item_type_to_int == 0:
             return True
 
+        if item_type is None:
+            item_type = ItemType(item_type_to_int)
+
         if parsed_modifiers is None:
             prefix, suffix, inherent, parsed_modifiers = self.get_mods_from_item(item_id)
 
+        requirements = parsed_modifiers.requirements
+        offset = 0
+        if requirements is not None and requirements < 9:
+            offset = 9 - requirements
+
         res : bool | None = None
-
-        if item_type == ItemType.Wand or item_type == ItemType.Staff:
-            min_dmg, max_dmg = parsed_modifiers.damage
-            res = min_dmg >= 11 and max_dmg >= 21 # i like 21 wands too
-
-        if item_type == ItemType.Axe:
-            min_dmg, max_dmg = parsed_modifiers.damage
-            res = min_dmg >= 6 and max_dmg >= 28
-
-        if item_type == ItemType.Bow:
-            min_dmg, max_dmg = parsed_modifiers.damage
-            res = min_dmg >= 15 and max_dmg >= 28
-
-        if item_type == ItemType.Daggers:
-            min_dmg, max_dmg = parsed_modifiers.damage
-            res = min_dmg >= 7 and max_dmg >= 17
-
-        if item_type == ItemType.Hammer:
-            min_dmg, max_dmg = parsed_modifiers.damage
-            res = min_dmg >= 19 and max_dmg >= 35
-
-        if item_type == ItemType.Sword:
-            min_dmg, max_dmg = parsed_modifiers.damage
-            res = min_dmg >= 15 and max_dmg >= 22
-
-        if item_type == ItemType.Spear:
-            min_dmg, max_dmg = parsed_modifiers.damage
-            res = min_dmg >= 14 and max_dmg >= 27
-
-        if item_type == ItemType.Scythe:
-            min_dmg, max_dmg = parsed_modifiers.damage
-            res = min_dmg > 9 or (
-                    min_dmg >= 9 and max_dmg >= 41
-            )
 
         if item_type == ItemType.Shield:
             max_armor, min_armor = parsed_modifiers.shield_armor
-            res = (max_armor >= 16 or min_armor >= 16)
+            if constants.DEBUG: ConsoleLog("InvUtil",f"Shield {item_id} q{requirements} Damage {max_armor} {min_armor}")
+            res = (max_armor >= 16 - offset or min_armor >= 16 - offset)
 
-        if item_type == ItemType.Offhand:
+        elif item_type == ItemType.Offhand:
+            if constants.DEBUG: ConsoleLog("InvUtil",f"Offhand {item_id} q{requirements} : {parsed_modifiers}")
             return True
+
+        else:
+            min_dmg, max_dmg = parsed_modifiers.damage
+
+            if constants.DEBUG: ConsoleLog("InvUtil",f"Weapon {item_id} q{requirements} Damage {min_dmg} {max_dmg}")
+
+            if item_type == ItemType.Wand or item_type == ItemType.Staff:
+                res = min_dmg >= 11 - offset and max_dmg >= 21 - offset # i like 21 wands too
+
+            if item_type == ItemType.Axe:
+                res = min_dmg >= 6 - offset and max_dmg >= 28 - offset
+
+            if item_type == ItemType.Bow:
+                res = min_dmg >= 15 - offset and max_dmg >= 28 - offset
+
+            if item_type == ItemType.Daggers:
+                res = min_dmg >= 7- offset and max_dmg >= 17 - offset
+
+            if item_type == ItemType.Hammer:
+                res = min_dmg >= 19 - offset and max_dmg >= 35 - offset
+
+            if item_type == ItemType.Sword:
+                res = min_dmg >= 15 - offset and max_dmg >= 22 - offset
+
+            if item_type == ItemType.Spear:
+                res = min_dmg >= 14 - offset and max_dmg >= 27 - offset
+
+            if item_type == ItemType.Scythe:
+                res = min_dmg > 9 or (
+                        min_dmg >= 9 - offset and max_dmg >= 41 - offset
+                )
 
         if res is None or res:
             res2 = len(parsed_modifiers.max_runes) > 0 or len(parsed_modifiers.max_weapon_mods) > 0
@@ -456,21 +463,23 @@ class InventoryUtils:
 
             # todo result.attribute
         if not Item.Rarity.IsWhite(item_id) and parsed_modifiers.requirements is not None:
-            if parsed_modifiers.requirements == 0:
-                # todo check max
-                default_action = weapon_config.q0
-            if parsed_modifiers.requirements == 5:
-                # todo check max
-                default_action = weapon_config.q5
-            if parsed_modifiers.requirements == 6:
-                # todo check max
-                default_action = weapon_config.q6
-            if parsed_modifiers.requirements == 7:
-                # todo check max
-                default_action = weapon_config.q7
 
             if self.is_maxed(item_id, parsed_modifiers, item_type):
                 if constants.DEBUG: ConsoleLog("InvUtil",f"Item {item_id} is maxed")
+
+                if parsed_modifiers.requirements == 0:
+                    # todo check max
+                    default_action = weapon_config.q0
+                if parsed_modifiers.requirements == 5:
+                    # todo check max
+                    default_action = weapon_config.q5
+                if parsed_modifiers.requirements == 6:
+                    # todo check max
+                    default_action = weapon_config.q6
+                if parsed_modifiers.requirements == 7:
+                    # todo check max
+                    default_action = weapon_config.q7
+
                 if parsed_modifiers.requirements == 8:
                     default_action = weapon_config.q8
                 if parsed_modifiers.requirements == 9:
