@@ -60,7 +60,6 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
             current_build=in_game_build)
 
         self.technobabble_utility: CustomSkillUtilityBase = Technobabble_Utility(event_bus=self.event_bus, current_build=in_game_build, mana_required_to_cast=15)
-        self.fragility_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Fragility"), current_build=in_game_build, mana_required_to_cast=20)
 
 #         Cast Glyph of Lesser Energy↦Arcane Conundrum↦Cry of Pain on the largest group of foes, preferably hitting casters.
 #         Deal damage against balled up attacking foes utilizing Ineptitude, Wandering Eye and Signet of Clumsiness.
@@ -105,7 +104,6 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.Signet_of_Corruption_kurzick_utility,
             self.Signet_of_Corruption_luxon_utility,
             self.technobabble_utility,
-            self.fragility_utility,
         ]
 
     @property
