@@ -166,7 +166,12 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
                 return BehaviorResult.ACTION_SKIPPED
 
         print(f"Trying to step to {target}")
+        Player.Interact(target, False)
+
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target)
+
+        Player.Interact(target, False)
+
         return result
 
     def distance_from_lead(self, my_id, party_leader_id):
