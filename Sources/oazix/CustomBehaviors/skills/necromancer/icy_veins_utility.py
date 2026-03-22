@@ -75,11 +75,11 @@ class IcyVeinsUtility(CustomSkillUtilityBase):
 
         # if the target is not hexed
         if not Agent.IsHexed(target):
-            mult += 0.51
+            return 80
 
         # if the lowest hp target is below 50% health lets try and get that eoe like effect
         if Agent.GetHealth(target) < 0.6:
-            mult += 0.51
+            mult += 0.55
 
         scored = self.score_definition.get_score() * mult
 
