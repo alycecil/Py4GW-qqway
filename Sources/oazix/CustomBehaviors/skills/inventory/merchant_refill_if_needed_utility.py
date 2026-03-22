@@ -112,6 +112,13 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
             # MerchantType.ID_TIME: False
         }
 
+        if Map.IsOutpost():
+            self.npc_visited[MerchantType.XUNLAI_CHEST] = True
+            self.npc_visited[MerchantType.MERCHANT] = True
+            self.npc_visited[MerchantType.RUNE_TRADER] = True
+            self.npc_visited[MerchantType.RARE_MATERIAL_TRADER] = True
+            self.npc_visited[MerchantType.CRAFTING_MATERIAL_TRADER] = True
+
         self.event_bus.subscribe(EventType.MAP_CHANGED, self.map_changed, subscriber_name=self.custom_skill.skill_name)
 
         data: str | None = PersistenceLocator().skills.read(self.custom_skill.skill_name, "inventory_config")
