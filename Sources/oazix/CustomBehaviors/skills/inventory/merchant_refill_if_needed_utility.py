@@ -112,7 +112,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
             # MerchantType.ID_TIME: False
         }
 
-        if Map.IsOutpost():
+        if Map.IsOutpost() and not Map.IsGuildHall():
             self.npc_visited[MerchantType.XUNLAI_CHEST] = True
             self.npc_visited[MerchantType.MERCHANT] = True
             self.npc_visited[MerchantType.RUNE_TRADER] = True
