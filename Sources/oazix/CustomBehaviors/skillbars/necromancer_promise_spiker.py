@@ -81,13 +81,6 @@ class NecromancerPromiseSpiker_UtilitySkillBar(CustomBehaviorBaseUtility):
                 mana_required_to_cast=15,
             )
         )
-        self.you_move_like_a_dwarf_utility: CustomSkillUtilityBase = RawSimpleAttackUtility(
-            event_bus=self.event_bus,
-            skill=CustomSkill("You_Move_Like_a_Dwarf"),
-            current_build=in_game_build,
-            score_definition=ScoreStaticDefinition(84),
-            mana_required_to_cast=5,
-        )
         self.pain_inverter_utility: CustomSkillUtilityBase = RawSimpleAttackUtility(
             event_bus=self.event_bus,
             skill=CustomSkill("Pain_Inverter"),
@@ -113,7 +106,6 @@ class NecromancerPromiseSpiker_UtilitySkillBar(CustomBehaviorBaseUtility):
         return [
             self.masochism_utility,
             self.assassins_promise_utility,
-            self.you_move_like_a_dwarf_utility,
             self.ebon_vanguard_assassin_support,
             self.putrid_bile_utility,
             self.finish_him_utility,

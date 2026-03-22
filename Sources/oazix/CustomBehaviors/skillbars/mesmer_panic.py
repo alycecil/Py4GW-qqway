@@ -58,13 +58,6 @@ class MesmerPanic_UtilitySkillBar(CustomBehaviorBaseUtility):
             mana_required_to_cast=15
         )
         self.finish_him_utility: CustomSkillUtilityBase = FinishHimUtility(event_bus=self.event_bus, current_build=in_game_build)
-        self.you_move_like_a_dwarf_utility: CustomSkillUtilityBase = RawAoeAttackUtility(
-            event_bus=self.event_bus,
-            skill=CustomSkill("You_Move_Like_A_Dwarf"),
-            current_build=in_game_build,
-            score_definition=ScorePerAgentQuantityDefinition(lambda q: 82 if q >= 3 else 50),
-            mana_required_to_cast=0
-        )
         self.cry_of_frustration_utility: CustomSkillUtilityBase = RawAoeAttackUtility(
             event_bus=self.event_bus,
             skill=CustomSkill("Cry_of_Frustration"),
@@ -160,7 +153,6 @@ class MesmerPanic_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.chaos_storm_utility,
             self.spiritual_pain_utility,
             self.finish_him_utility,
-            self.you_move_like_a_dwarf_utility,
 
             # energy management / combos
             self.guilt_utility,
