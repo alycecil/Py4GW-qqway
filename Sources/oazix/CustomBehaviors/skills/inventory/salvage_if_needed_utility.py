@@ -198,7 +198,7 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
 
         if salvaged_something:
             ConsoleLog("Salvager",f"Salvaging {len(inventory_item_ids)} items")
-            yield from Routines.Yield.Items.SalvageItems(salvage_me, log=constants.DEBUG)
+            # yield from Routines.Yield.Items.SalvageItems(salvage_me, log=constants.DEBUG)
             yield
             return BehaviorResult.ACTION_PERFORMED
         else:
