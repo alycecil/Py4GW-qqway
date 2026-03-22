@@ -42,7 +42,7 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
             event_bus=event_bus,
             skill=CustomSkill("salvage_if_needed_utility"),
             in_game_build=current_build,
-            score_definition=ScoreStaticDefinition(CommonScore.INVENTORY.value),
+            score_definition=ScoreStaticDefinition(CommonScore.INVENTORY.value+0.002),
             allowed_states=[BehaviorState.FAR_FROM_AGGRO, BehaviorState.IDLE],
             utility_skill_typology=UtilitySkillTypology.INVENTORY,
             execution_strategy=UtilitySkillExecutionStrategy.EXECUTE_THROUGH_THE_END) # or stuck detection will make us reset each 5s...
@@ -102,7 +102,9 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
     def are_common_pre_checks_valid(self, current_state: BehaviorState) -> bool:
         if self.allowed_states is not None and current_state not in self.allowed_states: return False
         if Map.IsOutpost() or Map.IsGuildHall():
-            return False # leave the inventory alone while in town, thats merchant utilities time to shine
+            lock_key = self.generic_player_lock_key()
+            if CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(lock_key):
+                return False # leave the inventory alone while in town, thats merchant utilities time to shine
         return True
 
     @override
@@ -204,8 +206,8 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
             return BehaviorResult.ACTION_SKIPPED
 
     def generic_player_lock_key(self):
-        lock_key = f"inventory_{Player.GetAgentID()}"
-        return lock_key
+        from Sources.oazix.CustomBehaviors.primitives.helpers.lock_key_helper import LockKeyHelper
+        return LockKeyHelper.generic_player_lock_key()
 
     @override
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
