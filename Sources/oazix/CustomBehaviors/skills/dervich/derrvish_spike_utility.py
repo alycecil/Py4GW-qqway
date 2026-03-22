@@ -46,6 +46,7 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         self.staggering_force: CustomSkill = CustomSkill("Staggering_Force")
         self.Deaths_Charge: CustomSkill = CustomSkill("Deaths_Charge")
         self.Ebon_Escape: CustomSkill = CustomSkill("Ebon_Escape")
+        self.Asuran_Scan: CustomSkill = CustomSkill("Asuran_Scan")
         self.mana_required_to_cast = mana_required_to_cast
 
         self.model_id_filter: int = int(PersistenceLocator().skills.read_or_default(self.custom_skill.skill_name, "model_id_filter", "5903"))
@@ -120,6 +121,9 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
     def is_shadow_step_available(self):
         return self.Deaths_Charge.skill_slot is not None and Routines.Checks.Skills.IsSkillSlotReady(self.Deaths_Charge.skill_slot)
 
+    def is_asuran_scan_available(self):
+        return self.Asuran_Scan.skill_slot is not None and Routines.Checks.Skills.IsSkillSlotReady(self.Asuran_Scan.skill_slot)
+
     def is_ebon_escape_available(self):
         return self.Ebon_Escape.skill_slot is not None and Routines.Checks.Skills.IsSkillSlotReady(self.Ebon_Escape.skill_slot)
 
@@ -191,30 +195,34 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         wanted_mana = self.mana_required_to_cast
         cast_staggering_force = False
         cast_aura_of_thorns = False
+        cast_asuran_scan = False
 
         if (self.is_staggering_force_available()
                 and Resources.get_player_absolute_energy() > wanted_mana + 10  # todo this better
         ):
-            wanted_mana = self.mana_required_to_cast + 10
+            wanted_mana = self.mana_required_to_cast + 10 # todo dervish cost reduction for mysticism
             if constants.DEBUG: print("using spike with staggering_force")
             cast_staggering_force = True
 
         if (self.is_aura_of_thorns_available()
               and Resources.get_player_absolute_energy() > wanted_mana + 5  # todo this better
         ):
-            wanted_mana = wanted_mana + 5
+            wanted_mana = wanted_mana + 5 # todo dervish cost reduction for mysticism
             if constants.DEBUG: print("using spike with aura_of_thorns")
             cast_aura_of_thorns = True
 
         ebon_escape_available = self.is_ebon_escape_available()
         shadow_step_available = self.is_shadow_step_available()
+
         if shadow_step_available or ebon_escape_available:
             cast_shadow_step = False
 
             if Resources.get_player_absolute_energy() > wanted_mana + 5:
                 # shadowstep?
+                wanted_mana += 5
                 cast_shadow_step = True
             elif Resources.get_player_absolute_energy() > wanted_mana - 5 and cast_staggering_force and cast_aura_of_thorns:
+                wanted_mana -= 5
                 cast_staggering_force = False  # prefer slower recharge snare if not enough energy
                 cast_shadow_step = True
 
@@ -245,18 +253,29 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
                         print(f"using {self.Deaths_Charge.skill_name} to shadowstep")
                         yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.Deaths_Charge, target_agent_id=target.agent_id)
 
+        if self.is_asuran_scan_available() and Resources.get_player_absolute_energy() > wanted_mana + 5:
+            # asuran scan too!
+            cast_asuran_scan = True
+            wanted_mana += 5
+
         ping = 150 # todo read from frame
 
         # Do we need to wait for dervish flash cooldown?
         if cast_staggering_force and cast_staggering_force:
             yield from custom_behavior_helpers.Actions.cast_skill(self.staggering_force)
-            yield from custom_behavior_helpers.Helpers.wait_for(1000 + ping) # should add ping here
+            if cast_asuran_scan:
+                yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.Asuran_Scan, target_agent_id=target.agent_id)
+                yield from custom_behavior_helpers.Helpers.wait_for(750 + ping) # should add ping here
+            else:
+                yield from custom_behavior_helpers.Helpers.wait_for(1000 + ping) # should add ping here
             yield from custom_behavior_helpers.Actions.cast_skill(self.aura_of_thorns)
         else:
             if cast_staggering_force:
                 yield from custom_behavior_helpers.Actions.cast_skill(self.staggering_force)
             if cast_aura_of_thorns:
                 yield from custom_behavior_helpers.Actions.cast_skill(self.aura_of_thorns)
+            if cast_asuran_scan:
+                yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.Asuran_Scan, target_agent_id=target.agent_id)
 
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
         return result
