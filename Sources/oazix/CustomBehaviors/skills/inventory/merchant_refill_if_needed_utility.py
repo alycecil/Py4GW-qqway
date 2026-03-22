@@ -35,6 +35,10 @@ class MerchantType(Enum):
     RARE_MATERIAL_TRADER = 3
     CRAFTING_MATERIAL_TRADER = 4
     XUNLAI_CHEST = 5
+    SORT_STORAGE = 6
+    SORT_INVENTORY = 7
+    # SALVAGE_TIME = 8
+    # ID_TIME = 9
 
 
 class InventoryConfig:
@@ -72,6 +76,10 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
             MerchantType.RUNE_TRADER: False,
             MerchantType.RARE_MATERIAL_TRADER: False,
             MerchantType.CRAFTING_MATERIAL_TRADER: False,
+            MerchantType.SORT_INVENTORY: True,
+            MerchantType.SORT_STORAGE: True,
+            # MerchantType.SALVAGE_TIME: True,
+            # MerchantType.ID_TIME: True,
         }
         # this needs some indirection for primitives to enum
         # data: str | None = PersistenceLocator().skills.read(self.custom_skill.skill_name, "should_visit_npc_config")
@@ -86,6 +94,10 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
             MerchantType.RARE_MATERIAL_TRADER: 10,
             MerchantType.CRAFTING_MATERIAL_TRADER: 13,
             MerchantType.XUNLAI_CHEST: 1,
+            MerchantType.SORT_INVENTORY: 5,
+            MerchantType.SORT_STORAGE: 5,
+            # MerchantType.SALVAGE_TIME: 10,
+            # MerchantType.ID_TIME: 5
         }
 
         self.npc_visited:dict[MerchantType, bool] = {
@@ -94,6 +106,10 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
             MerchantType.RUNE_TRADER: False,
             MerchantType.RARE_MATERIAL_TRADER: False,
             MerchantType.CRAFTING_MATERIAL_TRADER: False,
+            MerchantType.SORT_INVENTORY: False,
+            MerchantType.SORT_STORAGE: False,
+            # MerchantType.SALVAGE_TIME: False,
+            # MerchantType.ID_TIME: False
         }
 
         self.event_bus.subscribe(EventType.MAP_CHANGED, self.map_changed, subscriber_name=self.custom_skill.skill_name)
@@ -128,6 +144,8 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         self.npc_visited[MerchantType.RUNE_TRADER] = False
         self.npc_visited[MerchantType.RARE_MATERIAL_TRADER] = False
         self.npc_visited[MerchantType.CRAFTING_MATERIAL_TRADER] = False
+        self.npc_visited[MerchantType.SORT_STORAGE] = False
+        self.npc_visited[MerchantType.SORT_INVENTORY] = False
 
         yield
 
@@ -224,8 +242,9 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
 
             is_white = Item.Rarity.IsWhite(item_id)
             is_blue = Item.Rarity.IsBlue(item_id)
+            is_purple = Item.Rarity.IsPurple(item_id)
 
-            if is_white or is_blue:
+            if is_white or is_blue or is_purple:
                 if GLOBAL_CACHE.Item.Properties.GetValue(item_id) > 0:
                     action_for_item: InventoryMode = self.inventory_utils.get_action_for_item(self.inventory_utils_config, item_id)
                     if action_for_item == InventoryMode.SELL_DONT_IDENTIFY:
@@ -448,8 +467,18 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
                 return BehaviorResult.ACTION_SKIPPED
             yield from self._visit(MerchantType.XUNLAI_CHEST)
             return BehaviorResult.ACTION_PERFORMED
-        if not self.npc_visited[MerchantType.MERCHANT]:
+        if not self.npc_visited[MerchantType.SORT_INVENTORY]:
             if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10):
+                return BehaviorResult.ACTION_SKIPPED
+            yield from self.sort_inventory()
+            return BehaviorResult.ACTION_PERFORMED
+        if not self.npc_visited[MerchantType.SORT_STORAGE]:
+            if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10):
+                return BehaviorResult.ACTION_SKIPPED
+            yield from self.sort_storage()
+            return BehaviorResult.ACTION_PERFORMED
+        if not self.npc_visited[MerchantType.MERCHANT]:
+            if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=30):
                 return BehaviorResult.ACTION_SKIPPED
             yield from self._visit(MerchantType.MERCHANT)
             return BehaviorResult.ACTION_PERFORMED
@@ -472,8 +501,8 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         return BehaviorResult.ACTION_SKIPPED
 
     def generic_player_lock_key(self):
-        lock_key = f"merchant_user_{Player.GetAgentID()}"
-        return lock_key
+        from Sources.oazix.CustomBehaviors.primitives.helpers.lock_key_helper import LockKeyHelper
+        return LockKeyHelper.generic_player_lock_key()
 
     @override
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
@@ -621,6 +650,42 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         name_parts.append(parsed_modifiers.summary())
 
         return " \n".join(name_parts)
+
+    def sort_inventory(self):
+        from Py4GWCoreLib.py4gwcorelib_src.Console import Console, ConsoleLog
+
+        visit_duration_in_seconds = self.visit_duration_in_seconds_config[MerchantType.SORT_INVENTORY]
+        ConsoleLog("MerchantRefillIfNeededUtility",
+                   f"{MerchantType.SORT_INVENTORY.name} waiting at for {visit_duration_in_seconds}s.",
+                   Console.MessageType.Info
+                   )
+        milliseconds = visit_duration_in_seconds * random.randint(800, 1600)
+        yield from custom_behavior_helpers.Helpers.wait_for(milliseconds)
+
+        self.npc_visited[MerchantType.SORT_INVENTORY] = True
+
+        lock_key = self.generic_player_lock_key()
+        CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
+
+        return
+
+    def sort_storage(self):
+        from Py4GWCoreLib.py4gwcorelib_src.Console import Console, ConsoleLog
+
+        visit_duration_in_seconds = self.visit_duration_in_seconds_config[MerchantType.SORT_STORAGE]
+        ConsoleLog("MerchantRefillIfNeededUtility",
+                   f"{MerchantType.SORT_STORAGE.name} waiting at for {visit_duration_in_seconds}s.",
+                   Console.MessageType.Info
+        )
+        milliseconds = visit_duration_in_seconds * random.randint(800, 1600)
+        yield from custom_behavior_helpers.Helpers.wait_for(milliseconds)
+
+        self.npc_visited[MerchantType.SORT_STORAGE] = True
+
+        lock_key = self.generic_player_lock_key()
+        CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
+
+        return
 
 
 # TODO move to common lib
