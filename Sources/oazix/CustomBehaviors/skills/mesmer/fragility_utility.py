@@ -1,6 +1,7 @@
 from typing import Any, Generator, Callable, override
 
 from Py4GWCoreLib import GLOBAL_CACHE, Agent, Range
+from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
@@ -39,14 +40,13 @@ class FragilityUtility(CustomSkillUtilityBase):
         return f"Fragility_{agent_id}"
 
     def _get_target_score(self, target: custom_behavior_helpers.SortableAgentData) -> float:
-        score_max = 80
+        score_max = 81
         score_min = 0
-        if Agent.IsHexed(target.agent_id):
-            score_max = 20
-        else:
-            score_min = 20
+        score_offset = 0
+        if not Agent.IsHexed(target.agent_id):
+            score_offset = 20
 
-        score: int = round(self.score_definition.get_score(target.enemy_quantity_within_range))
+        score: int = round(self.score_definition.get_score(target.enemy_quantity_within_range)) + score_offset
 
         return max(min(score_max, score), score_min)
 
@@ -56,8 +56,16 @@ class FragilityUtility(CustomSkillUtilityBase):
             within_range=Range.Spellcast, condition=lambda agent_id: not Agent.IsSpirit(agent_id),
             range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id))
 
+        by_priority_raw.sort(key=lambda target: (
+            -self._get_target_score(target),
+            -target.enemy_quantity_within_range,
+            target.is_caster,
+        ))
 
-        by_priority_raw.sort(key=lambda target: self._get_target_score(target))
+        if constants.DEBUG:
+            print("List of targets")
+            for item in by_priority_raw:
+                print(f"item: {self._get_target_score(item)} : {item}")
 
         return by_priority_raw
 
