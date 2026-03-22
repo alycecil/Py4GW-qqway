@@ -44,7 +44,7 @@ class IcyVeinsUtility(CustomSkillUtilityBase):
         priority = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority(
             within_range=Range.Spellcast, condition=lambda agent_id: (not Agent.IsSpirit(agent_id)
                                                                       and not Agent.IsHexed(agent_id)
-                                                                      and 0.05 < Agent.GetHealth(agent_id) < 0.6),
+                                                                      and 0.15 < Agent.GetHealth(agent_id) < 0.9),
             sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC), )
 
         if len(priority) > 0:
