@@ -98,11 +98,11 @@ class WeaponConfig:
                  purple: InventoryMode = InventoryMode.SELL,
                  gold: InventoryMode = InventoryMode.SELL,
                  green: InventoryMode = InventoryMode.DEPOSIT,
-                 q0: InventoryMode = InventoryMode.DEPOSIT,
-                 q5: InventoryMode = InventoryMode.DEPOSIT,
-                 q6: InventoryMode = InventoryMode.DEPOSIT,
-                 q7: InventoryMode = InventoryMode.DEPOSIT,
-                 q8: InventoryMode = InventoryMode.DEPOSIT,
+                 q0: InventoryMode = InventoryMode.KEEP,
+                 q5: InventoryMode = InventoryMode.KEEP,
+                 q6: InventoryMode = InventoryMode.KEEP,
+                 q7: InventoryMode = InventoryMode.KEEP,
+                 q8: InventoryMode = InventoryMode.KEEP,
                  q9: InventoryMode = InventoryMode.DEPOSIT,
                  q10: InventoryMode = InventoryMode.SELL,
                  q11: InventoryMode = InventoryMode.SELL,
@@ -201,7 +201,9 @@ class InventoryUtils:
 
     @staticmethod
     def GetIDKits():
-        count_of_id_kits = Inventory.GetModelCount(ModelID.Superior_Identification_Kit)  #5899 model for ID kit
+        count_of_id_kits = (Inventory.GetModelCount(ModelID.Superior_Identification_Kit) + #5899 model for ID kit
+            Inventory.GetModelCount(ModelID.Identification_Kit)
+        )
         return count_of_id_kits
 
     @staticmethod
@@ -409,7 +411,7 @@ class InventoryUtils:
         if res is None or res:
             res2 = len(parsed_modifiers.max_runes) > 0 or len(parsed_modifiers.max_weapon_mods) > 0
             if res2:
-                if constants.DEBUG: ConsoleLog("InvUtil",f"Item {item_id} is not normal max of {item_type} but has max mods, marking true.")
+                if constants.DEBUG: ConsoleLog("InvUtil",f"Item {item_id} is not normal max of {item_type} but has max mods {parsed_modifiers.max_runes} and {parsed_modifiers.max_weapon_mods}, marking true.")
                 return True
 
         if res is not None and res:
