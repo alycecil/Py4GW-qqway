@@ -149,8 +149,11 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
             self.npc_visited[MerchantType.RARE_MATERIAL_TRADER] = False
             self.npc_visited[MerchantType.CRAFTING_MATERIAL_TRADER] = False
         elif Map.IsOutpost():
-            # self.npc_visited[MerchantType.XUNLAI_CHEST] = False
-            # self.npc_visited[MerchantType.MERCHANT] = False
+            self.npc_visited[MerchantType.XUNLAI_CHEST] = True
+            self.npc_visited[MerchantType.MERCHANT] = True
+            self.npc_visited[MerchantType.RUNE_TRADER] = True
+            self.npc_visited[MerchantType.RARE_MATERIAL_TRADER] = True
+            self.npc_visited[MerchantType.CRAFTING_MATERIAL_TRADER] = True
             pass
 
         yield
