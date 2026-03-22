@@ -111,8 +111,8 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
             result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
 
         if self.is_YMLAD_available():
-            if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(self._get_YMLAD_lock_key(target.agent_id), timeout_seconds=3):
-                yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.YMLAD, target_agent_id=target.agent_id)
+            #no lock just yolo
+            yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.YMLAD, target_agent_id=target.agent_id)
 
 
         return result
