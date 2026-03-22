@@ -36,9 +36,6 @@ class RisingBileUtility(CustomSkillUtilityBase):
 
         self.score_definition = score_definition
 
-    def _get_lock_key(self, agent_id: int) -> str:
-        return f"Icy_Veins_{agent_id}"
-
     def _get_target_score(self, target: custom_behavior_helpers.SortableAgentData) -> float:
         score_max = 50
         score_min = 0
@@ -65,9 +62,6 @@ class RisingBileUtility(CustomSkillUtilityBase):
         if 0.1 < health < 0.6:
             score_offset += 20
             score_min = 40
-
-        lock_key = self._get_lock_key(target.agent_id)
-        CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(lock_key)
 
         score: int = round(self.score_definition.get_score(target.enemy_quantity_within_range)) + score_offset
 
@@ -100,8 +94,6 @@ class RisingBileUtility(CustomSkillUtilityBase):
         targets = self._get_targets()
         if len(targets) == 0: return None
         target = targets[0]
-        lock_key = self._get_lock_key(target.agent_id)
-        if CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(lock_key): return None
 
         return self._get_target_score(target)
 
@@ -112,12 +104,6 @@ class RisingBileUtility(CustomSkillUtilityBase):
         if len(enemies) == 0: return BehaviorResult.ACTION_SKIPPED
         target = enemies[0]
 
-        lock_key = self._get_lock_key(target.agent_id)
-        CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key) # intentionally not blocking as still does damage
-
-        try:
-            result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
-        finally:
-            CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
+        result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
         return result
 
