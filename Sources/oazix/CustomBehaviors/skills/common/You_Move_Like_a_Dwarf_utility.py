@@ -56,7 +56,6 @@ class You_Move_Like_a_Dwarf_Utility(CustomSkillUtilityBase):
                     not CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(self._get_lock_key(agent_id)) # Spread mode won't target those already locked
             )
         )
-
     
     def _get_lock_key(self, agent_id: int) -> str:
         return f"You_Move_Like_a_Dwarf_{agent_id}"

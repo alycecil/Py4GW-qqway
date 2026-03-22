@@ -3,7 +3,7 @@ from typing import List, Any, Generator, Callable, override
 
 import PyImGui
 
-from Py4GWCoreLib import GLOBAL_CACHE, Agent, Range
+from Py4GWCoreLib import GLOBAL_CACHE, Agent, Range, Routines, Player
 from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
@@ -48,6 +48,7 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
             str(mode.value)
         )
         self.mode: EbonVanguardAssassinSupportMode = EbonVanguardAssassinSupportMode(int(persisted_mode))
+        self.YMLAD = CustomSkill("You_Move_Like_a_Dwarf")
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
         return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
@@ -60,7 +61,12 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
             )
         )
 
-    
+    def is_YMLAD_available(self):
+        current_energy = Agent.GetEnergy(Player.GetAgentID())
+        energy_cost = Routines.Checks.Skills.GetEnergyCostWithEffects(self.YMLAD.skill_id,Player.GetAgentID())
+
+        return self.YMLAD.skill_slot is not None and Routines.Checks.Skills.IsSkillSlotReady(self.YMLAD.skill_slot) and energy_cost < current_energy
+
     def _get_lock_key(self, agent_id: int) -> str:
         return f"EbonVanguardAssassinSupport_{agent_id}"
 
@@ -77,6 +83,9 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
                 return None  # someone is already doing that, we want to delay a bit when lock is available to chain interruptions
 
         return self.score_definition.get_score()
+
+    def _get_YMLAD_lock_key(self, agent_id: int) -> str:
+        return f"You_Move_Like_a_Dwarf_{agent_id}"
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
@@ -100,6 +109,11 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
         else:
             # SPIKE mode: no lock, just cast
             result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
+
+        if self.is_YMLAD_available():
+            if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(self._get_YMLAD_lock_key(target.agent_id), timeout_seconds=3):
+                yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.YMLAD, target_agent_id=target.agent_id)
+
 
         return result
 
