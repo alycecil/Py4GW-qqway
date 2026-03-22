@@ -62,10 +62,7 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
         )
 
     def is_YMLAD_available(self):
-        current_energy = Agent.GetEnergy(Player.GetAgentID())
-        energy_cost = Routines.Checks.Skills.GetEnergyCostWithEffects(self.YMLAD.skill_id,Player.GetAgentID())
-
-        return self.YMLAD.skill_slot is not None and Routines.Checks.Skills.IsSkillSlotReady(self.YMLAD.skill_slot) and energy_cost < current_energy
+        return self.YMLAD.skill_slot is not None and Routines.Checks.Skills.IsSkillSlotReady(self.YMLAD.skill_slot)
 
     def _get_lock_key(self, agent_id: int) -> str:
         return f"EbonVanguardAssassinSupport_{agent_id}"
@@ -112,8 +109,9 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
 
         if self.is_YMLAD_available():
             #no lock just yolo
-            yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.YMLAD, target_agent_id=target.agent_id)
-
+            action = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.YMLAD, target_agent_id=target.agent_id)
+            if action == BehaviorResult.ACTION_PERFORMED and Agent.IsKnockedDown(target.agent_id):
+                CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(self._get_YMLAD_lock_key(target.agent_id), timeout_seconds=3)
 
         return result
 
