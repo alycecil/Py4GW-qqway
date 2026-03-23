@@ -98,7 +98,8 @@ class DestructionUtility(CustomSkillUtilityBase):
             # move to nearest ally with enemies nearby
             allies = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
                 within_range=Range.Earshot.value,
-                range_to_count_enemies=Range.Area.value,
+                range_to_count_enemies=Range.Nearby.value,
+                condition=lambda agent_id: Player.GetAgentID() != agent_id,
                 sort_key=(TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC,TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.DISTANCE_ASC),
             )
 
