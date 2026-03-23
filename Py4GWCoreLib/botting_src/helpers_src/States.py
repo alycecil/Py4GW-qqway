@@ -13,7 +13,7 @@ class _States:
         self.parent = parent.parent
         self._config = parent._config
         
-    def insert_header_step(self, step_name: str) -> None:
+    def insert_header_step(self, step_name: str) -> str:
         from ...Routines import Routines
         header_name = f"[H]{step_name}_{self._config.get_counter("HEADER_COUNTER")}"
         self._config.FSM.AddYieldRoutineStep(
