@@ -194,8 +194,17 @@ class AutoInventoryHandler():
                 continue
             if is_white and is_material and is_material_salvageable and not self.salvage_rare_materials:
                 continue
-            if is_white and not is_material and not self.salvage_whites:
-                continue
+            from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryMode
+            action_for_item = self.action_for_item(item_id)
+            inventory_mode_salvage_ = [InventoryMode.SALVAGE]
+            if Inventory.GetFreeSlotCount() < 5:
+                inventory_mode_salvage_ = [InventoryMode.SALVAGE, InventoryMode.SELL_DONT_IDENTIFY, InventoryMode.SELL]
+
+            if action_for_item in inventory_mode_salvage_:
+                pass
+            else:
+                if is_white and not is_material and not self.salvage_whites:
+                    continue
             if is_blue and not self.salvage_blues:
                 continue
             # Greens are not salvageable in Guild Wars; skip explicitly.
@@ -453,7 +462,13 @@ class AutoInventoryHandler():
                     GLOBAL_CACHE.Inventory.DepositItemToStorage(item_id)
                     yield from Routines.Yield.wait(350)
                     deposited = True
-                         
+
+                from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryMode
+                if not deposited and self.action_for_item(item_id) in [InventoryMode.DEPOSIT]:
+                    GLOBAL_CACHE.Inventory.DepositItemToStorage(item_id)
+                    yield from Routines.Yield.wait(350)
+                    deposited = True
+
                 if ((not deposited) and
                     (model_id in event_items) and 
                     self.deposit_event_items and
@@ -492,5 +507,18 @@ class AutoInventoryHandler():
         self.status = "Idle"
         #ConsoleLog("AutoInventoryHandler", "ID, Salvage and Deposit routine completed", Console.MessageType.Success)
 
+    def action_for_item(self, item_id):
+        from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
+        from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import string_to_dict
+        from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
+        data: str | None = PersistenceLocator().skills.read("my_inventory_utils_config", "inventory_utils_config")
+        if data is not None:
+            inventory_utils_config = string_to_dict(data)
+        else:
+            inventory_utils_config = InventoryUtilsConfig()
+
+        inventory_utils = InventoryUtils()
+
+        return inventory_utils.get_action_for_item(inventory_utils_config, item_id)
 
 #endregion
