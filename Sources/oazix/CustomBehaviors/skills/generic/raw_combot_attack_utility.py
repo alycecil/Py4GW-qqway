@@ -1,10 +1,11 @@
 from typing import List, Any, Generator, Callable, override
 
-from Py4GWCoreLib import GLOBAL_CACHE, Agent, Range
+from Py4GWCoreLib import GLOBAL_CACHE, Agent, Range, Routines, Skill
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
+from Sources.oazix.CustomBehaviors.primitives.helpers.custom_behavior_helpers import Resources
 from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
 from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
 from Sources.oazix.CustomBehaviors.primitives.scores.score_combot_definition import ScoreCombotDefinition
@@ -33,6 +34,7 @@ class RawCombotAttackUtility(CustomSkillUtilityBase):
         
         self.score_definition: ScoreCombotDefinition = score_definition
         self.combot_type:int = GLOBAL_CACHE.Skill.Data.GetCombo(skill.skill_id) # 1,2,3 for lead(1) - offhand(2) - dual(3)
+        self.Asuran_Scan: CustomSkill = CustomSkill("Asuran_Scan")
 
     def _is_agent_compatible_with_dagger_status(self, agent_id: int) -> bool:
 
@@ -79,10 +81,23 @@ class RawCombotAttackUtility(CustomSkillUtilityBase):
 
         return self.score_definition.get_score(self.combot_type, party_forced_target_prioritized = party_forced_target_prioritized)
 
+    def is_asuran_scan_available(self):
+        return self.Asuran_Scan.skill_slot is not None and Routines.Checks.Skills.IsSkillSlotReady(self.Asuran_Scan.skill_slot)
+
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
 
         target = self._get_target()
         if target is None: return BehaviorResult.ACTION_SKIPPED
+
+        wanted_mana = Skill.Data.GetEnergyCost(self.custom_skill.skill_id)
+        if self.is_asuran_scan_available() and Resources.get_player_absolute_energy() > wanted_mana + 5:
+            # asuran scan too!
+            cast_asuran_scan = True
+            wanted_mana += 5
+
+        if cast_asuran_scan:
+            yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.Asuran_Scan, target_agent_id=target)
+
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target)
         return result
