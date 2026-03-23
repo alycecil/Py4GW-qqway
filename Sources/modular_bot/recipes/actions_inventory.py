@@ -213,6 +213,56 @@ def _get_nonsalvageable_gold_item_ids() -> list[int]:
         sell_ids.append(int(item_id))
     return sell_ids
 
+def get_crap_to_sell() -> list[int]:
+    from Py4GWCoreLib import GLOBAL_CACHE
+    from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
+    from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import string_to_dict
+    from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
+    data: str | None = PersistenceLocator().skills.read("my_inventory_utils_config", "inventory_utils_config")
+    if data is not None:
+        inventory_utils_config = string_to_dict(data)
+    else:
+        inventory_utils_config = InventoryUtilsConfig()
+
+    inventory_utils = InventoryUtils()
+
+    include_salvage_items = GLOBAL_CACHE.Inventory.GetFreeSlotCount() < 7
+
+    my_items = []
+    inventory_item_ids = inventory_utils.get_inventory_items(inventory_utils_config)
+    for item_id in inventory_item_ids:
+
+        from Py4GWCoreLib import Item
+        if Item.Rarity.IsGreen(item_id):
+            continue
+
+        is_white = Item.Rarity.IsWhite(item_id)
+        is_blue = Item.Rarity.IsBlue(item_id)
+        is_purple = Item.Rarity.IsPurple(item_id)
+
+        if is_white or is_blue or is_purple:
+            if GLOBAL_CACHE.Item.Properties.GetValue(item_id) > 0:
+                action_for_item: InventoryMode = inventory_utils.get_action_for_item(inventory_utils_config, item_id)
+                if action_for_item == InventoryMode.SELL_DONT_IDENTIFY:
+                    my_items.append(item_id)
+                if action_for_item == InventoryMode.SELL:
+                    my_items.append(item_id)
+                elif include_salvage_items and (action_for_item == InventoryMode.SALVAGE):
+                    my_items.append(item_id)
+
+        _, rarity = GLOBAL_CACHE.Item.Rarity.GetRarity(item_id)
+        if rarity != "Gold":
+            continue
+        if not GLOBAL_CACHE.Item.Usage.IsIdentified(item_id):
+            continue
+        if GLOBAL_CACHE.Item.Usage.IsSalvageable(item_id):
+            continue
+
+        action = inventory_utils.get_action_for_item(inventory_utils_config, item_id)
+        if action in [InventoryMode.SELL, InventoryMode.SELL_DONT_IDENTIFY, InventoryMode.SALVAGE]:
+            my_items.append(int(item_id))
+    return my_items
+
 
 def _resolve_inventory_location_key(location_raw: str, return_map_id: int) -> str:
     key = str(location_raw or "auto").strip().lower()
@@ -863,6 +913,66 @@ def handle_deposit_materials(ctx: StepContext) -> None:
     wait_after_step(ctx.bot, ctx.step)
 
 
+def handle_sell_inventoryutil(ctx: StepContext) -> None:
+    from Py4GWCoreLib import GLOBAL_CACHE, Player, Routines, SharedCommandType
+
+    selector_step = dict(ctx.step)
+    name = ctx.step.get("name", "Sell Marked for Sale")
+    multibox = parse_step_bool(ctx.step.get("multibox", False), False)
+    multibox_wait_step_ms = max(10, parse_step_int(ctx.step.get("multibox_wait_step_ms", 50), 50))
+    multibox_wait_timeout_ms = max(1_000, parse_step_int(ctx.step.get("multibox_wait_timeout_ms", 30_000), 30_000))
+
+    def _sell_local():
+        step_selector = dict(selector_step)
+        _apply_default_npc_selector(step_selector, "merchant")
+        coords = resolve_agent_xy_from_step(
+            step_selector,
+            recipe_name=ctx.recipe_name,
+            step_idx=ctx.step_idx,
+            agent_kind="npc",
+        )
+        if coords is None:
+            log_recipe(ctx, "sell_nonsalvageable_golds: failed to resolve Merchant coordinates.")
+            yield
+            return
+
+        x, y = coords
+        sent_messages: list[tuple[str, int]] = []
+        if multibox:
+            sender_email = Player.GetAccountEmail()
+            for account_email in _iter_other_account_emails():
+                message_index = GLOBAL_CACHE.ShMem.SendMessage(
+                    sender_email,
+                    account_email,
+                    SharedCommandType.MerchantMaterials,
+                    (float(x), float(y), 0.0, 0.0),
+                    ("sell_inventoryutil", "", "", ""),
+                )
+                sent_messages.append((account_email, int(message_index)))
+
+        sell_ids = get_crap_to_sell()
+        if sell_ids:
+            yield from ctx.bot.Move._coro_xy_and_interact_npc(x, y, name)
+            yield from ctx.bot.Wait._coro_for_time(1200)
+            yield from Routines.Yield.Merchant.SellItems(sell_ids, log=True)
+            log_recipe(ctx, f"sell_nonsalvageable_golds: sold {len(sell_ids)} item(s).")
+        else:
+            log_recipe(ctx, "sell_nonsalvageable_golds: no eligible gold items.")
+
+        if multibox:
+            yield from _wait_for_outbound_messages(
+                ctx,
+                "sell_nonsalvageable_golds",
+                sent_messages,
+                SharedCommandType.MerchantMaterials,
+                wait_step_ms=multibox_wait_step_ms,
+                timeout_ms=multibox_wait_timeout_ms,
+            )
+        yield
+
+    ctx.bot.States.AddCustomState(_sell_local, f"{name} Execute")
+    wait_after_step(ctx.bot, ctx.step)
+
 def handle_sell_nonsalvageable_golds(ctx: StepContext) -> None:
     from Py4GWCoreLib import GLOBAL_CACHE, Player, Routines, SharedCommandType
 
@@ -1296,6 +1406,7 @@ HANDLERS: dict[str, Callable[[StepContext], None]] = {
     "sell_materials": handle_sell_materials,
     "deposit_materials": handle_deposit_materials,
     "sell_nonsalvageable_golds": handle_sell_nonsalvageable_golds,
+    "handle_sell_inventoryutil": handle_sell_inventoryutil,
     "sell_leftover_materials": handle_sell_leftover_materials,
     "sell_scrolls": handle_sell_scrolls,
     "buy_ectoplasm": handle_buy_ectoplasm,
