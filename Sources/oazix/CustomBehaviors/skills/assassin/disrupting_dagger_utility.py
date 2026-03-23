@@ -53,7 +53,7 @@ class DisruptingDaggerUtility(CustomSkillUtilityBase):
                     Agent.IsCasting(agent_id) and 
                     Utils.Distance(Agent.GetXY(agent_id), player_position) < Range.Spellcast.value * 0.4  and 
                     GLOBAL_CACHE.Skill.Data.GetActivation(Agent.GetCastingSkillID(agent_id)) >= 0.51,
-                sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.CASTER_THEN_MELEE))
+                sort_key=(TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC,TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.CASTER_THEN_MELEE))
         ))
 
         result: BehaviorResult = yield from custom_behavior_helpers.Helpers.wait_for_or_until_completion(500, action)
