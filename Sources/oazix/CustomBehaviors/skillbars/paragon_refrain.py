@@ -71,9 +71,6 @@ class ParagonRefrain_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.ebon_vanguard_assassin_support,
             self.ebon_battle_standard_of_wisdom,
             self.protectors_defense_utility,
-            self.jagged_strike_utility,
-            self.fox_fangs_utility,
-            self.death_blossom_utility,
         ]
 
     @property
