@@ -639,9 +639,11 @@ def _gh_merchant_setup() -> Generator:
         yield from Routines.Yield.wait(_merchant_alt_wait_ms)
 
     # ── Step 9: Return to Vlox's Fall ────────────────────────────────────────
+    yield from Routines.Yield.wait(10_000+random.randint(100, 10_000))
     ConsoleLog(BOT_NAME, "[Merchant] Returning to the outpost")
     yield from bot.Map._coro_travel(OUTPOST_TO_TRAVEL, "")
     ConsoleLog(BOT_NAME, "[Merchant] Guild Hall merchant run complete")
+    yield from Routines.Yield.wait(30_000+random.randint(100, 10_000))
     yield
 
 def is_asterius_killed_or_time_elapsed():
@@ -780,6 +782,7 @@ def farm_scythes(bot: Botting) -> None:
 
     loop_header = bot.States.AddHeader('Exit To Farm')
     bot.States.AddCustomState(_gh_merchant_setup, "GH Merchant Setup")
+    bot.Wait.ForTime(random.randint(11000, 19600))
 
     bot.Templates.Routines.PrepareForFarm(map_id_to_travel=OUTPOST_TO_TRAVEL)
     bot.Party.SetHardMode(True)
@@ -817,38 +820,42 @@ def farm_scythes(bot: Botting) -> None:
     bot.Wait.ForTime(5000)
     bot.Move.XYAndInteractNPC(-25341.00, -11957.00)
     bot.Multibox.SendDialogToTarget(0x84) # Edda Blessing 2
-    bot.Wait.ForTime(10000+random.randint(1800, 4600))
+    bot.Wait.ForTime(random.randint(11800, 14600))
 
-
+    death_loop_headers = bot.States.AddHeader("Path to blessing 3")
     if not is_asterius_killed:
-        death_loop_headers = bot.States.AddHeader("Path to blessing 3")
         # Path to blessing 3
         bot.Move.XY(-22275, -12462, "Move to area 2")
         bot.Wait.ForTime(random.randint(1800, 4600))
+    if not is_asterius_killed:
         bot.Move.XY(-21671, -2163, "Aggro: Berzerker")
         bot.Wait.ForTime(random.randint(1800, 4600))
+    if not is_asterius_killed:
         bot.Move.XY(-19592, 772, "Aggro: Berzerker")
         bot.Wait.ForTime(random.randint(1800, 4600))
+    if not is_asterius_killed:
         bot.Move.XY(-13795, -751, "Aggro: Berzerker")
         bot.Wait.ForTime(random.randint(1800, 4600))
+    if not is_asterius_killed:
         bot.Move.XY(-17012, -5376, "Aggro: Berzerker")
         bot.Wait.ForTime(random.randint(1800, 4600))
+    if not is_asterius_killed:
         bot.Move.XY(-10606.23, -1625.26)
         bot.Move.XY(-12158.00, -4277.00)
         bot.Wait.ForTime(5000)
         bot.Move.XYAndInteractNPC(-12158.00, -4277.00)
         bot.Multibox.SendDialogToTarget(0x84) #Blessing 3 - Inga Caveborn
-        bot.Wait.ForTime(5000+random.randint(1800, 4600))
+        bot.Wait.ForTime(random.randint(5800, 24600))
 
-    if not is_asterius_killed:
-        death_loop_headers = bot.States.AddHeader("Seak and Kill Path")
-        bot.Move.FollowAutoPath(TRAVEL_PATH, "Kill Route")
+    # death_loop_headers = bot.States.AddHeader("Seak and Kill Path")
+    # if not is_asterius_killed:
+    #     bot.Move.FollowAutoPath(TRAVEL_PATH, "Kill Route")
 
-    bot.Wait.UntilCondition(
-        is_asterius_killed_or_time_elapsed, duration=1000
-    )  # check every second until boss is killed
+    # bot.Wait.UntilCondition(
+    #     is_asterius_killed_or_time_elapsed, duration=1000
+    # )  # check every second until boss is killed
     # allow to loot
-    bot.Wait.ForTime(random.randint(11800, 19600))
+    bot.Wait.ForTime(random.randint(11000, 19600))
 
     bot.Multibox.ResignParty()
     bot.States.AddCustomState(reset_farm_flags, "Reset Farm detections")
