@@ -21,8 +21,15 @@ VARAJAR_FELLS_MAP_ID = 553
 ASTERIUS_MODEL_ID = 6509
 
 TRAVEL_PATH: list[tuple[float, float]] = [
-    (-3357, -741),
-    (-2572, -3393),
+    (-5278, -5771),
+    (-5456, -7921),
+    (-8793, -5837),
+    (-14092, -9662),
+    (17260, -7906),
+    (-14092, -9662),
+    (-8793, -5837),
+    (-5456, -7921),
+    (-5278, -5771),
     (-5767, -4300),
     (-8149, -2815),
     (-9563, -2276),
@@ -34,6 +41,7 @@ is_asterius_spotted = False
 is_asterius_killed = False
 asterius_agent_id = -1
 elapsed = 0
+death_loop_headers = None
 
 bot = Botting(BOT_NAME)
 
@@ -86,6 +94,7 @@ def reset_farm_flags():
 
 
 def _on_party_wipe(bot: "Botting"):
+    global death_loop_headers
     while Agent.IsDead(Player.GetAgentID()):
         yield from bot.Wait._coro_for_time(1000)
         if not Routines.Checks.Map.MapValid():
@@ -94,7 +103,9 @@ def _on_party_wipe(bot: "Botting"):
             return
 
     # Player revived on same map → jump to recovery step
-    bot.States.JumpToStepName("[H]Start Combat_4")
+    if death_loop_headers is None:
+        death_loop_headers = "[H]Start Combat_4"
+    bot.States.JumpToStepName(death_loop_headers)
     bot.config.FSM.resume()
 
 
@@ -143,6 +154,7 @@ def handle_asterius_killed_en_route():
 
 
 def farm_scythes(bot: Botting) -> None:
+    global death_loop_headers
     widget_handler = get_widget_handler()
     widget_handler.enable_widget('Return to outpost on defeat')
 
@@ -152,6 +164,8 @@ def farm_scythes(bot: Botting) -> None:
 
     bot.States.AddHeader(BOT_NAME)
     bot.Templates.Multibox_Aggressive()
+    bot.Properties.Disable("hero_ai")
+    bot.Multibox.ApplyWidgetPolicy(enable_widgets=('CustomBehaviors',))
     bot.Properties.Disable("auto_inventory_management")
 
     bot.Templates.Routines.PrepareForFarm(map_id_to_travel=OUTPOST_TO_TRAVEL)
@@ -164,7 +178,17 @@ def farm_scythes(bot: Botting) -> None:
     bot.Wait.ForTime(4000)
     bot.Properties.Enable('pause_on_danger')
 
-    bot.States.AddHeader("Start Combat")
+    # Initial path to first blessing
+    bot.Move.XY(-2484.73, 118.55, "Start")
+    bot.Move.XY(-3059.12, -419.00, "Move to bridge")
+    bot.Move.XY(-3301.01, -2008.23, "Move to shrine")
+    bot.Move.XY(-2034, -4512, "Move to blessing 1")
+    bot.Wait.ForTime(5000)
+    bot.Move.XYAndInteractNPC(-1892.00, -4505.00)
+    bot.Multibox.SendDialogToTarget(0x84) #Get Blessing 1
+    bot.Wait.ForTime(5000)
+
+    death_loop_headers = bot.States.AddHeader("Start Combat")
     bot.Move.FollowAutoPath(TRAVEL_PATH, "Kill Route")
     bot.Wait.UntilCondition(
         is_asterius_killed_or_time_elapsed, duration=1000
