@@ -1,6 +1,7 @@
+import random
 from typing import List, Any, Generator, Callable, override
 
-from Py4GWCoreLib import GLOBAL_CACHE, Routines, Range, Player
+from Py4GWCoreLib import GLOBAL_CACHE, Routines, Range, Player, Agent
 from Py4GWCoreLib.enums import SpiritModelID
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 
@@ -106,8 +107,8 @@ class DestructionUtility(CustomSkillUtilityBase):
                 Player.ChangeTarget(move_to)
                 yield from custom_behavior_helpers.Helpers.wait_for(127)
                 Player.Interact(move_to, False)
-                print("move to player")
-                yield from custom_behavior_helpers.Helpers.wait_for(5_000)
+                print(f"move to player {Agent.GetNameByID(move_to)}")
+                yield from custom_behavior_helpers.Helpers.wait_for(random.randint(5_000, 10_000))
                 yield
                 return BehaviorResult.ACTION_SKIPPED
 
