@@ -95,7 +95,7 @@ _merchant_sell_materials: bool = False
 _merchant_sell_rare_mats: bool = False
 _merchant_buy_ectos: bool = False
 _merchant_ecto_threshold: int = 800_000
-_merchant_alt_wait_ms: int = _DEFAULT_ALT_SETTLE_WAIT_MS
+_merchant_alt_wait_ms: int = 30_000
 _POST_RETURN_TO_ARBOR_SETTLE_MS = 4000
 _POST_WIDGET_REENABLE_SETTLE_MS = 2500
 
@@ -104,9 +104,9 @@ bot = Botting(BOT_NAME,
               upkeep_auto_loot_active=True)
 
 def get_items_to_deposit():
-    from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
     global inventory_utils_config
     global inventory_utils
+    from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
     from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
     from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import string_to_dict
     from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
@@ -197,11 +197,9 @@ def _coro_sell_scrolls(mx: float, my: float) -> Generator:
     yield from Routines.Yield.Merchant.SellItems(sell_ids, log=True)
     yield from Routines.Yield.wait(300)
 
-def _coro_sell_nonsalvageable_golds(mx: float, my: float) -> Generator:
+def _coro_handle_sell_inventoryutil(mx: float, my: float) -> Generator:
     """Sell all identified, non-salvageable gold items (e.g. anniversary weapons) to the GH merchant."""
 
-    bag_list = GLOBAL_CACHE.ItemArray.CreateBagList(1, 2, 3, 4)
-    item_array = GLOBAL_CACHE.ItemArray.GetItemArray(bag_list)
     from Sources.modular_bot.recipes.actions_inventory import get_crap_to_sell
     sell_ids = get_crap_to_sell()
     if not sell_ids:
@@ -247,7 +245,7 @@ def _draw_merchant_settings() -> None:
     _load_merchant_settings()
 
     PyImGui.separator()
-    PyImGui.text("Merchant (Guild Hall) — runs on startup")
+    PyImGui.text("Merchant (Guild Hall) - runs on start")
     PyImGui.separator()
 
     new_enabled = PyImGui.checkbox("Restock kits / sell materials on startup", _merchant_enabled)
@@ -361,6 +359,9 @@ def _gh_merchant_setup() -> Generator:
     from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
     from Sources.oazix.CustomBehaviors.primitives.parties.party_command_contants import PartyCommandConstants
     from Py4GWCoreLib.enums_src.Model_enums import ModelID as _ModelID
+
+    yield from Routines.Yield.wait(1500)
+    yield from AutoInventoryHandler().IDAndSalvageItems()
 
     leave_party: bool = True
 
@@ -537,19 +538,18 @@ def _gh_merchant_setup() -> Generator:
     # ── Step 5: Sell non-salvageable gold items (anniversary weapons) to merchant ─
     if merchant_xy:
         mx, my = merchant_xy
-        ConsoleLog(BOT_NAME, "[Merchant] Dispatching sell_nonsalvageable_golds to alts")
+        ConsoleLog(BOT_NAME, "[Merchant] Dispatching handle_sell_inventoryutil to alts")
         sell_gold_refs = _dispatch_to_alts(
             SharedCommandType.MerchantMaterials,
             (mx, my, 0, 0),
-            ("sell_nonsalvageable_golds", "", "", ""),
+            ("handle_sell_inventoryutil", "", "", ""),
         )
-        yield from _coro_sell_nonsalvageable_golds(mx, my)
+        yield from _coro_handle_sell_inventoryutil(mx, my)
         yield from _wait_for_alt_dispatch_completion(
             "handle_sell_inventoryutil",
             sell_gold_refs,
             SharedCommandType.MerchantMaterials,
         )
-
 
     # ── Step 6: Sell XP/insight scrolls to merchant (leader + alts) ──────────
     if merchant_xy:
@@ -638,12 +638,14 @@ def _gh_merchant_setup() -> Generator:
         ConsoleLog(BOT_NAME, f"[Merchant] Final settle wait {_merchant_alt_wait_ms}ms")
         yield from Routines.Yield.wait(_merchant_alt_wait_ms)
 
+    CustomBehaviorParty().schedule_action(PartyCommandConstants.invite_all_to_leader_party)
+
     # ── Step 9: Return to Vlox's Fall ────────────────────────────────────────
     yield from Routines.Yield.wait(10_000+random.randint(100, 10_000))
     ConsoleLog(BOT_NAME, "[Merchant] Returning to the outpost")
     yield from bot.Map._coro_travel(OUTPOST_TO_TRAVEL, "")
     ConsoleLog(BOT_NAME, "[Merchant] Guild Hall merchant run complete")
-    yield from Routines.Yield.wait(30_000+random.randint(100, 10_000))
+    yield from Routines.Yield.wait(10_000+random.randint(100, 10_000))
     yield
 
 def is_asterius_killed_or_time_elapsed():
