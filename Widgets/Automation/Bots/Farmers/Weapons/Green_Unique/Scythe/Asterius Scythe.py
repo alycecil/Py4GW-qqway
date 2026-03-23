@@ -21,10 +21,8 @@ VARAJAR_FELLS_MAP_ID = 553
 ASTERIUS_MODEL_ID = 6509
 
 TRAVEL_PATH: list[tuple[float, float]] = [
-    (-5278, -5771),
-    (-5456, -7921),
-    (-8793, -5837),
-    (-14092, -9662),
+    (-25341.00, -11957.00),
+    (-21964, -12877),
     (17260, -7906),
     (-14092, -9662),
     (-8793, -5837),
@@ -187,6 +185,32 @@ def farm_scythes(bot: Botting) -> None:
     bot.Move.XYAndInteractNPC(-1892.00, -4505.00)
     bot.Multibox.SendDialogToTarget(0x84) #Get Blessing 1
     bot.Wait.ForTime(5000)
+
+    # Path to blessing 2
+    bot.Move.XY(-5278, -5771, "Aggro: Berzerker")
+    bot.Move.XY(-5456, -7921, "Aggro: Berzerker")
+    bot.Move.XY(-8793, -5837, "Aggro: Berzerker")
+    bot.Move.XY(-14092, -9662, "Aggro: Vaettir and Berzerker")
+    bot.Move.XY(-17260, -7906, "Aggro: Vaettir and Berzerker")
+    bot.Move.XY(-21964, -12877, "Aggro: Jotun")
+    bot.Move.XY(-25341.00, -11957.00)
+    bot.Wait.ForTime(5000)
+    bot.Move.XYAndInteractNPC(-25341.00, -11957.00)
+    bot.Multibox.SendDialogToTarget(0x84) # Edda Blessing 2
+    bot.Wait.ForTime(10000)
+
+    # Path to blessing 3
+    bot.Move.XY(-22275, -12462, "Move to area 2")
+    bot.Move.XY(-21671, -2163, "Aggro: Berzerker")
+    bot.Move.XY(-19592, 772, "Aggro: Berzerker")
+    bot.Move.XY(-13795, -751, "Aggro: Berzerker")
+    bot.Move.XY(-17012, -5376, "Aggro: Berzerker")
+    bot.Move.XY(-10606.23, -1625.26)
+    bot.Move.XY(-12158.00, -4277.00)
+    bot.Wait.ForTime(5000)
+    bot.Move.XYAndInteractNPC(-12158.00, -4277.00)
+    bot.Multibox.SendDialogToTarget(0x84) #Blessing 3
+    bot.Wait.ForTime(10000)
 
     death_loop_headers = bot.States.AddHeader("Start Combat")
     bot.Move.FollowAutoPath(TRAVEL_PATH, "Kill Route")
