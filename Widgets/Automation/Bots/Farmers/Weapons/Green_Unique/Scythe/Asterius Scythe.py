@@ -1,5 +1,5 @@
 import os
-
+import random
 import Py4GW
 from Py4GW_widget_manager import get_widget_handler
 from Py4GWCoreLib import GLOBAL_CACHE
@@ -78,9 +78,29 @@ inventory_utils = None
 inventory_utils_config = None
 _MERCHANT_SECTION = "Merchantism"
 _MAX_ALT_SETTLE_WAIT_MS = 5000
+_SCROLL_MODEL_IDS = {5594, 5595, 5611, 5853, 5975, 5976, 21233}
+_SCROLL_MODEL_FILTER = "5594,5595,5611,5853,5975,5976,21233"
+
+
+# ==================== MERCHANT SETTINGS ====================
+_ALT_SALVAGE_SECTION = "Alt Salvage Kits"
+_ALT_SALVAGE_TRIGGER_THRESHOLD = 2
+_ALT_SALVAGE_POLL_TIMEOUT_MS = 200
+_ALT_SALVAGE_POLL_MAX_TOTAL_MS = 10_000
+_merchant_enabled: bool = False
+_merchant_id_kits_target: int = _FIXED_ID_KITS_TARGET
+_merchant_salvage_kits_target: int = _FIXED_SALVAGE_KITS_TARGET
+_merchant_store_consumable_materials: bool = False
+_merchant_sell_materials: bool = False
+_merchant_sell_rare_mats: bool = False
+_merchant_buy_ectos: bool = False
+_merchant_ecto_threshold: int = 800_000
+_merchant_alt_wait_ms: int = _DEFAULT_ALT_SETTLE_WAIT_MS
+_POST_RETURN_TO_ARBOR_SETTLE_MS = 4000
+_POST_WIDGET_REENABLE_SETTLE_MS = 2500
 
 bot = Botting(BOT_NAME,
-              upkeep_war_supplies_restock=10,
+              upkeep_war_supplies_restock=25,
               upkeep_auto_loot_active=True)
 
 def get_items_to_deposit():
@@ -151,10 +171,6 @@ def _coro_deposit_crafting_materials_to_storage(selected_models: set[int]) -> Ge
     ConsoleLog(BOT_NAME, f"[Merchant] Deposited {len(item_ids)} crafting material stack(s) to storage")
     yield
 
-
-_SCROLL_MODEL_IDS = {5594, 5595, 5611, 5853, 5975, 5976, 21233}
-_SCROLL_MODEL_FILTER = "5594,5595,5611,5853,5975,5976,21233"
-
 def _coro_sell_scrolls(mx: float, my: float) -> Generator:
     """Sell XP/insight scrolls to the GH merchant."""
     bag_list = GLOBAL_CACHE.ItemArray.CreateBagList(1, 2, 3, 4)
@@ -212,6 +228,83 @@ def _load_merchant_settings() -> None:
     _merchant_ecto_threshold = _bds_ini.read_int(_MERCHANT_SECTION, "ecto_threshold", 800_000)
     _merchant_alt_wait_ms = max(0, min(_MAX_ALT_SETTLE_WAIT_MS, _bds_ini.read_int(_MERCHANT_SECTION, "alt_wait_ms", _DEFAULT_ALT_SETTLE_WAIT_MS)))
     _merchant_loaded = True
+
+def _save_merchant_settings() -> None:
+    _bds_ini.write_key(_MERCHANT_SECTION, "enabled", str(_merchant_enabled))
+    _bds_ini.write_key(_MERCHANT_SECTION, "id_kits_target", str(_merchant_id_kits_target))
+    _bds_ini.write_key(_MERCHANT_SECTION, "salvage_kits_target", str(_merchant_salvage_kits_target))
+    _bds_ini.write_key(_MERCHANT_SECTION, "store_consumable_materials", str(_merchant_store_consumable_materials))
+    _bds_ini.write_key(_MERCHANT_SECTION, "sell_materials", str(_merchant_sell_materials))
+    _bds_ini.write_key(_MERCHANT_SECTION, "sell_rare_mats", str(_merchant_sell_rare_mats))
+    _bds_ini.write_key(_MERCHANT_SECTION, "buy_ectos", str(_merchant_buy_ectos))
+    _bds_ini.write_key(_MERCHANT_SECTION, "ecto_threshold", str(_merchant_ecto_threshold))
+    _bds_ini.write_key(_MERCHANT_SECTION, "alt_wait_ms", str(_merchant_alt_wait_ms))
+
+def _draw_merchant_settings() -> None:
+    import PyImGui
+    global _merchant_enabled, _merchant_id_kits_target, _merchant_salvage_kits_target, _merchant_store_consumable_materials, _merchant_sell_materials, _merchant_sell_rare_mats, _merchant_buy_ectos, _merchant_ecto_threshold, _merchant_alt_wait_ms
+
+    _load_merchant_settings()
+
+    PyImGui.separator()
+    PyImGui.text("Merchant (Guild Hall) — runs on startup")
+    PyImGui.separator()
+
+    new_enabled = PyImGui.checkbox("Restock kits / sell materials on startup", _merchant_enabled)
+    if new_enabled != _merchant_enabled:
+        _merchant_enabled = new_enabled
+        _save_merchant_settings()
+
+    if _merchant_enabled:
+        PyImGui.push_item_width(100)
+        new_id = PyImGui.input_int("ID Kits target##bds_id", _merchant_id_kits_target)
+        if new_id != _merchant_id_kits_target:
+            _merchant_id_kits_target = max(0, new_id)
+            _save_merchant_settings()
+
+        new_sal = PyImGui.input_int("Salvage Kits target##bds_sal", _merchant_salvage_kits_target)
+        if new_sal != _merchant_salvage_kits_target:
+            _merchant_salvage_kits_target = max(0, new_sal)
+            _save_merchant_settings()
+        PyImGui.pop_item_width()
+
+        new_sell = PyImGui.checkbox("Sell common materials##bds_sell", _merchant_sell_materials)
+        if new_sell != _merchant_sell_materials:
+            _merchant_sell_materials = new_sell
+            _save_merchant_settings()
+
+        new_store = PyImGui.checkbox(
+            "Store consumable materials (Dust/Iron/Feather/Bone/Fiber)##bds_store_cons_mats",
+            _merchant_store_consumable_materials,
+        )
+        if new_store != _merchant_store_consumable_materials:
+            _merchant_store_consumable_materials = new_store
+            _save_merchant_settings()
+
+        new_rare = PyImGui.checkbox("Sell Diamond & Onyx to Rare Material Trader##bds_rare_mats", _merchant_sell_rare_mats)
+        if new_rare != _merchant_sell_rare_mats:
+            _merchant_sell_rare_mats = new_rare
+            _save_merchant_settings()
+
+        new_ectos = PyImGui.checkbox("Buy Glob of Ectoplasm when storage over threshold##bds_ectos", _merchant_buy_ectos)
+        if new_ectos != _merchant_buy_ectos:
+            _merchant_buy_ectos = new_ectos
+            _save_merchant_settings()
+
+        if _merchant_buy_ectos:
+            new_thresh = PyImGui.input_int("Storage threshold (gold)##bds_ecto_thresh", _merchant_ecto_threshold)
+            if new_thresh != _merchant_ecto_threshold:
+                _merchant_ecto_threshold = max(0, new_thresh)
+                _save_merchant_settings()
+
+        PyImGui.push_item_width(100)
+        new_wait = PyImGui.input_int("Alt settle wait (ms)##bds_alt_wait", _merchant_alt_wait_ms)
+        if new_wait != _merchant_alt_wait_ms:
+            _merchant_alt_wait_ms = max(0, min(_MAX_ALT_SETTLE_WAIT_MS, new_wait))
+            _save_merchant_settings()
+        PyImGui.pop_item_width()
+        PyImGui.same_line(0, 6)
+        PyImGui.text("(time given to alts to reach NPCs and finish)")
 
 def _find_npc_xy_by_name(name_fragment: str, max_dist: float = 15000.0):
     """Find the nearest NPC whose display name contains name_fragment."""
@@ -705,47 +798,47 @@ def farm_scythes(bot: Botting) -> None:
     bot.Wait.ForTime(5000)
     bot.Move.XYAndInteractNPC(-1892.00, -4505.00)
     bot.Multibox.SendDialogToTarget(0x84) #Get Blessing 1
-    bot.Wait.ForTime(5000)
+    bot.Wait.ForTime(random.randint(5000, 9600))
 
     death_loop_headers = bot.States.AddHeader("Path to blessing 2 - Edda")
     # Path to blessing 2
     bot.Move.XY(-5278, -5771, "Aggro: Berzerker")
-    bot.Wait.ForTime(2000)
+    bot.Wait.ForTime(random.randint(1800, 4600))
     bot.Move.XY(-5456, -7921, "Aggro: Berzerker")
-    bot.Wait.ForTime(2000)
+    bot.Wait.ForTime(random.randint(1800, 4600))
     bot.Move.XY(-8793, -5837, "Aggro: Berzerker")
-    bot.Wait.ForTime(2000)
+    bot.Wait.ForTime(random.randint(1800, 4600))
     bot.Move.XY(-14092, -9662, "Aggro: Vaettir and Berzerker")
-    bot.Wait.ForTime(2000)
+    bot.Wait.ForTime(random.randint(1800, 4600))
     bot.Move.XY(-17260, -7906, "Aggro: Vaettir and Berzerker")
-    bot.Wait.ForTime(2000)
+    bot.Wait.ForTime(random.randint(1800, 4600))
     bot.Move.XY(-21964, -12877, "Aggro: Jotun")
     bot.Move.XY(-25341.00, -11957.00)
     bot.Wait.ForTime(5000)
     bot.Move.XYAndInteractNPC(-25341.00, -11957.00)
     bot.Multibox.SendDialogToTarget(0x84) # Edda Blessing 2
-    bot.Wait.ForTime(10000)
+    bot.Wait.ForTime(10000+random.randint(1800, 4600))
 
 
     if not is_asterius_killed:
         death_loop_headers = bot.States.AddHeader("Path to blessing 3")
         # Path to blessing 3
         bot.Move.XY(-22275, -12462, "Move to area 2")
-        bot.Wait.ForTime(2000)
+        bot.Wait.ForTime(random.randint(1800, 4600))
         bot.Move.XY(-21671, -2163, "Aggro: Berzerker")
-        bot.Wait.ForTime(2000)
+        bot.Wait.ForTime(random.randint(1800, 4600))
         bot.Move.XY(-19592, 772, "Aggro: Berzerker")
-        bot.Wait.ForTime(2000)
+        bot.Wait.ForTime(random.randint(1800, 4600))
         bot.Move.XY(-13795, -751, "Aggro: Berzerker")
-        bot.Wait.ForTime(2000)
+        bot.Wait.ForTime(random.randint(1800, 4600))
         bot.Move.XY(-17012, -5376, "Aggro: Berzerker")
-        bot.Wait.ForTime(2000)
+        bot.Wait.ForTime(random.randint(1800, 4600))
         bot.Move.XY(-10606.23, -1625.26)
         bot.Move.XY(-12158.00, -4277.00)
         bot.Wait.ForTime(5000)
         bot.Move.XYAndInteractNPC(-12158.00, -4277.00)
-        bot.Multibox.SendDialogToTarget(0x84) #Blessing 3
-        bot.Wait.ForTime(10000)
+        bot.Multibox.SendDialogToTarget(0x84) #Blessing 3 - Inga Caveborn
+        bot.Wait.ForTime(5000+random.randint(1800, 4600))
 
     if not is_asterius_killed:
         death_loop_headers = bot.States.AddHeader("Seak and Kill Path")
@@ -754,7 +847,9 @@ def farm_scythes(bot: Botting) -> None:
     bot.Wait.UntilCondition(
         is_asterius_killed_or_time_elapsed, duration=1000
     )  # check every second until boss is killed
-    bot.Wait.ForTime(10000)  # allow to loot
+    # allow to loot
+    bot.Wait.ForTime(random.randint(11800, 19600))
+
     bot.Multibox.ResignParty()
     bot.States.AddCustomState(reset_farm_flags, "Reset Farm detections")
     bot.Wait.UntilOnOutpost()
@@ -762,8 +857,15 @@ def farm_scythes(bot: Botting) -> None:
 
     bot.States.JumpToStepName(loop_header)
 
+def _draw_settings() -> None:
+    import PyImGui
+    PyImGui.text("Settings")
+    PyImGui.separator()
+    # _draw_difficulty_setting()
+    _draw_merchant_settings()
 
 bot.SetMainRoutine(farm_scythes)
+bot.UI.override_draw_config(_draw_settings)
 
 def tooltip():
     import PyImGui
