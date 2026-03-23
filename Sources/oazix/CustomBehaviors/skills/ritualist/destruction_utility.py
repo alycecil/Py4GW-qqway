@@ -18,11 +18,11 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomS
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 
 
-class RawSpiritUtility(CustomSkillUtilityBase):
+class DestructionUtility(CustomSkillUtilityBase):
     def __init__(self,
         event_bus: EventBus,
         current_build: list[CustomSkill],
-        score_definition: ScoreStaticDefinition = ScoreStaticDefinition(40),
+        score_definition: ScoreStaticDefinition = ScoreStaticDefinition(39),
         mana_required_to_cast: int = 0,
         allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]
         ) -> None:
@@ -39,6 +39,16 @@ class RawSpiritUtility(CustomSkillUtilityBase):
         self.soul_twisting_skill = CustomSkill("Soul_Twisting")
         self.score_definition: ScoreStaticDefinition = score_definition
         self.owned_spirit_model_id: SpiritModelID = SpiritModelID.DESTRUCTION
+
+    def _get_candidates(self) -> tuple[int, ...]:
+        """
+        Return enemy agent IDs ordered by priority (lowest HP, then distance) within shout/spellcast range.
+        """
+
+        return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority(
+            within_range=Range.Area,
+            sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC),
+        )
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
@@ -82,6 +92,24 @@ class RawSpiritUtility(CustomSkillUtilityBase):
         if not Resources.has_enough_resources(self.custom_skill):
             yield
             return BehaviorResult.ACTION_SKIPPED
+
+        if len(self._get_candidates()) <= 0:
+            # move to nearest ally with enemies nearby
+            allies = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
+                within_range=Range.Earshot.value,
+                range_to_count_enemies=Range.Area.value,
+                sort_key=(TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC,TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.DISTANCE_ASC),
+            )
+
+            if len(allies) > 0:
+                move_to = allies[0].agent_id
+                Player.ChangeTarget(move_to)
+                yield from custom_behavior_helpers.Helpers.wait_for(127)
+                Player.Interact(move_to, False)
+                print("move to player")
+                yield from custom_behavior_helpers.Helpers.wait_for(5_000)
+                yield
+                return BehaviorResult.ACTION_SKIPPED
 
         if Routines.Checks.Skills.IsSkillSlotReady(self.ritual_lord_skill.skill_slot):
             print("using ritual lord")
