@@ -21,7 +21,7 @@ class IcyVeinsUtility(CustomSkillUtilityBase):
         self,
         event_bus: EventBus,
         current_build: list[CustomSkill],
-        score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 80 if enemy_qte >= 5 else 45 if enemy_qte >= 3 else 30 if enemy_qte >= 2 else 10),
+        score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 80 if enemy_qte >= 5 else 45 if enemy_qte >= 3 else 40),
         mana_required_to_cast: int = 15,
         allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO,BehaviorState.CLOSE_TO_AGGRO],
     ) -> None:
@@ -40,29 +40,29 @@ class IcyVeinsUtility(CustomSkillUtilityBase):
         return f"Icy_Veins_{agent_id}"
 
     def _get_target_score(self, target: custom_behavior_helpers.SortableAgentData) -> float:
-        score_max = 50
+        score_max = 55
         score_min = 0
         score_offset = 0
         if not Agent.IsHexed(target.agent_id):
             score_offset = 10
-            score_max = 60
+            score_max = 75
 
         health = Agent.GetHealth(target.agent_id)
 
         if health < .1:
             # let finish him do the work here, we will waste our cast
-            score_max = 60
+            score_max = 55
             score_min = 0
         elif health < .5:
-            score_max = 90
+            score_max += 20
             score_min = 20
             score_offset += 10
         elif health < .75:
-            score_max = 75
+            score_max += 20
             score_min = 20
             score_offset += 5
 
-        if 0.1 < health < 0.6:
+        if 0.25 < health < 0.6:
             score_offset += 20
             score_min = 40
 
@@ -76,7 +76,7 @@ class IcyVeinsUtility(CustomSkillUtilityBase):
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
         """Get enemies ordered by cluster size and distance."""
         by_priority_raw : list[custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
-            within_range=Range.Spellcast,
+            within_range=Range.Earshot,
             condition=lambda agent_id: not Agent.IsSpirit(agent_id),
             range_to_count_enemies=Range.Nearby.value
         )
