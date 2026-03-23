@@ -135,7 +135,12 @@ class PlayerMethods:
             args = (ctypes.c_float * 4)()
             args[0] = x
             args[1] = y
-            args[2] = float(zPlane)
+            z_value = zPlane
+            if z_value == 0:
+                from Py4GWCoreLib import Agent
+                from Py4GWCoreLib import Player
+                z_value = Agent.GetZPlane(Player.GetAgentID())
+            args[2] = float(z_value)
             args[3] = 0.0  # unknown, but required
 
             MoveTo_Func.directCall(args)
