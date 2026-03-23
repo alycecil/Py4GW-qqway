@@ -40,6 +40,7 @@ is_asterius_killed = False
 asterius_agent_id = -1
 elapsed = 0
 death_loop_headers = None
+loop_header = "[H]Exit To Farm_3"
 
 bot = Botting(BOT_NAME)
 
@@ -132,6 +133,7 @@ def handle_asterius_killed_en_route():
             yield from Routines.Yield.wait(1000)
             if Agent.IsDead(asterius_agent_id):
                 is_asterius_killed = True
+                print("We killed Asterius!")
             continue
 
         enemy_array = AgentArray.GetEnemyArray()
@@ -146,6 +148,7 @@ def handle_asterius_killed_en_route():
         for enemy_id in enemy_array:
             if Agent.GetModelID(enemy_id) == ASTERIUS_MODEL_ID:
                 is_asterius_spotted = True
+                print("I see Asterius!")
                 asterius_agent_id = enemy_id
                 yield from Routines.Yield.wait(1000)
         yield from Routines.Yield.wait(1000)
@@ -153,6 +156,7 @@ def handle_asterius_killed_en_route():
 
 def farm_scythes(bot: Botting) -> None:
     global death_loop_headers
+    global loop_header
     widget_handler = get_widget_handler()
     widget_handler.enable_widget('Return to outpost on defeat')
 
@@ -170,7 +174,7 @@ def farm_scythes(bot: Botting) -> None:
     bot.Party.SetHardMode(True)
     bot.States.AddManagedCoroutine('Detect en route Asterius kill', handle_asterius_killed_en_route)
 
-    bot.States.AddHeader('Exit To Farm')
+    loop_header = bot.States.AddHeader('Exit To Farm')
     bot.Properties.Disable('pause_on_danger')
     bot.Move.XYAndExitMap(-2166, 861, target_map_id=VARAJAR_FELLS_MAP_ID)
     bot.Wait.ForTime(4000)
@@ -186,12 +190,18 @@ def farm_scythes(bot: Botting) -> None:
     bot.Multibox.SendDialogToTarget(0x84) #Get Blessing 1
     bot.Wait.ForTime(5000)
 
+    death_loop_headers = bot.States.AddHeader("Path to blessing 2 - Edda")
     # Path to blessing 2
     bot.Move.XY(-5278, -5771, "Aggro: Berzerker")
+    bot.Wait.ForTime(2000)
     bot.Move.XY(-5456, -7921, "Aggro: Berzerker")
+    bot.Wait.ForTime(2000)
     bot.Move.XY(-8793, -5837, "Aggro: Berzerker")
+    bot.Wait.ForTime(2000)
     bot.Move.XY(-14092, -9662, "Aggro: Vaettir and Berzerker")
+    bot.Wait.ForTime(2000)
     bot.Move.XY(-17260, -7906, "Aggro: Vaettir and Berzerker")
+    bot.Wait.ForTime(2000)
     bot.Move.XY(-21964, -12877, "Aggro: Jotun")
     bot.Move.XY(-25341.00, -11957.00)
     bot.Wait.ForTime(5000)
@@ -199,21 +209,31 @@ def farm_scythes(bot: Botting) -> None:
     bot.Multibox.SendDialogToTarget(0x84) # Edda Blessing 2
     bot.Wait.ForTime(10000)
 
-    # Path to blessing 3
-    bot.Move.XY(-22275, -12462, "Move to area 2")
-    bot.Move.XY(-21671, -2163, "Aggro: Berzerker")
-    bot.Move.XY(-19592, 772, "Aggro: Berzerker")
-    bot.Move.XY(-13795, -751, "Aggro: Berzerker")
-    bot.Move.XY(-17012, -5376, "Aggro: Berzerker")
-    bot.Move.XY(-10606.23, -1625.26)
-    bot.Move.XY(-12158.00, -4277.00)
-    bot.Wait.ForTime(5000)
-    bot.Move.XYAndInteractNPC(-12158.00, -4277.00)
-    bot.Multibox.SendDialogToTarget(0x84) #Blessing 3
-    bot.Wait.ForTime(10000)
 
-    death_loop_headers = bot.States.AddHeader("Start Combat")
-    bot.Move.FollowAutoPath(TRAVEL_PATH, "Kill Route")
+    if not is_asterius_killed:
+        death_loop_headers = bot.States.AddHeader("Path to blessing 3")
+        # Path to blessing 3
+        bot.Move.XY(-22275, -12462, "Move to area 2")
+        bot.Wait.ForTime(2000)
+        bot.Move.XY(-21671, -2163, "Aggro: Berzerker")
+        bot.Wait.ForTime(2000)
+        bot.Move.XY(-19592, 772, "Aggro: Berzerker")
+        bot.Wait.ForTime(2000)
+        bot.Move.XY(-13795, -751, "Aggro: Berzerker")
+        bot.Wait.ForTime(2000)
+        bot.Move.XY(-17012, -5376, "Aggro: Berzerker")
+        bot.Wait.ForTime(2000)
+        bot.Move.XY(-10606.23, -1625.26)
+        bot.Move.XY(-12158.00, -4277.00)
+        bot.Wait.ForTime(5000)
+        bot.Move.XYAndInteractNPC(-12158.00, -4277.00)
+        bot.Multibox.SendDialogToTarget(0x84) #Blessing 3
+        bot.Wait.ForTime(10000)
+
+    if not is_asterius_killed:
+        death_loop_headers = bot.States.AddHeader("Seak and Kill Path")
+        bot.Move.FollowAutoPath(TRAVEL_PATH, "Kill Route")
+
     bot.Wait.UntilCondition(
         is_asterius_killed_or_time_elapsed, duration=1000
     )  # check every second until boss is killed
@@ -222,7 +242,7 @@ def farm_scythes(bot: Botting) -> None:
     bot.States.AddCustomState(reset_farm_flags, "Reset Farm detections")
     bot.Wait.UntilOnOutpost()
     bot.Wait.ForTime(10000)
-    bot.States.JumpToStepName("[H]Exit To Farm_3")
+    bot.States.JumpToStepName(loop_header)
 
 
 bot.SetMainRoutine(farm_scythes)
