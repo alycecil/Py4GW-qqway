@@ -148,7 +148,7 @@ class Checks:
             return is_someone_dead
         
         @staticmethod
-        def IsPartyMemberBehind(range_value: int = 3500): #spirit
+        def IsPartyMemberBehind(range_value: int = 2500): #spirit
             from ..GlobalCache import GLOBAL_CACHE
             from ..Py4GWcorelib import Utils
             from ..Agent import Agent
