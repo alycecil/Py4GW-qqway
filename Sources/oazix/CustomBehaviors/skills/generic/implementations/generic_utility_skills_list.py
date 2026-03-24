@@ -54,6 +54,7 @@ class GenericUtilitySkillsList:
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Winds"), current_build=in_game_build, score_definition=ScoreStaticDefinition(10), owned_spirit_model_id=SpiritModelID.WINDS))
         ## Ranger Generics
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Winter"), current_build=in_game_build, score_definition=ScoreStaticDefinition(20), owned_spirit_model_id=SpiritModelID.WINTER))
+        skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Quickening_Zephyr"), current_build=in_game_build, score_definition=ScoreStaticDefinition(20), owned_spirit_model_id=SpiritModelID.QUICKENING_ZEPHYR))
 
         skills.append(MinionInvocationFromCorpseUtility(event_bus=event_bus, skill=CustomSkill("Animate_Shambling_Horror"), current_build=in_game_build, score_definition=ScoreStaticDefinition(25)))
         skills.append(MinionInvocationFromCorpseUtility(event_bus=event_bus, skill=CustomSkill("Animate_Bone_Fiend"), current_build=in_game_build, score_definition=ScoreStaticDefinition(25)))
