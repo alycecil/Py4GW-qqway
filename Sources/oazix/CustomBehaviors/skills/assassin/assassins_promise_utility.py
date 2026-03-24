@@ -54,7 +54,8 @@ class AssassinsPromiseUtility(CustomSkillUtilityBase):
         def condition(agent_id: int) -> bool:
             hp = Agent.GetHealth(agent_id)
             # Include only alive agents with a known health fraction below 0.5
-            return hp is not None and hp > 0.0 and hp < self.REQUIRED_TARGET_HP_FRACTION
+            is_spirit_agent = Agent.IsSpirit(agent_id)
+            return not is_spirit_agent and hp is not None and 0.0 < hp < self.REQUIRED_TARGET_HP_FRACTION
 
         return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority(
             within_range=Range.Spellcast,
