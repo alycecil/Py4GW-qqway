@@ -206,9 +206,9 @@ def _coro_handle_sell_inventoryutil(mx: float, my: float) -> Generator:
         ConsoleLog(BOT_NAME, "[Merchant] No items to sell")
         yield
         return
-    yield from bot.Move._coro_xy_and_interact_npc(mx, my, "GH Merchant (non-salvageable golds)")
+    yield from bot.Move._coro_xy_and_interact_npc(mx, my, "GH Merchant (nom nom)")
     yield from Routines.Yield.wait(1200)
-    ConsoleLog(BOT_NAME, f"[Merchant] Selling {len(sell_ids)} non-salvageable gold item(s) at merchant")
+    ConsoleLog(BOT_NAME, f"[Merchant] Selling {len(sell_ids)} item(s) at merchant")
     yield from Routines.Yield.Merchant.SellItems(sell_ids, log=True)
     yield from Routines.Yield.wait(300)
 
@@ -352,6 +352,17 @@ def _coro_sell_rare_mats_at_trader(x: float, y: float, model_ids: set[int]) -> G
             sold_total += stack_qty - new_qty
             stack_qty = new_qty
     ConsoleLog(BOT_NAME, f"[Merchant] Sold {sold_total} rare material unit(s) at trader")
+
+def _formation_of_group() -> Generator:
+    from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
+    from Sources.oazix.CustomBehaviors.primitives.parties.party_command_contants import PartyCommandConstants
+
+    CustomBehaviorParty().schedule_action(PartyCommandConstants.invite_all_to_leader_party)
+
+    yield from Routines.Yield.wait(random.randint(4_000, 10_000))
+
+    yield
+    return
 
 def _gh_merchant_setup() -> Generator:
     """Travel to Guild Hall (all accounts via SharedMemory), restock kits, sell materials,
@@ -789,6 +800,7 @@ def farm_scythes(bot: Botting) -> None:
     bot.Templates.Routines.PrepareForFarm(map_id_to_travel=OUTPOST_TO_TRAVEL)
     bot.Party.SetHardMode(True)
     bot.States.AddManagedCoroutine('Detect en route Asterius kill', handle_asterius_killed_en_route)
+    bot.States.AddCustomState(_formation_of_group, "Force formation")
 
     bot.Properties.Disable('pause_on_danger')
     bot.Move.XYAndExitMap(-2166, 861, target_map_id=VARAJAR_FELLS_MAP_ID)
@@ -824,7 +836,7 @@ def farm_scythes(bot: Botting) -> None:
     bot.Multibox.SendDialogToTarget(0x84) # Edda Blessing 2
     bot.Wait.ForTime(random.randint(11800, 14600))
 
-    death_loop_headers = bot.States.AddHeader("Path to blessing 3")
+    bot.States.AddHeader("Path to blessing 3 - Inga Caveborn")
     if not is_asterius_killed:
         # Path to blessing 3
         bot.Move.XY(-22275, -12462, "Move to area 2")
