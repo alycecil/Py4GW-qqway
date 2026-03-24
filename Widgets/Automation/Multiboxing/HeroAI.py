@@ -55,7 +55,7 @@ def LootingNode(cached_data: CacheData)-> BehaviorTree.NodeState:
         return BehaviorTree.NodeState.FAILURE
     
     loot_array = LootConfig().GetfilteredLootArray(
-        Range.Earshot.value,
+        Range.Spellcast.value,
         multibox_loot=True,
         allow_unasigned_loot=False,
     )

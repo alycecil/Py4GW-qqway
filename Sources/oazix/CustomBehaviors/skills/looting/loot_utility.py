@@ -57,7 +57,7 @@ class LootUtility(CustomSkillUtilityBase):
         """Get filtered loot array, cached per evaluation cycle via MemoryCacheManager."""
         return MemoryCacheManager.get_or_set(
             self._LOOT_CACHE_KEY,
-            lambda: LootConfig().GetfilteredLootArray(Range.Earshot.value, multibox_loot=True)
+            lambda: LootConfig().GetfilteredLootArray(Range.Spellcast.value, multibox_loot=True)
         )
 
     @override
@@ -146,7 +146,7 @@ class LootUtility(CustomSkillUtilityBase):
             # 2) check if loot has been looted
             pickup_timer = ThrottledTimer(3_000)
             while not pickup_timer.IsExpired():
-                loot_array = LootConfig().GetfilteredLootArray(Range.Earshot.value, multibox_loot=True)
+                loot_array = LootConfig().GetfilteredLootArray(Range.Spellcast.value, multibox_loot=True)
                 if item_id not in loot_array or len(loot_array) == 0:
                     break
                 yield from custom_behavior_helpers.Helpers.wait_for(100)
@@ -164,5 +164,5 @@ class LootUtility(CustomSkillUtilityBase):
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
         PyImGui.bullet_text(f"is_in_loot_cooldown : {self.loot_cooldown_timer.IsInCooldown()}")
         PyImGui.bullet_text(f"loot_cd_remaining_ms: {int(self.loot_cooldown_timer.GetTimeRemaining())}")
-        PyImGui.bullet_text(f"loot_array : {LootConfig().GetfilteredLootArray(Range.Earshot.value, multibox_loot=True)}")
+        PyImGui.bullet_text(f"loot_array : {LootConfig().GetfilteredLootArray(Range.Spellcast.value, multibox_loot=True)}")
         return
