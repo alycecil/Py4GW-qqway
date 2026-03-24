@@ -728,6 +728,19 @@ def OnPartyWipe(bot: "Botting"):
     fsm.pause()
     fsm.AddManagedCoroutine("OnWipe_OPD", lambda: _on_party_wipe(bot))
 
+def _quit_if_done():
+    global is_asterius_killed
+    global is_asterius_spotted
+    global asterius_agent_id
+
+    if is_asterius_killed:
+        print("we're done, lets wait for a minute then leave")
+
+        yield from bot.Wait._coro_for_time(60_000)
+
+        bot.Multibox.ResignParty()
+
+    pass
 
 def handle_asterius_killed_en_route():
     global is_asterius_killed
@@ -837,32 +850,32 @@ def farm_scythes(bot: Botting) -> None:
     bot.Wait.ForTime(random.randint(11800, 14600))
 
     bot.States.AddHeader("Path to blessing 3 - Inga Caveborn")
-    if not is_asterius_killed:
-        # Path to blessing 3
-        bot.Move.XY(-22275, -12462, "Move to area 2")
-        bot.Wait.ForTime(random.randint(1800, 4600))
-    if not is_asterius_killed:
-        bot.Move.XY(-21671, -2163, "Aggro: Berzerker")
-        bot.Wait.ForTime(random.randint(1800, 4600))
-    if not is_asterius_killed:
-        bot.Move.XY(-19592, 772, "Aggro: Berzerker")
-        bot.Wait.ForTime(random.randint(1800, 4600))
-    if not is_asterius_killed:
-        bot.Move.XY(-13795, -751, "Aggro: Berzerker")
-        bot.Wait.ForTime(random.randint(1800, 4600))
-    if not is_asterius_killed:
-        bot.Move.XY(-17012, -5376, "Aggro: Berzerker")
-        bot.Wait.ForTime(random.randint(1800, 4600))
-    if not is_asterius_killed:
-        bot.Move.XY(-10606.23, -1625.26)
-        bot.Move.XY(-12158.00, -4277.00)
-        bot.Wait.ForTime(5000)
-        bot.Move.XYAndInteractNPC(-12158.00, -4277.00)
-        bot.Multibox.SendDialogToTarget(0x84) #Blessing 3 - Inga Caveborn
-        bot.Wait.ForTime(random.randint(5800, 24600))
+    bot.States.AddCustomState(_quit_if_done, "Quit if done")
+    # Path to blessing 3
+    bot.Move.XY(-22275, -12462, "Move to area 2")
+    bot.Wait.ForTime(random.randint(1800, 4600))
+    bot.States.AddCustomState(_quit_if_done, "Quit if done")
+    bot.Move.XY(-21671, -2163, "Aggro: Berzerker")
+    bot.Wait.ForTime(random.randint(1800, 4600))
+    bot.States.AddCustomState(_quit_if_done, "Quit if done")
+    bot.Move.XY(-19592, 772, "Aggro: Berzerker")
+    bot.Wait.ForTime(random.randint(1800, 4600))
+    bot.States.AddCustomState(_quit_if_done, "Quit if done")
+    bot.Move.XY(-13795, -751, "Aggro: Berzerker")
+    bot.Wait.ForTime(random.randint(1800, 4600))
+    bot.States.AddCustomState(_quit_if_done, "Quit if done")
+    bot.Move.XY(-17012, -5376, "Aggro: Berzerker")
+    bot.Wait.ForTime(random.randint(1800, 4600))
+    bot.States.AddCustomState(_quit_if_done, "Quit if done")
+    bot.Move.XY(-10606.23, -1625.26)
+    bot.Move.XY(-12158.00, -4277.00)
+    bot.Wait.ForTime(5000)
+    bot.Move.XYAndInteractNPC(-12158.00, -4277.00)
+    bot.Multibox.SendDialogToTarget(0x84) #Blessing 3 - Inga Caveborn
+    bot.Wait.ForTime(random.randint(5800, 24600))
 
     # death_loop_headers = bot.States.AddHeader("Seak and Kill Path")
-    # if not is_asterius_killed:
+    # bot.States.AddCustomState(_quit_if_done, "Quit if done")
     #     bot.Move.FollowAutoPath(TRAVEL_PATH, "Kill Route")
 
     # bot.Wait.UntilCondition(
