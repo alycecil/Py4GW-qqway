@@ -732,13 +732,26 @@ def _quit_if_done():
     global is_asterius_killed
     global is_asterius_spotted
     global asterius_agent_id
+    global loop_header
 
     if is_asterius_killed:
         print("we're done, lets wait for a minute then leave")
 
-        yield from bot.Wait._coro_for_time(60_000)
+        yield from bot.Wait._coro_for_time(10_000)
 
         bot.Multibox.ResignParty()
+
+        from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
+        from Sources.oazix.CustomBehaviors.primitives.parties.party_command_contants import PartyCommandConstants
+
+        CustomBehaviorParty().schedule_action(PartyCommandConstants.resign)
+
+        yield from Routines.Yield.wait(random.randint(4_000, 10_000))
+
+        reset_farm_flags()
+
+        bot.Wait.UntilOnOutpost()
+        bot.States.JumpToStepName(loop_header)
 
     pass
 
@@ -787,6 +800,7 @@ WIDGETS_TO_ENABLE: tuple[str, ...] = (
     "CustomBehaviors",
     "ResurrectionScroll",
     "Return to outpost on defeat",
+#    "Inventory Plus",
 )
 
 def farm_scythes(bot: Botting) -> None:
