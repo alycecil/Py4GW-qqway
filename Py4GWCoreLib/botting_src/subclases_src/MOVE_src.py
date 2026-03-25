@@ -59,7 +59,7 @@ class _MOVE:
             if not loot_config_enabled:
                 return False
             loot_array = loot_singleton.GetfilteredLootArray(
-                distance=Range.Spellcast.value,
+                distance=Range.Earshot.value,
                 multibox_loot=True,
                 allow_unasigned_loot=False,
             )
