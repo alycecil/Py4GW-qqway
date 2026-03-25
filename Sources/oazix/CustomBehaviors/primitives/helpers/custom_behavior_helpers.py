@@ -227,6 +227,13 @@ class Resources:
         if profession == "Ranger" or skill_type == "Ritual":
             energy_cost = Routines.Checks.Skills.apply_expertise_reduction(energy_cost, get_attribute_level("Expertise"), skill.skill_id)
 
+        if profession == "Ritualist" and skill_type == "Ritual":
+            has_soul_twisting = Routines.Checks.Effects.HasBuff(Player.GetAgentID(), CustomSkill("Soul_Twisting").skill_id)
+            if has_soul_twisting and energy_cost > 10:
+                energy_cost -= 15
+                if energy_cost < 10:
+                    energy_cost = 10
+
         return energy_cost
 
     @staticmethod
