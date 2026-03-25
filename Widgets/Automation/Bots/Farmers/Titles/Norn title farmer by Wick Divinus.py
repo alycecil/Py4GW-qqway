@@ -160,6 +160,8 @@ _POST_WIDGET_REENABLE_SETTLE_MS = 2500
 bot = Botting(BOT_NAME,
               upkeep_honeycomb_active=True,
               upkeep_war_supplies_restock=25,
+              upkeep_armor_of_salvation_active=True,
+              upkeep_grail_of_might_active=True,
               upkeep_auto_loot_active=True)
 
 def get_items_to_deposit():
@@ -718,59 +720,6 @@ def _gh_merchant_setup() -> Generator:
     yield from Routines.Yield.wait(10_000+random.randint(100, 10_000))
     yield
 
-
-def _quit_if_done():
-    global is_asterius_killed
-    global is_asterius_spotted
-    global asterius_agent_id
-
-    if is_asterius_killed:
-        print("we're done, lets wait for a minute then leave")
-
-        yield from bot.Wait._coro_for_time(60_000)
-
-        bot.Multibox.ResignParty()
-
-    pass
-
-def handle_asterius_killed_en_route():
-    global is_asterius_killed
-    global is_asterius_spotted
-    global asterius_agent_id
-
-    while True:
-        if not Map.IsExplorable():
-            yield from Routines.Yield.wait(1000)
-            continue
-
-        if is_asterius_killed:
-            yield from Routines.Yield.wait(1000)
-            continue
-
-        if is_asterius_spotted and asterius_agent_id:
-            yield from Routines.Yield.wait(1000)
-            if Agent.IsDead(asterius_agent_id):
-                is_asterius_killed = True
-                print("We killed Asterius!")
-            continue
-
-        enemy_array = AgentArray.GetEnemyArray()
-        enemy_array = AgentArray.Filter.ByCondition(
-            enemy_array,
-            lambda agent_id: Utils.Distance(Player.GetXY(), Agent.GetXY(agent_id))
-            <= Range.SafeCompass.value,
-        )
-        enemy_array = AgentArray.Filter.ByCondition(
-            enemy_array, lambda agent_id: Player.GetAgentID() != agent_id
-        )
-        for enemy_id in enemy_array:
-            if Agent.GetModelID(enemy_id) == ASTERIUS_MODEL_ID:
-                is_asterius_spotted = True
-                print("I see Asterius!")
-                asterius_agent_id = enemy_id
-                yield from Routines.Yield.wait(1000)
-        yield from Routines.Yield.wait(1000)
-
 # Widgets you want to force-manage at startup.
 # Edit these lists to choose which widgets to enable/disable.
 WIDGETS_TO_ENABLE: tuple[str, ...] = (
@@ -882,6 +831,7 @@ def bot_routine(bot: Botting) -> None:
     bot.Multibox.SendDialogToTarget(0x84) #Blessing 6
     bot.Wait.ForTime(10000)
 
+    bot.States.AddHeader("The Path to Revelations")
     # The Path to Revelations (The quest is required beforehand, otherwise the enemies will not spawn)
     bot.Move.XY(19416.26, 1142.77)
     bot.Move.XY(24169.45, -4288.69)
@@ -905,7 +855,8 @@ def bot_routine(bot: Botting) -> None:
     bot.Move.XY(23504, 1801) # Sixth boss
     bot.Wait.ForTime(10000)
     bot.Wait.UntilOutOfCombat()
-    
+
+    bot.States.AddHeader("After The Path to Revelations")
     # Continue route
     bot.Move.XY(-2290, 14879, "Aggro: Modnir")
     bot.Wait.UntilOutOfCombat()
@@ -931,6 +882,7 @@ def bot_routine(bot: Botting) -> None:
     bot.Wait.UntilOutOfCombat()
     
     # Path to blessing 7
+    bot.States.AddHeader("Path to blessing 7")
     bot.Move.XY(21597, -6798)
     bot.Wait.UntilOutOfCombat()
     bot.Move.XY(-2217.00, 14914.00)
@@ -955,6 +907,7 @@ def bot_routine(bot: Botting) -> None:
     bot.Wait.UntilOutOfCombat()
     
     # Path to blessing 8
+    bot.States.AddHeader("Path to blessing 8")
     bot.Move.XY(8963, 4043, "Take blessing 8")
     bot.Wait.ForTime(5000)
     bot.Move.XYAndInteractNPC(8963, 4043)
@@ -967,6 +920,7 @@ def bot_routine(bot: Botting) -> None:
     bot.Wait.UntilOutOfCombat()
     
     # Path to blessing 9
+    bot.States.AddHeader("Path to blessing 9")
     bot.Move.XY(22838, 7914, "Take blessing 9")
     bot.Wait.ForTime(5000)
     bot.Move.XYAndInteractNPC(22838, 7914)
@@ -1038,42 +992,42 @@ def _anti_stuck_watchdog(bot: "Botting"):
             bot.config.FSM.AddManagedCoroutine("AntiStuck_Resign", lambda: _anti_stuck_resign(bot))
 
 
-def _upkeep_multibox_consumables(bot: "Botting"):
-    while True:
-        yield from bot.Wait._coro_for_time(15000)
-        if not Routines.Checks.Map.MapValid():
-            continue
-        
-        if Routines.Checks.Map.IsOutpost():
-            continue
-        
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Essence_Of_Celerity.value, 
-                                            GLOBAL_CACHE.Skill.GetID("Essence_of_Celerity_item_effect"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Grail_Of_Might.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Grail_of_Might_item_effect"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Armor_Of_Salvation.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Armor_of_Salvation_item_effect"), 0, 0))
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Birthday_Cupcake.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Birthday_Cupcake_skill"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Golden_Egg.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Golden_Egg_skill"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Candy_Corn.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Candy_Corn_skill"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Candy_Apple.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Candy_Apple_skill"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Slice_Of_Pumpkin_Pie.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Pie_Induced_Ecstasy"), 0, 0))    
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Drake_Kabob.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Drake_Skin"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Bowl_Of_Skalefin_Soup.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Skale_Vigor"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.Pahnai_Salad.value, 
-                                                GLOBAL_CACHE.Skill.GetID("Pahnai_Salad_item_effect"), 0, 0))  
-        yield from bot.helpers.Multibox._use_consumable_message((ModelID.War_Supplies.value, 
-                                                                GLOBAL_CACHE.Skill.GetID("Well_Supplied"), 0, 0))
-        for i in range(1, 5): 
-            GLOBAL_CACHE.Inventory.UseItem(ModelID.Honeycomb.value)
-            yield from bot.Wait._coro_for_time(250)
+# def _upkeep_multibox_consumables(bot: "Botting"):
+#     while True:
+#         yield from bot.Wait._coro_for_time(15000)
+#         if not Routines.Checks.Map.MapValid():
+#             continue
+#
+#         if Routines.Checks.Map.IsOutpost():
+#             continue
+#
+#         yield from bot.helpers.Multibox._use_consumable_message((ModelID.Essence_Of_Celerity.value,
+#                                             GLOBAL_CACHE.Skill.GetID("Essence_of_Celerity_item_effect"), 0, 0))
+#         yield from bot.helpers.Multibox._use_consumable_message((ModelID.Grail_Of_Might.value,
+#                                                 GLOBAL_CACHE.Skill.GetID("Grail_of_Might_item_effect"), 0, 0))
+#         yield from bot.helpers.Multibox._use_consumable_message((ModelID.Armor_Of_Salvation.value,
+#                                                 GLOBAL_CACHE.Skill.GetID("Armor_of_Salvation_item_effect"), 0, 0))
+#         yield from bot.helpers.Multibox._use_consumable_message((ModelID.Birthday_Cupcake.value,
+#                                                 GLOBAL_CACHE.Skill.GetID("Birthday_Cupcake_skill"), 0, 0))
+#         yield from bot.helpers.Multibox._use_consumable_message((ModelID.Golden_Egg.value,
+#                                                 GLOBAL_CACHE.Skill.GetID("Golden_Egg_skill"), 0, 0))
+#         yield from bot.helpers.Multibox._use_consumable_message((ModelID.Candy_Corn.value,
+#                                                 GLOBAL_CACHE.Skill.GetID("Candy_Corn_skill"), 0, 0))
+#         yield from bot.helpers.Multibox._use_consumable_message((ModelID.Candy_Apple.value,
+#                                                 GLOBAL_CACHE.Skill.GetID("Candy_Apple_skill"), 0, 0))
+#         yield from bot.helpers.Multibox._use_consumable_message((ModelID.Slice_Of_Pumpkin_Pie.value,
+#                                                 GLOBAL_CACHE.Skill.GetID("Pie_Induced_Ecstasy"), 0, 0))
+#         yield from bot.helpers.Multibox._use_consumable_message((ModelID.Drake_Kabob.value,
+#                                                 GLOBAL_CACHE.Skill.GetID("Drake_Skin"), 0, 0))
+#         yield from bot.helpers.Multibox._use_consumable_message((ModelID.Bowl_Of_Skalefin_Soup.value,
+#                                                 GLOBAL_CACHE.Skill.GetID("Skale_Vigor"), 0, 0))
+#         yield from bot.helpers.Multibox._use_consumable_message((ModelID.Pahnai_Salad.value,
+#                                                 GLOBAL_CACHE.Skill.GetID("Pahnai_Salad_item_effect"), 0, 0))
+#         yield from bot.helpers.Multibox._use_consumable_message((ModelID.War_Supplies.value,
+#                                                                 GLOBAL_CACHE.Skill.GetID("Well_Supplied"), 0, 0))
+#         for i in range(1, 5):
+#             GLOBAL_CACHE.Inventory.UseItem(ModelID.Honeycomb.value)
+#             yield from bot.Wait._coro_for_time(250)
             
 def _nearest_path_index(path: list, x: float, y: float) -> int:
     best, best_dist = 0, float('inf')
