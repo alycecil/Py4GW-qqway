@@ -5,11 +5,11 @@ from Sources.oazix.CustomBehaviors.primitives.scores.comon_score import CommonSc
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
-from Sources.oazix.CustomBehaviors.skills.common.signet_of_capture_utility import Signet_of_Capture_Stub
 from Sources.oazix.CustomBehaviors.skills.generic.generic_resurrection_utility import GenericResurrectionUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.minion_invocation_from_corpse_utility import \
     MinionInvocationFromCorpseUtility
+from Sources.oazix.CustomBehaviors.skills.generic.preparation_utility import PreparationUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_spirit_utility import RawSpiritUtility
 from Sources.oazix.CustomBehaviors.skills.generic.stub_utility import StubUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.ether_nightmare_utility import EtherNightmareUtility
@@ -54,7 +54,32 @@ class GenericUtilitySkillsList:
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Winds"), current_build=in_game_build, score_definition=ScoreStaticDefinition(10), owned_spirit_model_id=SpiritModelID.WINDS))
         ## Ranger Generics
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Winter"), current_build=in_game_build, score_definition=ScoreStaticDefinition(20), owned_spirit_model_id=SpiritModelID.WINTER))
-        skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Quickening_Zephyr"), current_build=in_game_build, score_definition=ScoreStaticDefinition(20), owned_spirit_model_id=SpiritModelID.QUICKENING_ZEPHYR))
+
+        qz_util = RawSpiritUtility(
+            event_bus=event_bus, skill=CustomSkill("Quickening_Zephyr"),
+            current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(85),
+            owned_spirit_model_id=SpiritModelID.QUICKENING_ZEPHYR,
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]
+        )
+        serpents_quickness_prep_utility: CustomSkillUtilityBase = PreparationUtility(
+            event_bus=event_bus,
+            prep_skill=CustomSkill("Serpents_Quickness"),
+            target_utilities=[
+                              qz_util,
+                              ],
+            current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(94)
+        )
+        dwarven_stability_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(
+            event_bus=event_bus,
+            current_build=in_game_build,
+            skill=CustomSkill("Dwarven_Stability"),
+            score_definition=ScoreStaticDefinition(95)
+        )
+        skills.append(qz_util)
+        skills.append(serpents_quickness_prep_utility)
+        skills.append(dwarven_stability_utility)
 
         skills.append(MinionInvocationFromCorpseUtility(event_bus=event_bus, skill=CustomSkill("Animate_Shambling_Horror"), current_build=in_game_build, score_definition=ScoreStaticDefinition(25)))
         skills.append(MinionInvocationFromCorpseUtility(event_bus=event_bus, skill=CustomSkill("Animate_Bone_Fiend"), current_build=in_game_build, score_definition=ScoreStaticDefinition(25)))
