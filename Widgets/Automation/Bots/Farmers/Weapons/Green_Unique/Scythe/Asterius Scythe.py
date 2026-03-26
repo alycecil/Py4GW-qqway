@@ -861,7 +861,7 @@ def farm_scythes(bot: Botting) -> None:
     bot.Events.OnPartyMemberDeadBehindCallback(lambda: bot.Templates.Routines.OnPartyMemberDeathBehind())
     bot.Map.Travel(target_map_id=OUTPOST_TO_TRAVEL)
     bot.Multibox.SummonAllAccounts()
-    bot.Wait.ForTime(4000)
+    bot.Wait.ForTime(random.randint(4_000, 10_000))
     bot.Multibox.InviteAllAccounts()
 
     bot.Party.SetHardMode(True)
@@ -870,7 +870,7 @@ def farm_scythes(bot: Botting) -> None:
 
     bot.Properties.Disable('pause_on_danger')
     bot.Move.XYAndExitMap(-2166, 861, target_map_id=VARAJAR_FELLS_MAP_ID)
-    bot.Wait.ForTime(4000)
+    bot.Wait.ForTime(random.randint(4_000, 10_000))
     bot.Properties.Enable('pause_on_danger')
 
     # Initial path to first blessing
@@ -878,7 +878,7 @@ def farm_scythes(bot: Botting) -> None:
     bot.Move.XY(-3059.12, -419.00, "Move to bridge")
     bot.Move.XY(-3301.01, -2008.23, "Move to shrine")
     bot.Move.XY(-2034, -4512, "Move to blessing 1")
-    bot.Wait.ForTime(5000)
+    bot.Wait.ForTime(random.randint(5_000, 10_000))
     bot.Move.XYAndInteractNPC(-1892.00, -4505.00)
     bot.Multibox.SendDialogToTarget(0x84) #Get Blessing 1
     bot.Wait.ForTime(random.randint(5000, 9600))
@@ -897,7 +897,7 @@ def farm_scythes(bot: Botting) -> None:
     bot.Wait.ForTime(random.randint(1800, 4600))
     bot.Move.XY(-21964, -12877, "Aggro: Jotun")
     bot.Move.XY(-25341.00, -11957.00)
-    bot.Wait.ForTime(5000)
+    bot.Wait.ForTime(random.randint(5_000, 10_000))
     bot.Move.XYAndInteractNPC(-25341.00, -11957.00)
     bot.Multibox.SendDialogToTarget(0x84) # Edda Blessing 2
     bot.Wait.ForTime(random.randint(11800, 14600))
@@ -922,7 +922,7 @@ def farm_scythes(bot: Botting) -> None:
     bot.States.AddCustomState(_quit_if_done, "Quit if done")
     bot.Move.XY(-10606.23, -1625.26)
     bot.Move.XY(-12158.00, -4277.00)
-    bot.Wait.ForTime(5000)
+    bot.Wait.ForTime(random.randint(5_000, 10_000))
     bot.Move.XYAndInteractNPC(-12158.00, -4277.00)
     bot.Multibox.SendDialogToTarget(0x84) #Blessing 3 - Inga Caveborn
     bot.Wait.ForTime(random.randint(5800, 24600))
