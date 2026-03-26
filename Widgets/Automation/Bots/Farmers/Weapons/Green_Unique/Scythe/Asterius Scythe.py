@@ -364,6 +364,11 @@ def _formation_of_group() -> Generator:
     yield
     return
 
+def _is_xunlai_chest(agent_id: int) -> bool:
+    merchant_tags = ['Xunlai Chest']
+    agent_name = Agent.GetNameByID(agent_id)
+    return any(merchant_tag in agent_name for merchant_tag in merchant_tags)
+
 def _gh_merchant_setup() -> Generator:
     """Travel to Guild Hall (all accounts via SharedMemory), restock kits, sell materials,
     sell leftover stacks and optionally buy ectos. Mirrors the FoW modular bot pattern."""
@@ -494,6 +499,21 @@ def _gh_merchant_setup() -> Generator:
     _CRAFTING_MAT_FILTER = ",".join(str(mid) for mid in sorted(_CRAFTING_MAT_MODELS))
 
     merchant_xy   = _find_npc_xy_by_name("Merchant")
+
+    if not merchant_xy:
+        # go to xunlai and try again
+        xunlai_agent_id = xunlai_chest_id()
+        if xunlai_agent_id is not None:
+            account_email = Player.GetAccountEmail()
+            accounts = GLOBAL_CACHE.ShMem.GetAllAccountData()
+            for account in accounts:
+                # intentionally include self
+                GLOBAL_CACHE.ShMem.SendMessage(account_email, account.AccountEmail, SharedCommandType.InteractWithTarget, (xunlai_agent_id,0,0,0))
+                yield from Routines.Yield.wait(random.randint(700, 5000))
+            yield from Routines.Yield.wait(random.randint(800, 9600))
+            merchant_xy = _find_npc_xy_by_name("Merchant")
+
+
     mat_xy        = _find_npc_xy_by_name("Material Trader") if _merchant_sell_materials else None
     rare_xy       = _find_npc_xy_by_name("Rare") if (_merchant_buy_ectos or _merchant_sell_rare_mats) else None
 
@@ -595,7 +615,7 @@ def _gh_merchant_setup() -> Generator:
         yield from _wait_for_alt_dispatch_completion("restock_kits", kit_refs, SharedCommandType.MerchantItems)
         yield from Routines.Yield.wait(300)
     else:
-        ConsoleLog(BOT_NAME, "[Merchant] No Merchant NPC found — skipping kit purchase")
+        ConsoleLog(BOT_NAME, "[Merchant] No Merchant NPC found - skipping kit purchase")
 
     # ── Step 6: Sell Diamonds & Onyx to Rare Material Trader (leader + alts) ──
     # if _merchant_sell_rare_mats:
@@ -658,6 +678,17 @@ def _gh_merchant_setup() -> Generator:
     ConsoleLog(BOT_NAME, "[Merchant] Guild Hall merchant run complete")
     yield from Routines.Yield.wait(10_000+random.randint(100, 10_000))
     yield
+
+
+def xunlai_chest_id():
+    agent_ids = AgentArray.GetNPCMinipetArray()
+    agent_ids = AgentArray.Filter.ByDistance(agent_ids, Player.GetXY(), Range.Compass.value)
+    agent_ids = AgentArray.Filter.ByCondition(agent_ids,
+                                              lambda agent_id: Agent.IsAlive(agent_id) and Agent.IsValid(agent_id))
+    agent_ids = AgentArray.Filter.ByCondition(agent_ids, _is_xunlai_chest)
+    if len(agent_ids) == 0: return None
+    return agent_ids[0]
+
 
 def is_asterius_killed_or_time_elapsed():
     global is_asterius_killed
@@ -824,7 +855,15 @@ def farm_scythes(bot: Botting) -> None:
     bot.States.AddCustomState(_gh_merchant_setup, "GH Merchant Setup")
     bot.Wait.ForTime(random.randint(11000, 19600))
 
-    bot.Templates.Routines.PrepareForFarm(map_id_to_travel=OUTPOST_TO_TRAVEL)
+    bot.States.AddHeader("Prepare For Farm")
+    bot.Events.OnPartyMemberBehindCallback(lambda: bot.Templates.Routines.OnPartyMemberBehind())
+    bot.Events.OnPartyMemberInDangerCallback(lambda: bot.Templates.Routines.OnPartyMemberInDanger())
+    bot.Events.OnPartyMemberDeadBehindCallback(lambda: bot.Templates.Routines.OnPartyMemberDeathBehind())
+    bot.Map.Travel(target_map_id=OUTPOST_TO_TRAVEL)
+    bot.Multibox.SummonAllAccounts()
+    bot.Wait.ForTime(4000)
+    bot.Multibox.InviteAllAccounts()
+
     bot.Party.SetHardMode(True)
     bot.States.AddManagedCoroutine('Detect en route Asterius kill', handle_asterius_killed_en_route)
     bot.States.AddCustomState(_formation_of_group, "Force formation")
