@@ -1267,6 +1267,7 @@ class Yield:
             max_character_gold: int = 100_000,
             max_no_progress_cycles: int = 3,
             max_ecto_to_buy: int | None = None,
+            rare_mat_override: int | None = None,
         ):
             from ..Inventory import Inventory
             metrics = {
@@ -1285,6 +1286,8 @@ class Yield:
                 start_threshold = stop_threshold
 
             ecto_model_id = int(ModelID.Glob_Of_Ectoplasm.value)
+            if rare_mat_override is not None: # intentional
+                ecto_model_id = rare_mat_override
             character_gold = int(GLOBAL_CACHE.Inventory.GetGoldOnCharacter())
             storage_gold = int(GLOBAL_CACHE.Inventory.GetGoldInStorage())
 
