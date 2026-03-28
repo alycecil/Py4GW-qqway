@@ -1,6 +1,7 @@
 from typing import override
 
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
+from Sources.oazix.CustomBehaviors.primitives.scores.score_combot_definition import ScoreCombotDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import (
     ScorePerAgentQuantityDefinition,
 )

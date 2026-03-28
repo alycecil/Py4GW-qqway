@@ -50,6 +50,9 @@ NICK_CYCLES_FILE = os.path.join(script_directory, "Widgets", "Data", "Nick_cycle
 nick_cycles = []
 weeks_future = 0
 
+def _inventory_util_filter():
+    return None
+
 def load_nick_cycles():
     global nick_cycles
     if os.path.exists(NICK_CYCLES_FILE):

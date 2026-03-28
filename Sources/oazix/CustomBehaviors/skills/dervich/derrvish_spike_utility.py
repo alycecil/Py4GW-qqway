@@ -15,6 +15,7 @@ from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_hel
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
 from Sources.oazix.CustomBehaviors.primitives.helpers.custom_behavior_helpers import Resources
 from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
+from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
@@ -94,28 +95,27 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
         sort_key = (TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC,
-                    TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC,
                     TargetingOrder.DISTANCE_ASC,
                     )
 
-        # if self.targeting_mode == TargetingMode.SPREAD:
-        #     sort_key = (
-        #         TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_ASC,
-        #         TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC,
-        #         TargetingOrder.DISTANCE_ASC,
-        #         )
-
-        if self.targeting_mode == TargetingMode.CLOSEST:
+        if self.targeting_mode == TargetingMode.CLOSEST or self.targeting_mode == TargetingMode.SPREAD:
             sort_key = (
                 TargetingOrder.DISTANCE_ASC,
                 TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC,
-                TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC,
                 )
         
         return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
             within_range=Range.Spellcast,
+            condition=lambda agent_id: not Agent.IsSpirit(agent_id) and (
+                    self.targeting_mode != TargetingMode.SPREAD or
+                    not CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(self._get_lock_key(agent_id)) # Spread mode won't target those already locked
+            ),
             sort_key=sort_key,
             range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id))
+
+
+    def _get_lock_key(self, agent_id: int) -> str:
+        return f"spike_{agent_id}"
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
@@ -140,6 +140,12 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
 
         targets = self._get_targets()
         if len(targets) == 0: return None
+
+        if self.targeting_mode == TargetingMode.SPREAD:
+            lock_key = self._get_lock_key(targets[0].agent_id)
+            if CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(lock_key):
+                return 10  # someone is already doing that, low priority
+
         return self.score_definition.get_score(targets[0].enemy_quantity_within_range)
 
     def is_staggering_force_available(self):
@@ -219,6 +225,12 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         enemies = self._get_targets()
         if len(enemies) == 0: return BehaviorResult.ACTION_SKIPPED
         target = enemies[0]
+
+        lock_key = self._get_lock_key(target.agent_id)
+        if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=3):
+            if self.targeting_mode == TargetingMode.SPREAD:
+                yield
+                return BehaviorResult.ACTION_SKIPPED
 
         wanted_mana = self.mana_required_to_cast
         cast_staggering_force = False

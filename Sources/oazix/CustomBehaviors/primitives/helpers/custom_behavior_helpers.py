@@ -151,6 +151,7 @@ class Resources:
             GadgetModelID.CHEST_KOURNAN.value,
             GadgetModelID.CHEST_DARKSTONE.value,
             GadgetModelID.CHEST_GENERIC.value,
+            74, #obsidian
         ]
 
         gadget_array = AgentArray.GetGadgetArray()
