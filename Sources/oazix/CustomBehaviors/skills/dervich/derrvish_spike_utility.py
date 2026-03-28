@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import List, Any, Generator, Callable, override
 
 import PyImGui
@@ -19,6 +20,11 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition imp
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 
+class TargetingMode(Enum):
+    SPIKE = 0
+    CLOSEST = 1
+    SPREAD = 2
+    
 class DervishSpikeUtility(CustomSkillUtilityBase):
     def __init__(self,
                  event_bus: EventBus,
@@ -26,7 +32,8 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
                  current_build: list[CustomSkill],
                  score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 66 if enemy_qte >= 3 else 51 if enemy_qte <= 2 else 26),
                  mana_required_to_cast: int = 5,
-                 allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO]
+                 allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
+                mode: TargetingMode = TargetingMode.SPREAD
                  ) -> None:
 
         super().__init__(
@@ -48,6 +55,8 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         self.Ebon_Escape: CustomSkill = CustomSkill("Ebon_Escape")
         self.Asuran_Scan: CustomSkill = CustomSkill("Asuran_Scan")
         self.mana_required_to_cast = mana_required_to_cast
+
+        self.targeting_mode = mode
 
         self.model_id_filter: int = int(PersistenceLocator().skills.read_or_default(self.custom_skill.skill_name, "model_id_filter", "5903"))
 
@@ -84,9 +93,28 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         return has_dervish
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
+        sort_key = (TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC,
+                    TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC,
+                    TargetingOrder.DISTANCE_ASC,
+                    )
+
+        # if self.targeting_mode == TargetingMode.SPREAD:
+        #     sort_key = (
+        #         TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_ASC,
+        #         TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC,
+        #         TargetingOrder.DISTANCE_ASC,
+        #         )
+
+        if self.targeting_mode == TargetingMode.CLOSEST:
+            sort_key = (
+                TargetingOrder.DISTANCE_ASC,
+                TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC,
+                TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC,
+                )
+        
         return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
             within_range=Range.Spellcast,
-            sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.DISTANCE_ASC),
+            sort_key=sort_key,
             range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id))
 
     @override
@@ -200,14 +228,14 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         if (self.is_staggering_force_available()
                 and Resources.get_player_absolute_energy() > wanted_mana + 10  # todo this better
         ):
-            wanted_mana = self.mana_required_to_cast + 10 # todo dervish cost reduction for mysticism
+            wanted_mana += 10 # todo dervish cost reduction for mysticism
             if constants.DEBUG: print("using spike with staggering_force")
             cast_staggering_force = True
 
         if (self.is_aura_of_thorns_available()
               and Resources.get_player_absolute_energy() > wanted_mana + 5  # todo this better
         ):
-            wanted_mana = wanted_mana + 5 # todo dervish cost reduction for mysticism
+            wanted_mana += 5 # todo dervish cost reduction for mysticism
             if constants.DEBUG: print("using spike with aura_of_thorns")
             cast_aura_of_thorns = True
 
