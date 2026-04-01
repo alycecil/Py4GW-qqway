@@ -20,6 +20,9 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_de
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
+from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_execution_strategy import \
+    UtilitySkillExecutionStrategy
+
 
 class TargetingMode(Enum):
     SPIKE = 0
@@ -34,7 +37,7 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
                  score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 66 if enemy_qte >= 3 else 51 if enemy_qte <= 2 else 26),
                  mana_required_to_cast: int = 5,
                  allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
-                mode: TargetingMode = TargetingMode.SPREAD
+                 mode: TargetingMode = TargetingMode.CLOSEST
                  ) -> None:
 
         super().__init__(
@@ -43,7 +46,9 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
             in_game_build=current_build,
             score_definition=score_definition,
             mana_required_to_cast=mana_required_to_cast,
-            allowed_states=allowed_states)
+            allowed_states=allowed_states,
+            execution_strategy=UtilitySkillExecutionStrategy.EXECUTE_THROUGH_THE_END
+        )
 
         self.score_definition: ScorePerAgentQuantityDefinition = score_definition
         self.vow_of_strength: CustomSkill = CustomSkill("Vow_of_Strength")
@@ -57,9 +62,15 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         self.Asuran_Scan: CustomSkill = CustomSkill("Asuran_Scan")
         self.mana_required_to_cast = mana_required_to_cast
 
-        self.targeting_mode = mode
-
         self.model_id_filter: int = int(PersistenceLocator().skills.read_or_default(self.custom_skill.skill_name, "model_id_filter", "5903"))
+
+        # Load mode from persistence or use default
+        persisted_mode = PersistenceLocator().skills.read_or_default(
+            self.custom_skill.skill_name,
+            "mode",
+            str(mode.value)
+        )
+        self.targeting_mode: TargetingMode = TargetingMode(int(persisted_mode))
 
     def has_dervish_enchantment(self) -> bool:
 
@@ -227,10 +238,8 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         target = enemies[0]
 
         lock_key = self._get_lock_key(target.agent_id)
-        if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=3):
-            if self.targeting_mode == TargetingMode.SPREAD:
-                yield
-                return BehaviorResult.ACTION_SKIPPED
+        # just lock to remove from condition
+        CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=3)
 
         wanted_mana = self.mana_required_to_cast
         cast_staggering_force = False
@@ -334,19 +343,36 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
     def has_persistence(self) -> bool:
         return True
 
-    #TODO UI
+    @override
+    def customized_debug_ui(self, current_state: BehaviorState) -> None:
+        PyImGui.bullet_text("Mode:")
+        PyImGui.same_line(0, -1)
+
+        # Radio buttons for mode selection
+        mode_value = self.targeting_mode.value
+        mode_value = PyImGui.radio_button(TargetingMode.SPIKE.name, mode_value, TargetingMode.SPIKE.value)
+        PyImGui.same_line(0, -1)
+        mode_value = PyImGui.radio_button( TargetingMode.CLOSEST.name, mode_value, TargetingMode.CLOSEST.value)
+        PyImGui.same_line(0, -1)
+        mode_value = PyImGui.radio_button(TargetingMode.SPREAD.name, mode_value, TargetingMode.SPREAD.value)
+
+        # Update mode if changed
+        self.targeting_mode = TargetingMode(mode_value)
 
     @override
     def persist_configuration_for_account(self):
         PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "model_id_filter", str(self.model_id_filter))
+        PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name),"targeting_mode",str(self.targeting_mode.value))
         print("configuration saved for account")
 
     @override
     def persist_configuration_as_global(self):
         PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "model_id_filter", str(self.model_id_filter))
+        PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name),"targeting_mode",str(self.targeting_mode.value))
         print("configuration saved as global")
 
     @override
     def delete_persisted_configuration(self):
         PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "model_id_filter")
+        PersistenceLocator().skills.delete(str(self.custom_skill.skill_name),"targeting_mode")
         print("configuration deleted")
