@@ -12,6 +12,7 @@ from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_wisdom_
 from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.common.great_dwarf_weapon_utility import GreatDwarfWeaponUtility
 from Sources.oazix.CustomBehaviors.skills.common.i_am_unstoppable_utility import IAmUnstoppableUtility
+from Sources.oazix.CustomBehaviors.skills.elementalist.burning_speed_utility import BurningSpeedUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.protective_shout_utility import ProtectiveShoutUtility
 from Sources.oazix.CustomBehaviors.skills.monk.infuse_health_utility import InfuseHealthUtility
@@ -34,7 +35,7 @@ class ElementalistEmo_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.aura_of_restoration_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Aura_of_Restoration"), current_build=in_game_build, score_definition=ScoreStaticDefinition( 80), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
 
         self.protective_bond_utility: CustomSkillUtilityBase = ProtectiveBondUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(20))
-        self.burning_speed_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Burning_Speed"), current_build=in_game_build, score_definition=ScoreStaticDefinition(50), mana_required_to_cast=10,allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
+        self.burning_speed_utility: CustomSkillUtilityBase = BurningSpeedUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(30), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
 
         self.life_attunement_utility: CustomSkillUtilityBase = LifeAttunementUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(50))
 
