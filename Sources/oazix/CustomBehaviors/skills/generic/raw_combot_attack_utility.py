@@ -89,6 +89,7 @@ class RawCombotAttackUtility(CustomSkillUtilityBase):
 
         target = self._get_target()
         if target is None: return BehaviorResult.ACTION_SKIPPED
+        cast_asuran_scan = False
 
         wanted_mana = Skill.Data.GetEnergyCost(self.custom_skill.skill_id)
         if self.is_asuran_scan_available() and Resources.get_player_absolute_energy() > wanted_mana + 5:
