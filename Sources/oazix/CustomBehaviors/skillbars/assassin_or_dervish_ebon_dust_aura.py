@@ -21,7 +21,7 @@ from Sources.oazix.CustomBehaviors.skills.generic.raw_combot_attack_utility impo
 from Sources.oazix.CustomBehaviors.skills.generic.stub_utility import StubUtility
 
 
-class VowOfStrength_UtilitySkillBar(CustomBehaviorBaseUtility):
+class EbonDust_UtilitySkillBar(CustomBehaviorBaseUtility):
 
     def __init__(self):
         super().__init__()

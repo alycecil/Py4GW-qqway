@@ -18,7 +18,7 @@ from Sources.oazix.CustomBehaviors.skills.generic.auto_combat_utility import Aut
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_combot_attack_utility import RawCombotAttackUtility
 
-class AssassinCriticalHit_UtilitySkillBar(CustomBehaviorBaseUtility):
+class warriors_endurance_UtilitySkillBar(CustomBehaviorBaseUtility):
 
     def __init__(self):
         super().__init__()
