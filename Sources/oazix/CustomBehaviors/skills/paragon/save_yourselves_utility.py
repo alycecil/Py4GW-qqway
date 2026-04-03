@@ -56,7 +56,7 @@ class SaveYourselfsUtility(ProtectiveShoutUtility):
             yield
             return BehaviorResult.ACTION_SKIPPED
 
-        result:BehaviorResult = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
+        result:BehaviorResult = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill, after_cast_delay=False)
         CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
         return result
 
