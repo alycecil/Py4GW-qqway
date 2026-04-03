@@ -354,8 +354,6 @@ class AutoInventoryHandler():
         if salvaged_items > 0 and log:
             ConsoleLog(self.module_name, f"Salvaged {salvaged_items} items", Console.MessageType.Success)
 
-            
-            
     def DepositItemsAuto(self):
         from ..enums import Bags, ModelID
         from ..GlobalCache import GLOBAL_CACHE
