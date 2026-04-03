@@ -1,6 +1,20 @@
 from tkinter.constants import N
 from typing import Any, Generator, override
+from typing import Any, Generator, override
 
+import PyImGui
+
+from Py4GWCoreLib import GLOBAL_CACHE, Range, Routines, Agent, Player
+from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
+from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
+from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
+from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
+from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
+from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
+from Sources.oazix.CustomBehaviors.primitives.scores.healing_score import HealingScore
+from Sources.oazix.CustomBehaviors.primitives.scores.score_per_health_gravity_definition import ScorePerHealthGravityDefinition
+from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
+from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Py4GWCoreLib import GLOBAL_CACHE, Routines, Range, Player, Agent
 from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
@@ -66,10 +80,8 @@ class BurningSpeedUtility(CustomSkillUtilityBase):
 
     @override
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
-        # self.sacrifice_life_limit_percent = PyImGui.input_float("sacrifice_life_limit_percent##sacrifice_life_limit_percent", self.sacrifice_life_limit_percent)
-        # self.sacrifice_life_limit_absolute = PyImGui.input_int("sacrifice_life_limit_absolute##sacrifice_life_limit_absolute", self.sacrifice_life_limit_absolute)
         self.require_aura_of_restoration = PyImGui.checkbox("require_aura_of_restoration##require_aura_of_restoration", self.require_aura_of_restoration)
-        # self.require_life_attunement = PyImGui.checkbox("require_life_attunement##require_life_attunement", self.require_life_attunement)
+        self.require_life_attunement = PyImGui.checkbox("require_life_attunement##require_life_attunement", self.require_life_attunement)
         self.should_cast_when_mana_low = PyImGui.checkbox("should_cast_when_mana_low##should_cast_when_mana_low", self.should_cast_when_mana_low)
         self.mana_low_threshold = PyImGui.input_float("mana_low_threshold##mana_low_threshold", self.mana_low_threshold)
 
@@ -79,8 +91,6 @@ class BurningSpeedUtility(CustomSkillUtilityBase):
 
     @override
     def persist_configuration_for_account(self):
-        # PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "sacrifice_life_limit_percent", f"{self.sacrifice_life_limit_percent:.2f}")
-        # PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "sacrifice_life_limit_absolute", str(self.sacrifice_life_limit_absolute))
         PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "require_aura_of_restoration", "1" if self.require_aura_of_restoration else "0")
         PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "require_life_attunement", "1" if self.require_life_attunement else "0")
         PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "should_cast_when_mana_low", "1" if self.should_cast_when_mana_low else "0")
@@ -89,8 +99,6 @@ class BurningSpeedUtility(CustomSkillUtilityBase):
 
     @override
     def persist_configuration_as_global(self):
-        # PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "sacrifice_life_limit_percent", f"{self.sacrifice_life_limit_percent:.2f}")
-        # PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "sacrifice_life_limit_absolute", str(self.sacrifice_life_limit_absolute))
         PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "require_aura_of_restoration", "1" if self.require_aura_of_restoration else "0")
         PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "require_life_attunement", "1" if self.require_life_attunement else "0")
         PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "should_cast_when_mana_low", "1" if self.should_cast_when_mana_low else "0")
@@ -99,8 +107,6 @@ class BurningSpeedUtility(CustomSkillUtilityBase):
 
     @override
     def delete_persisted_configuration(self):
-        # PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "sacrifice_life_limit_percent")
-        # PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "sacrifice_life_limit_absolute")
         PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "require_aura_of_restoration")
         PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "require_life_attunement")
         PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "should_cast_when_mana_low")
