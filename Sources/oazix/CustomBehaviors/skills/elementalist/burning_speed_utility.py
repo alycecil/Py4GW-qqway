@@ -52,11 +52,13 @@ class BurningSpeedUtility(CustomSkillUtilityBase):
         self.require_aura_of_restoration: bool = PersistenceLocator().skills.read_or_default(self.custom_skill.skill_name, "require_aura_of_restoration", str(0)) == "1"
         self.require_life_attunement: bool = PersistenceLocator().skills.read_or_default(self.custom_skill.skill_name, "require_life_attunement", str(0)) == "1"
 
+        # CustomSkill instances for the enchantments so we can reference their skill_id
+        self._aura_skill = CustomSkill("Aura_of_Restoration")
+        self._life_skill = CustomSkill("Life_Attunement")
+
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
-
-        # Check if mana is low (if enabled)
         player_agent = Player.GetAgentID()
 
         # Check if mana is low (if enabled)
@@ -64,6 +66,24 @@ class BurningSpeedUtility(CustomSkillUtilityBase):
             player_energy_percent = Agent.GetEnergy(player_agent)
             if player_energy_percent <= self.mana_low_threshold:
                 return HealingScore.MEMBER_DAMAGED_EMERGENCY.value - 0.1 # force cast when mana low (to regain energy)
+
+
+        # Configurable buff checks using Routines.Checks.Effects.HasBuff
+        try:
+            has_aura = bool(Routines.Checks.Effects.HasBuff(player_agent, self._aura_skill.skill_id))
+            has_life = bool(Routines.Checks.Effects.HasBuff(player_agent, self._life_skill.skill_id))
+
+            if Agent.GetHealth(player_agent) < 0.6:
+                if self.require_aura_of_restoration and not has_aura:
+                    pass
+                # Check if required buffs are present (based on configuration)
+                elif self.require_life_attunement and not has_life:
+                    pass
+                else:
+                    return self.score_definition.get_score()
+        except Exception:
+            # If the buff-check call itself fails, be conservative and skip
+            return None
 
         has_buff = Routines.Checks.Effects.HasBuff(player_agent, self.custom_skill.skill_id)
         if not has_buff: return self.score_definition.get_score()
