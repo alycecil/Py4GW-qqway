@@ -213,6 +213,11 @@ class SharedLockManager:
         return None
 
     def try_aquire_lock(self, key: str, timeout_seconds: int = LOCK_TTL_SECONDS) -> bool:
+        """
+        :param key: str
+        :type timeout_seconds: int
+        :rtype: bool
+        """
         if key is None or key == "":
             return False
         self.__dedupe_locks()
