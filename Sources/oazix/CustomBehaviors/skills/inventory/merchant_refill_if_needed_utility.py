@@ -7,7 +7,8 @@ from typing import Any, Generator, override
 
 import PyImGui
 
-from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, ItemArray, Routines, Range, Map, Agent, Player, Inventory, Item
+from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, ItemArray, Routines, Range, Map, Agent, Player, Inventory, Item, \
+    PyUIManager
 from Py4GWCoreLib.Pathing import AutoPathing
 from Py4GWCoreLib.Py4GWcorelib import Utils
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
@@ -429,17 +430,20 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         elif merchant_type == MerchantType.XUNLAI_CHEST:
             ConsoleLog("MerchantRefillIfNeededUtility", f"Opening Xunlai", Console.MessageType.Info)
 
+            from Py4GWCoreLib.py4gwcorelib_src.AutoInventoryHandler import AutoInventoryHandler
+            inventory_handler = AutoInventoryHandler()
+            current_state =  inventory_handler.module_active
+            inventory_handler.module_active = False
+
+            yield from self.DepositMaterials()
+
             deposit = self.get_items_to_deposit()
             if len(deposit) > 0:
                 ConsoleLog("MerchantRefillIfNeededUtility", f"get_items_to_deposit = {deposit}", Console.MessageType.Info)
                 yield from Routines.Yield.Items.DepositItems(deposit,constants.DEBUG)
             else:
-                if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"Nothing to sell", Console.MessageType.Info)
+                if constants.DEBUG: ConsoleLog("MerchantRefillIfNeededUtility", f"Nothing to store", Console.MessageType.Info)
 
-            from Py4GWCoreLib.py4gwcorelib_src.AutoInventoryHandler import AutoInventoryHandler
-            inventory_handler = AutoInventoryHandler()
-            current_state =  inventory_handler.module_active
-            inventory_handler.module_active = False
             yield from inventory_handler.IdentifyItems()
             yield from inventory_handler.DepositItemsAuto()
             yield from Routines.Yield.Items.DepositGold(inventory_handler.keep_gold, log =False)
@@ -709,6 +713,80 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
 
         return
+
+    def DepositMaterials(self):
+        from Py4GWCoreLib import Map
+        from Py4GWCoreLib import UIManager
+        FRAME_ALIAS_FILE = ".\\Py4GWCoreLib\\frame_aliases.json"  # JSON file mapping human-readable frame labels
+        XUNLAI_WINDOW_HASH = 2315448754       # UIManager hash for the Xunlai vault window
+
+        def GetAllChildFrameIDs(root_frame_id: int):
+            """
+            Finds all frame IDs that match the given offset path from the parent hash.
+            Unlike GetChildFrameID, this returns *all* frames that match the offset chain.
+
+            :param root_frame_id: The root hash of the UI dialog
+            :return: List of matching frame IDs
+            """
+            frame_array = UIManager.GetFrameArray()
+
+            matching_ids = []
+
+            for fid in frame_array:
+                from Py4GWCoreLib import PyUIManager
+                current = PyUIManager.UIFrame(fid)
+                offsets = []
+                trace = current
+
+                if trace.frame_id == root_frame_id:
+                    matching_ids.append(current.frame_id)
+
+            return matching_ids
+
+        def find_deposit_all_frame_id(FRAME_ALIAS_FILE, GetAllChildFrameIDs, XUNLAI_WINDOW_HASH):
+            _frame_id = 0
+
+            try:
+                _frame_id = UIManager.GetFrameIDByCustomLabel(FRAME_ALIAS_FILE, "DepositAllMaterials")
+            except Exception:
+                _frame_id = 0
+
+            if _frame_id > 0:
+                return _frame_id
+
+            try:
+                _frame_id = UIManager.GetFrameIDByCustomLabel(FRAME_ALIAS_FILE, "Xunlai Window")
+            except Exception:
+                _frame_id = 0
+
+            if _frame_id == 0:
+                _frame_id = UIManager.GetFrameIDByHash(XUNLAI_WINDOW_HASH)
+
+            if _frame_id > 0 and UIManager.FrameExists(_frame_id):
+                children = GetAllChildFrameIDs(_frame_id)
+                for child_frame_id in children:
+                    child_frame = PyUIManager.UIFrame(child_frame_id)
+                    if child_frame is not None and child_frame.child_offset_id == 4:
+                        return child_frame_id
+
+            return None
+
+        if Map.IsOutpost():
+            if not GLOBAL_CACHE.Inventory.IsStorageOpen():
+                GLOBAL_CACHE.Inventory.OpenXunlaiWindow()
+                yield from Routines.Yield.wait(150)
+
+            yield from Routines.Yield.wait(350)
+            if GLOBAL_CACHE.Inventory.IsStorageOpen():
+                yield from Routines.Yield.wait(150)
+
+                frame_id = find_deposit_all_frame_id(FRAME_ALIAS_FILE, GetAllChildFrameIDs, XUNLAI_WINDOW_HASH)
+
+                if frame_id is not None:
+                    print (f"Clicked on frame {frame_id} to Deposit All Items")
+                    UIManager.FrameClick(frame_id)
+        pass
+
 
 
 # TODO move to common lib
