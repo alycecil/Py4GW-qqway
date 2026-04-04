@@ -18,6 +18,7 @@ from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility im
 from Sources.oazix.CustomBehaviors.skills.generic.protective_shout_utility import ProtectiveShoutUtility
 from Sources.oazix.CustomBehaviors.skills.monk.infuse_health_utility import InfuseHealthUtility
 from Sources.oazix.CustomBehaviors.skills.monk.life_attunement_utility import LifeAttunementUtility
+from Sources.oazix.CustomBehaviors.skills.monk.life_bond_utility import LifeBondUtility
 from Sources.oazix.CustomBehaviors.skills.monk.protective_bond_utility import ProtectiveBondUtility
 from Sources.oazix.CustomBehaviors.skills.monk.protective_spirit_utility import ProtectiveSpiritUtility
 from Sources.oazix.CustomBehaviors.skills.monk.seed_of_life_utility import SeedOfLifeUtility
@@ -34,8 +35,10 @@ class ElementalistEmo_UtilitySkillBar(CustomBehaviorBaseUtility):
         #core
         self.ether_renewal_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Ether_Renewal"), current_build=in_game_build, score_definition=ScoreStaticDefinition(81), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
         self.aura_of_restoration_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Aura_of_Restoration"), current_build=in_game_build, score_definition=ScoreStaticDefinition( 80), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
+        self.balthazars_spirit_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Balthazars_Spirit"), current_build=in_game_build, score_definition=ScoreStaticDefinition(20), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
 
         self.protective_bond_utility: CustomSkillUtilityBase = ProtectiveBondUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(20))
+        self.life_bond_utility: CustomSkillUtilityBase = LifeBondUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(20))
         self.burning_speed_utility: CustomSkillUtilityBase = BurningSpeedUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(30), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
 
         self.life_attunement_utility: CustomSkillUtilityBase = LifeAttunementUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(50))
@@ -81,6 +84,8 @@ class ElementalistEmo_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.burning_speed_utility,
             self.infuse_health_utility,
             self.ebon_escape_utility,
+            self.life_bond_utility,
+            self.balthazars_spirit_utility,
         ]
 
     @property
