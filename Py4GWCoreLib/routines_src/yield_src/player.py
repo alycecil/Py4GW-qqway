@@ -147,3 +147,17 @@ class Player:
         """
         tree = BT.Player.Move(x, y, log=log)
         yield from _run_bt_tree(tree, throttle_ms=100)
+
+    @staticmethod
+    def MoveXYZ(x:float, y:float, zplane:int, log=False):
+        """
+        Purpose: Move the player to the specified coordinates and z-plane.
+        Args:
+            x (float): The x coordinate.
+            y (float): The y coordinate.
+            zplane (int): The z-plane.
+            log (bool) Optional: Whether to log the action. Default is False.
+        Returns: None
+        """
+        tree = BT.Player.MoveXYZ(x, y, zplane, log=log)
+        yield from _run_bt_tree(tree , throttle_ms=100)
