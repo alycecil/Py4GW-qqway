@@ -63,7 +63,7 @@ class MonkHealingBurst_UtilitySkillBar(CustomBehaviorBaseUtility):
 
         self.selfless_spirit_luxon_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, current_build=in_game_build, skill=CustomSkill("Selfless_Spirit_luxon"), score_definition=ScoreStaticDefinition(88))
         self.selfless_spirit_kurzick_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, current_build=in_game_build, skill=CustomSkill("Selfless_Spirit_kurzick"), score_definition=ScoreStaticDefinition(88))
-        self.vigorous_spirit_utility: CustomSkillUtilityBase = VigorousSpiritUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(72))
+
         self.serpents_quickness_prep_utility: CustomSkillUtilityBase = PreparationUtility(event_bus=self.event_bus,
                                                              prep_skill=CustomSkill("Serpents_Quickness"),
                                                              target_utilities=[self.seed_of_life_utility, self.selfless_spirit_luxon_utility, self.selfless_spirit_kurzick_utility], current_build=in_game_build, score_definition=ScoreStaticDefinition(94))
