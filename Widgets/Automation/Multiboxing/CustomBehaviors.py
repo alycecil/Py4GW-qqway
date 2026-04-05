@@ -44,7 +44,7 @@ def draw_dialog_overlay():
     account_email = Player.GetAccountEmail()
     own_data = GLOBAL_CACHE.ShMem.GetAccountDataFromEmail(account_email)
     if own_data is None:
-        print("no cache data")
+        # print("no cache data")
         return
 
     dialog_open = UIManager.IsNPCDialogVisible()
