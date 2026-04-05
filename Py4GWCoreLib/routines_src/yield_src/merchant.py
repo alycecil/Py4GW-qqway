@@ -273,6 +273,7 @@ class Merchant:
         max_character_gold: int = 100_000,
         max_no_progress_cycles: int = 3,
         max_ecto_to_buy: int | None = None,
+        rare_mat_override: int | None = None,
     ):
         from ...Inventory import Inventory
         metrics = {
@@ -291,6 +292,8 @@ class Merchant:
             start_threshold = stop_threshold
 
         ecto_model_id = int(ModelID.Glob_Of_Ectoplasm.value)
+        if rare_mat_override is not None: # intentional
+            ecto_model_id = rare_mat_override
         character_gold = int(GLOBAL_CACHE.Inventory.GetGoldOnCharacter())
         storage_gold = int(GLOBAL_CACHE.Inventory.GetGoldInStorage())
 
@@ -401,24 +404,24 @@ class Merchant:
             ConsoleLog("SellItems", f"Sold {len(item_array)} items.", Console.MessageType.Info)
 
     @staticmethod
-    def BuyIDKits(kits_to_buy: int, log=False):
+    def BuyIDKits(kits_to_buy: int, log=False, flush_queue=True):
         from ...Py4GWcorelib import ActionQueueManager, ConsoleLog, Console
         from ...ItemArray import ItemArray
 
         if kits_to_buy <= 0:
-            ActionQueueManager().ResetQueue("MERCHANT")
+            if flush_queue: ActionQueueManager().ResetQueue("MERCHANT")
             return
 
         merchant_item_list = GLOBAL_CACHE.Trading.Merchant.GetOfferedItems()
         merchant_item_list = ItemArray.Filter.ByCondition(merchant_item_list, lambda item_id: GLOBAL_CACHE.Item.GetModelID(item_id) == 5899)
 
         if len(merchant_item_list) == 0:
-            ActionQueueManager().ResetQueue("MERCHANT")
+            if flush_queue: ActionQueueManager().ResetQueue("MERCHANT")
             return
 
         for i in range(kits_to_buy):
             item_id = merchant_item_list[0]
-            value = GLOBAL_CACHE.Item.Properties.GetValue(item_id) * 2
+            value = GLOBAL_CACHE.Item.Properties.GetValue(item_id) * 2 # value reported is sell value not buy value
             GLOBAL_CACHE.Trading.Merchant.BuyItem(item_id, value)
 
         while not ActionQueueManager().IsEmpty("MERCHANT"):
@@ -428,19 +431,19 @@ class Merchant:
             ConsoleLog("BuyIDKits", f"Bought {kits_to_buy} ID Kits.", Console.MessageType.Info)
 
     @staticmethod
-    def BuySalvageKits(kits_to_buy: int, log=False):
+    def BuySalvageKits(kits_to_buy:int, log=False, kit_id=2992, flush_queue=True):
         from ...ItemArray import ItemArray
         from ...Py4GWcorelib import ActionQueueManager, ConsoleLog, Console
 
         if kits_to_buy <= 0:
-            ActionQueueManager().ResetQueue("MERCHANT")
+            if flush_queue: ActionQueueManager().ResetQueue("MERCHANT")
             return
 
         merchant_item_list = GLOBAL_CACHE.Trading.Merchant.GetOfferedItems()
-        merchant_item_list = ItemArray.Filter.ByCondition(merchant_item_list, lambda item_id: GLOBAL_CACHE.Item.GetModelID(item_id) == 2992)
+        merchant_item_list = ItemArray.Filter.ByCondition(merchant_item_list, lambda item_id: GLOBAL_CACHE.Item.GetModelID(item_id) == kit_id)
 
         if len(merchant_item_list) == 0:
-            ActionQueueManager().ResetQueue("MERCHANT")
+            if flush_queue: ActionQueueManager().ResetQueue("MERCHANT")
             return
 
         for i in range(kits_to_buy):
@@ -472,6 +475,7 @@ class Merchant:
         required_quantity = _get_minimum_quantity()
         merchant_item_list = GLOBAL_CACHE.Trading.Trader.GetOfferedItems()
 
+        # resolve merchant item ID from model_id
         item_id = None
         for candidate in merchant_item_list:
             if GLOBAL_CACHE.Item.GetModelID(candidate) == model_id:
@@ -482,6 +486,7 @@ class Merchant:
             ConsoleLog(MODULE_NAME, f"Model {model_id} not sold here.", Console.MessageType.Warning)
             return False
 
+        # Request a single quote
         GLOBAL_CACHE.Trading.Trader.RequestQuote(item_id)
 
         while True:
@@ -494,6 +499,7 @@ class Merchant:
             ConsoleLog(MODULE_NAME, f"Item {item_id} has no price.", Console.MessageType.Warning)
             return False
 
+        # Perform a single buy transaction
         GLOBAL_CACHE.Trading.Trader.BuyItem(item_id, cost)
 
         while True:
@@ -526,6 +532,7 @@ class Merchant:
         required_quantity = _get_minimum_quantity()
         merchant_item_list = GLOBAL_CACHE.Trading.Trader.GetOfferedItems()
 
+        # resolve merchant item ID from model_id
         item_id = None
         for candidate in merchant_item_list:
             if GLOBAL_CACHE.Item.GetModelID(candidate) == model_id:
@@ -536,6 +543,8 @@ class Merchant:
             ConsoleLog(MODULE_NAME, f"Model {model_id} not sold here.", Console.MessageType.Warning)
             return False
 
+        # Request a single quote
+        # GLOBAL_CACHE.Trading.Trader.RequestQuote(item_id)
         GLOBAL_CACHE.Trading.Trader.RequestSellQuote(item_id)
         ConsoleLog(MODULE_NAME, f"Requested Sell Quote for item {item_id}.", Console.MessageType.Warning)
 
@@ -552,6 +561,7 @@ class Merchant:
             ConsoleLog(MODULE_NAME, f"Item {item_id} has no price.", Console.MessageType.Warning)
             return False
 
+        # Perform a single buy transaction
         GLOBAL_CACHE.Trading.Trader.SellItem(item_id, cost)
 
         while True:
