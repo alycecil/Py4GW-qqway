@@ -163,7 +163,14 @@ class GenericUtilitySkillsList:
 
         skills.append(KeepSelfEffectUpUtility(event_bus=event_bus, skill=CustomSkill("Air_of_Superiority"), current_build=in_game_build, score_definition=ScoreStaticDefinition(30), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]))
 
-
+        # Warrior Things
+        skills.append(RawSimpleAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Renewing_Smash"),
+            current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(70),
+            custom_agent_targeting_predicate=lambda agent_id: Utils.Distance(Player.GetXY(), Agent.GetXY(agent_id)) < Range.Nearby.value and Agent.IsKnockedDown(agent_id)
+        ))
 
 
 
