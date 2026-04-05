@@ -373,6 +373,7 @@ class Items:
 
     @staticmethod
     def WithdrawUpTo(model_id: int, max_quantity: int) -> Generator[Any, Any, None]:
+        """Withdraw up to max_quantity of model_id from storage. No-op if none available."""
         available = GLOBAL_CACHE.Inventory.GetModelCountInStorage(model_id)
         to_withdraw = min(available, max_quantity)
         if to_withdraw > 0:
@@ -381,6 +382,7 @@ class Items:
 
     @staticmethod
     def WithdrawFirstAvailable(model_ids: list, max_quantity: int) -> Generator[Any, Any, None]:
+        """Withdraw up to max_quantity from the first model_id in the list that has stock in storage."""
         for model_id in model_ids:
             available = GLOBAL_CACHE.Inventory.GetModelCountInStorage(model_id)
             if available > 0:
@@ -391,6 +393,7 @@ class Items:
 
     @staticmethod
     def DepositAllInventory() -> Generator[Any, Any, None]:
+        """Deposits all items from inventory bags (Backpack, Belt Pouch, Bag 1, Bag 2) to storage."""
         item_ids = GLOBAL_CACHE.Inventory.GetAllInventoryItemIds()
         for item_id in item_ids:
             GLOBAL_CACHE.Inventory.DepositItemToStorage(item_id)
@@ -398,6 +401,14 @@ class Items:
 
     @staticmethod
     def RestockItems(model_id: int, desired_quantity: int) -> Generator[Any, Any, bool]:
+        """
+        Ensure we have `desired_quantity` of `model_id` in bags by withdrawing from storage.
+        - Try exact need first.
+        - If that fails, try withdrawing as much as possible (fallback = min(need, in_storage)).
+        - Return True iff final bag count >= desired_quantity.
+        """
+
+        # Current bag count
         in_bags = GLOBAL_CACHE.Inventory.GetModelCount(model_id)
         if in_bags >= desired_quantity:
             return True

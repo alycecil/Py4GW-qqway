@@ -193,12 +193,14 @@ class Agents:
             ConsoleLog("InteractWithGadgetXY", "No target after targeting.")
             return False
 
+        # 2) Interact once — the game will auto-move to the target
         yield from YieldPlayer.InteractTarget()
 
+            # 3) Wait until we’re inside the threshold (or timeout), re-issuing every 1000 ms
         elapsed = 0
         since_reissue = 0
         reissue_interval = 1000
-        step = 100
+        step = 100  # ms
         while elapsed < timeout_ms:
             px, py = Player.GetXY()
             tx, ty = Agent.GetXY(target_id)
@@ -218,23 +220,27 @@ class Agents:
             ConsoleLog("InteractWithAgentXY", "TIMEOUT waiting to reach target range.")
             return False
 
+        # 4) Small settle
         yield from wait(500)
         return True
 
     @staticmethod
     def InteractWithGadgetXY(x: float, y: float, tolerance: float = 200.0, timeout_ms: int = 15000):
         from ...Py4GWcorelib import ConsoleLog, Utils
+        # 1) Aim at the nearest gadget around (x, y)
         yield from Agents.TargetNearestGadgetXY(x, y, 100)
         target_id = Player.GetTargetID()
         if not target_id:
             ConsoleLog("InteractWithGadgetXY", "No target after targeting.")
             return False
 
+        # 2) Interact once — the game will auto-move to the target
         yield from YieldPlayer.InteractTarget()
 
+        # 3) Wait until we’re inside the threshold (or timeout), re-issuing every 1000 ms
         elapsed = 0
         since_reissue = 0
-        step = 100
+        step = 100  # ms
         while elapsed < timeout_ms:
             px, py = Player.GetXY()
             tx, ty = Agent.GetXY(target_id)
@@ -254,23 +260,27 @@ class Agents:
             ConsoleLog("InteractWithAgentXY", "TIMEOUT waiting to reach target range.")
             return False
 
+        # 4) Small settle
         yield from wait(500)
         return True
 
     @staticmethod
     def InteractWithItemXY(x: float, y: float, tolerance: float = 200.0, timeout_ms: int = 15000):
         from ...Py4GWcorelib import ConsoleLog, Utils
+        # 1) Aim at the nearest item around (x, y)
         yield from Agents.TargetNearestItemXY(x, y, 100)
         target_id = Player.GetTargetID()
         if not target_id:
             ConsoleLog("InteractWithItemXY", "No target after targeting.")
             return False
 
+        # 2) Interact once — the game will auto-move to the target
         yield from YieldPlayer.InteractTarget()
 
+        # 3) Wait until we’re inside the threshold (or timeout), re-issuing every 1000 ms
         elapsed = 0
         since_reissue = 0
-        step = 100
+        step = 100  # ms
         while elapsed < timeout_ms:
             px, py = Player.GetXY()
             tx, ty = Agent.GetXY(target_id)
