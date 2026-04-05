@@ -899,6 +899,8 @@ class Targets:
                 else:
                     raise ValueError(f"Invalid sorting criterion: {criterion}")
 
+            data_to_sort = sorted(data_to_sort, key=lambda x: not Agent.IsSpirit(x.agent_id))
+
             if should_prioritize_party_target:
                 party_forced_target_agent_id: int | None = CustomBehaviorHelperParty.get_party_custom_target()
 
