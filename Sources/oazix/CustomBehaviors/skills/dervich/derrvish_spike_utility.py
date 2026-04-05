@@ -57,6 +57,7 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         self.sand_shards: CustomSkill = CustomSkill("Sand_Shards")
         self.aura_of_thorns: CustomSkill = CustomSkill("Aura_of_Thorns")
         self.staggering_force: CustomSkill = CustomSkill("Staggering_Force")
+        self.dust_cloak: CustomSkill = CustomSkill("Dust_Cloak")
         self.Deaths_Charge: CustomSkill = CustomSkill("Deaths_Charge")
         self.Ebon_Escape: CustomSkill = CustomSkill("Ebon_Escape")
         self.Asuran_Scan: CustomSkill = CustomSkill("Asuran_Scan")
@@ -136,10 +137,15 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         if not has_dervish_enchantment:
 
             staggering_force_available = self.is_staggering_force_available()
+            dust_cloak_available = self.is_dust_cloak_available()
             aura_of_thorns_available = self.is_aura_of_thorns_available()
 
             if (staggering_force_available
                 and Resources.get_player_absolute_energy() > self.mana_required_to_cast + 10  # todo this better
+            ):
+                pass # its fine we have a skill to use for the spike
+            elif (dust_cloak_available
+                  and Resources.get_player_absolute_energy() > self.mana_required_to_cast + 10  # todo this better
             ):
                 pass # its fine we have a skill to use for the spike
             elif (aura_of_thorns_available
@@ -158,6 +164,10 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
                 return 10  # someone is already doing that, low priority
 
         return self.score_definition.get_score(targets[0].enemy_quantity_within_range)
+
+    def is_dust_cloak_available(self):
+        return self.dust_cloak.skill_slot is not None and Routines.Checks.Skills.IsSkillSlotReady(
+            self.dust_cloak.skill_slot)
 
     def is_staggering_force_available(self):
         return self.staggering_force.skill_slot is not None and Routines.Checks.Skills.IsSkillSlotReady(
@@ -245,6 +255,7 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         cast_staggering_force = False
         cast_aura_of_thorns = False
         cast_asuran_scan = False
+        cast_dust_cloak = False
 
         if (self.is_staggering_force_available()
                 and Resources.get_player_absolute_energy() > wanted_mana + 10  # todo this better
@@ -252,6 +263,13 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
             wanted_mana += 10 # todo dervish cost reduction for mysticism
             if constants.DEBUG: print("using spike with staggering_force")
             cast_staggering_force = True
+
+        if (self.is_dust_cloak_available()
+                and Resources.get_player_absolute_energy() > wanted_mana + 10  # todo this better
+        ):
+            wanted_mana += 10 # todo dervish cost reduction for mysticism
+            if constants.DEBUG: print("using spike with dust_cloak")
+            cast_dust_cloak = True
 
         if (self.is_aura_of_thorns_available()
               and Resources.get_player_absolute_energy() > wanted_mana + 5  # todo this better
@@ -274,6 +292,10 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
                 wanted_mana -= 5
                 cast_staggering_force = False  # prefer slower recharge snare if not enough energy
                 cast_shadow_step = True
+            elif Resources.get_player_absolute_energy() > wanted_mana - 5 and cast_staggering_force and cast_dust_cloak:
+                wanted_mana -= 5
+                cast_staggering_force = False  # prefer slower recharge snare if not enough energy
+                cast_dust_cloak = True
 
             if cast_shadow_step:
                 player_hp = Agent.GetHealth(Player.GetAgentID())
@@ -310,7 +332,7 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
         ping = 150 # todo read from frame
 
         # Do we need to wait for dervish flash cooldown?
-        if cast_staggering_force and cast_staggering_force:
+        if cast_staggering_force and cast_aura_of_thorns:
             yield from custom_behavior_helpers.Actions.cast_skill(self.staggering_force)
             if cast_asuran_scan:
                 yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.Asuran_Scan, target_agent_id=target.agent_id)
@@ -318,6 +340,14 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
             else:
                 yield from custom_behavior_helpers.Helpers.wait_for(1000 + ping) # should add ping here
             yield from custom_behavior_helpers.Actions.cast_skill(self.aura_of_thorns)
+        elif cast_staggering_force and cast_dust_cloak:
+            yield from custom_behavior_helpers.Actions.cast_skill(self.staggering_force)
+            if cast_asuran_scan:
+                yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.Asuran_Scan, target_agent_id=target.agent_id)
+                yield from custom_behavior_helpers.Helpers.wait_for(750 + ping) # should add ping here
+            else:
+                yield from custom_behavior_helpers.Helpers.wait_for(1000 + ping) # should add ping here
+            yield from custom_behavior_helpers.Actions.cast_skill(self.dust_cloak)
         else:
             if cast_staggering_force:
                 yield from custom_behavior_helpers.Actions.cast_skill(self.staggering_force)
@@ -325,6 +355,8 @@ class DervishSpikeUtility(CustomSkillUtilityBase):
                 yield from custom_behavior_helpers.Actions.cast_skill(self.aura_of_thorns)
             if cast_asuran_scan:
                 yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.Asuran_Scan, target_agent_id=target.agent_id)
+            if cast_dust_cloak:
+                yield from custom_behavior_helpers.Actions.cast_skill(self.dust_cloak)
 
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
         return result
