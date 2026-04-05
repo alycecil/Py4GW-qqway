@@ -314,7 +314,7 @@ class PVESkills:
         skill.TargetAllegiance = Skilltarget.OtherAlly.value
         skill.Nature = SkillNature.Buff.value
         skill.Conditions.LessLife = 0.8
-        skill.Conditions.IsPartyWide = False
+        skill.Conditions.IsPartyWide = True
         skill.Conditions.PartyWideArea = Range.SafeCompass.value
         skill_data[skill.SkillID] = skill
 
@@ -751,10 +751,8 @@ class PVESkills:
         skill = CustomSkill()
         skill.SkillID = GLOBAL_CACHE.Skill.GetID("Ursan_Rage")
         skill.SkillType = SkillType.Skill.value
-        skill.TargetAllegiance = Skilltarget.EnemyClustered.value
+        skill.TargetAllegiance = Skilltarget.Enemy.value
         skill.Nature = SkillNature.OffensiveA.value
-        skill.Conditions.EnemiesInRange = 2
-        skill.Conditions.EnemiesInRangeArea = Range.Adjacent.value
         skill_data[skill.SkillID] = skill
 
         skill = CustomSkill()

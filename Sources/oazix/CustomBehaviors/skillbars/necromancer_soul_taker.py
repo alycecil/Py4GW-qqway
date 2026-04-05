@@ -40,6 +40,8 @@ class NecromancerSoulTaker_UtilitySkillBar(CustomBehaviorBaseUtility):
 
         # dervish enchantments
         self.sand_shards_utility: CustomSkillUtilityBase = DervichEnchantmentUtility(event_bus=self.event_bus, skill=CustomSkill("Sand_Shards"), current_build=in_game_build, score_definition=ScoreStaticDefinition(88), renew_before_expiration_in_milliseconds=99999)
+        self.mirage_cloak_utility: CustomSkillUtilityBase = DervichEnchantmentUtility(event_bus=self.event_bus, skill=CustomSkill("Mirage_Cloak"), current_build=in_game_build, score_definition=ScoreStaticDefinition(88), renew_before_expiration_in_milliseconds=99999)
+
         self.rending_aura_utility: CustomSkillUtilityBase = DervichEnchantmentUtility(event_bus=self.event_bus, skill=CustomSkill("Rending_Aura"), current_build=in_game_build, score_definition=ScoreStaticDefinition(85), renew_before_expiration_in_milliseconds=99999)
         self.hearth_of_holy_flame_utility: CustomSkillUtilityBase = DervichEnchantmentUtility(event_bus=self.event_bus, skill=CustomSkill("Hearth_of_Holy_Flame"), current_build=in_game_build, score_definition=ScoreStaticDefinition(85), renew_before_expiration_in_milliseconds=99999)
         self.staggering_force_utility: CustomSkillUtilityBase = DervichEnchantmentUtility(event_bus=self.event_bus, skill=CustomSkill("Staggering_Force"), current_build=in_game_build, score_definition=ScoreStaticDefinition(85), renew_before_expiration_in_milliseconds=99999)
@@ -63,6 +65,7 @@ class NecromancerSoulTaker_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.hearth_of_holy_flame_utility,
             self.staggering_force_utility,
             self.dust_cloak_utility,
+            self.mirage_cloak_utility,
         ]
 
     @property

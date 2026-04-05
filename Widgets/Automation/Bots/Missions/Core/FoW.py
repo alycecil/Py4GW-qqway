@@ -3,13 +3,15 @@ import os
 import Py4GW
 import PyImGui
 
-from Py4GWCoreLib import Console, ConsoleLog, IniHandler, Party, Timer
+from Py4GWCoreLib import Console, ConsoleLog, IniHandler, Party, Player, Timer
 from Py4GWCoreLib.ImGui_src.ImGuisrc import ImGui
 from Py4GWCoreLib.ImGui_src.types import Alignment
 from Py4GWCoreLib.py4gwcorelib_src.Color import Color
 from Sources.modular_bot.prebuilts.fow import (
+    DEFAULT_FOW_COMBAT_WIDGET_KEY,
     DEFAULT_INVENTORY_MANAGEMENT_LOCATION_KEY,
     DEFAULT_FOW_ENTRYPOINT_KEY,
+    FOW_COMBAT_WIDGETS,
     FOW_ENTRYPOINTS,
     FOW_QUEST_ORDER,
     INVENTORY_MANAGEMENT_LOCATIONS,
@@ -22,6 +24,11 @@ MODULE_NAME = "Modular FoW"
 MODULE_ICON = "Textures/Module_Icons/Fissure of Woe.png"
 BOT_NAME = "ModularFow"
 SYNC_INTERVAL_MS = 1000
+DEFAULT_FOW_ENTRY_METHOD_KEY = "scroll"
+FOW_ENTRY_METHODS = {
+    "scroll": "Use FoW Scroll",
+    "kneel": "Temple of the Ages (/kneel)",
+}
 
 root_directory = Py4GW.Console.get_projects_path()
 ini_file_location = os.path.join(root_directory, "Widgets", "Config", "ModularFow.ini")
@@ -36,12 +43,19 @@ class Config:
         self.use_consumables = ini_handler.read_bool(BOT_NAME, "use_consumables", True)
         self.restock_consumables = ini_handler.read_bool(BOT_NAME, "restock_consumables", True)
         self.auto_loot = ini_handler.read_bool(BOT_NAME, "auto_loot", True)
+        self.upkeep_auto_inventory_management_active = ini_handler.read_bool(
+            BOT_NAME, "upkeep_auto_inventory_management_active", True
+        )
+        self.skip_merchant_actions = ini_handler.read_bool(BOT_NAME, "skip_merchant_actions", False)
         self.sell_non_cons_materials = ini_handler.read_bool(BOT_NAME, "sell_non_cons_materials", False)
         self.sell_all_common_materials = ini_handler.read_bool(BOT_NAME, "sell_all_common_materials", False)
         self.buy_ectoplasm = ini_handler.read_bool(BOT_NAME, "buy_ectoplasm", False)
         self.debug_logging = ini_handler.read_bool(BOT_NAME, "debug_logging", False)
         self.entrypoint = str(
             ini_handler.read_key(BOT_NAME, "entrypoint", DEFAULT_FOW_ENTRYPOINT_KEY) or DEFAULT_FOW_ENTRYPOINT_KEY
+        )
+        self.entry_method = str(
+            ini_handler.read_key(BOT_NAME, "entry_method", DEFAULT_FOW_ENTRY_METHOD_KEY) or DEFAULT_FOW_ENTRY_METHOD_KEY
         )
         self.inventory_management_location = str(
             ini_handler.read_key(
@@ -51,6 +65,14 @@ class Config:
             )
             or DEFAULT_INVENTORY_MANAGEMENT_LOCATION_KEY
         )
+        self.post_gh_combat_widget = str(
+            ini_handler.read_key(
+                BOT_NAME,
+                "post_gh_combat_widget",
+                DEFAULT_FOW_COMBAT_WIDGET_KEY,
+            )
+            or DEFAULT_FOW_COMBAT_WIDGET_KEY
+        )
 
     def to_options(self) -> ModularFowOptions:
         return ModularFowOptions(
@@ -58,12 +80,16 @@ class Config:
             use_consumables=bool(self.use_consumables),
             restock_consumables=bool(self.restock_consumables),
             auto_loot=bool(self.auto_loot),
+            upkeep_auto_inventory_management_active=bool(self.upkeep_auto_inventory_management_active),
+            skip_merchant_actions=bool(self.skip_merchant_actions),
             sell_non_cons_materials=bool(self.sell_non_cons_materials),
             sell_all_common_materials=bool(self.sell_all_common_materials),
             buy_ectoplasm=bool(self.buy_ectoplasm),
             debug_logging=bool(self.debug_logging),
             entrypoint=self.entrypoint,
+            entry_method=self.entry_method,
             inventory_management_location=self.inventory_management_location,
+            post_gh_combat_widget=self.post_gh_combat_widget,
         )
 
     def save_throttled(self):
@@ -75,12 +101,20 @@ class Config:
         ini_handler.write_key(BOT_NAME, "use_consumables", str(bool(self.use_consumables)))
         ini_handler.write_key(BOT_NAME, "restock_consumables", str(bool(self.restock_consumables)))
         ini_handler.write_key(BOT_NAME, "auto_loot", str(bool(self.auto_loot)))
+        ini_handler.write_key(
+            BOT_NAME,
+            "upkeep_auto_inventory_management_active",
+            str(bool(self.upkeep_auto_inventory_management_active)),
+        )
+        ini_handler.write_key(BOT_NAME, "skip_merchant_actions", str(bool(self.skip_merchant_actions)))
         ini_handler.write_key(BOT_NAME, "sell_non_cons_materials", str(bool(self.sell_non_cons_materials)))
         ini_handler.write_key(BOT_NAME, "sell_all_common_materials", str(bool(self.sell_all_common_materials)))
         ini_handler.write_key(BOT_NAME, "buy_ectoplasm", str(bool(self.buy_ectoplasm)))
         ini_handler.write_key(BOT_NAME, "debug_logging", str(bool(self.debug_logging)))
         ini_handler.write_key(BOT_NAME, "entrypoint", str(self.entrypoint))
+        ini_handler.write_key(BOT_NAME, "entry_method", str(self.entry_method))
         ini_handler.write_key(BOT_NAME, "inventory_management_location", str(self.inventory_management_location))
+        ini_handler.write_key(BOT_NAME, "post_gh_combat_widget", str(self.post_gh_combat_widget))
 
 
 config = Config()
@@ -88,8 +122,12 @@ bot = None
 _BOT_REBUILD_PENDING = False
 ENTRYPOINT_KEYS = list(FOW_ENTRYPOINTS.keys())
 ENTRYPOINT_LABELS = [label for label, _map_id in FOW_ENTRYPOINTS.values()]
+ENTRY_METHOD_KEYS = list(FOW_ENTRY_METHODS.keys())
+ENTRY_METHOD_LABELS = [FOW_ENTRY_METHODS[key] for key in ENTRY_METHOD_KEYS]
 INVENTORY_LOCATION_KEYS = list(INVENTORY_MANAGEMENT_LOCATIONS.keys())
 INVENTORY_LOCATION_LABELS = [INVENTORY_MANAGEMENT_LOCATIONS[key] for key in INVENTORY_LOCATION_KEYS]
+COMBAT_WIDGET_KEYS = list(FOW_COMBAT_WIDGETS.keys())
+COMBAT_WIDGET_LABELS = [FOW_COMBAT_WIDGETS[key] for key in COMBAT_WIDGET_KEYS]
 
 
 def _entrypoint_index() -> int:
@@ -97,6 +135,34 @@ def _entrypoint_index() -> int:
         return ENTRYPOINT_KEYS.index(config.entrypoint)
     except ValueError:
         return 0
+
+
+def _entry_method_index() -> int:
+    try:
+        return ENTRY_METHOD_KEYS.index(config.entry_method)
+    except ValueError:
+        return 0
+
+
+def _uses_temple_kneel_entry() -> bool:
+    return str(config.entry_method).strip().lower() == "kneel"
+
+
+def _draw_entry_method_combo(disabled: bool = False) -> None:
+    if disabled:
+        PyImGui.begin_disabled(True)
+    PyImGui.text("FoW Entry Method")
+    PyImGui.push_item_width(PyImGui.get_content_region_avail()[0])
+    selected_index = PyImGui.combo("##FoWEntryMethod", _entry_method_index(), ENTRY_METHOD_LABELS)
+    PyImGui.pop_item_width()
+    if 0 <= selected_index < len(ENTRY_METHOD_KEYS):
+        new_entry_method = ENTRY_METHOD_KEYS[selected_index]
+        if new_entry_method != config.entry_method:
+            config.entry_method = new_entry_method
+            if bot is not None:
+                _queue_rebuild()
+    if disabled:
+        PyImGui.end_disabled()
 
 
 def _draw_entrypoint_combo(disabled: bool = False) -> None:
@@ -138,6 +204,34 @@ def _draw_inventory_location_combo(disabled: bool = False) -> None:
         new_location = INVENTORY_LOCATION_KEYS[selected_index]
         if new_location != config.inventory_management_location:
             config.inventory_management_location = new_location
+            if bot is not None:
+                _queue_rebuild()
+    if disabled:
+        PyImGui.end_disabled()
+
+
+def _combat_widget_index() -> int:
+    try:
+        return COMBAT_WIDGET_KEYS.index(config.post_gh_combat_widget)
+    except ValueError:
+        return 0
+
+
+def _draw_combat_widget_combo(disabled: bool = False) -> None:
+    if disabled:
+        PyImGui.begin_disabled(True)
+    PyImGui.text("Combat Engine")
+    PyImGui.push_item_width(PyImGui.get_content_region_avail()[0])
+    selected_index = PyImGui.combo(
+        "##FoWPostGhCombatWidget",
+        _combat_widget_index(),
+        COMBAT_WIDGET_LABELS,
+    )
+    PyImGui.pop_item_width()
+    if 0 <= selected_index < len(COMBAT_WIDGET_KEYS):
+        new_widget = COMBAT_WIDGET_KEYS[selected_index]
+        if new_widget != config.post_gh_combat_widget:
+            config.post_gh_combat_widget = new_widget
             if bot is not None:
                 _queue_rebuild()
     if disabled:
@@ -194,13 +288,29 @@ def _debug(message: str) -> None:
         ConsoleLog(BOT_NAME, message, Console.MessageType.Info)
 
 
-def _should_show_widget() -> bool:
+def _is_current_party_leader() -> bool:
     try:
         if not Party.IsPartyLoaded():
             return True
         if Party.GetPlayerCount() <= 1:
             return True
-        return bool(Party.IsPartyLeader())
+        return int(Party.GetPartyLeaderID()) == int(Player.GetAgentID())
+    except Exception:
+        try:
+            return bool(Party.IsPartyLeader())
+        except Exception:
+            return True
+
+
+def _should_show_widget() -> bool:
+    try:
+        if bot is not None:
+            return True
+        if not Party.IsPartyLoaded():
+            return True
+        if Party.GetPlayerCount() <= 1:
+            return True
+        return _is_current_party_leader()
     except Exception:
         return True
 
@@ -221,6 +331,34 @@ def _build_bot():
     )
 
 
+def _ensure_party_safety_callbacks_runtime() -> None:
+    """
+    Re-apply party safety callbacks at runtime for FoW runs.
+    This is idempotent and ensures callbacks stay wired in HeroAI mode.
+    """
+    if bot is None:
+        return
+    try:
+        bot.bot.Events.OnPartyMemberBehindCallback(
+            lambda: bot.bot.Templates.Routines.OnPartyMemberBehind()
+        )
+        bot.bot.Events.OnPartyMemberInDangerCallback(
+            lambda: bot.bot.Templates.Routines.OnPartyMemberInDanger()
+        )
+        bot.bot.Events.OnPartyMemberDeadBehindCallback(
+            lambda: bot.bot.Templates.Routines.OnPartyMemberDeathBehind()
+        )
+        behind_cb = bool(getattr(bot.bot.config.events.on_party_member_behind, "callback", None))
+        danger_cb = bool(getattr(bot.bot.config.events.on_party_member_in_danger, "callback", None))
+        dead_behind_cb = bool(getattr(bot.bot.config.events.on_party_member_dead_behind, "callback", None))
+        _debug(
+            "FoW safety callbacks armed "
+            f"(behind={behind_cb}, in_danger={danger_cb}, dead_behind={dead_behind_cb})"
+        )
+    except Exception as exc:
+        _debug(f"Failed to arm FoW safety callbacks: {exc}")
+
+
 def _start_bot() -> None:
     global bot, _BOT_REBUILD_PENDING
 
@@ -238,6 +376,7 @@ def _start_bot() -> None:
         )
 
     apply_fow_runtime_properties(bot.bot, config.to_options(), debug_hook=_debug)
+    _ensure_party_safety_callbacks_runtime()
     _debug(
         "Calling bot.Start(). "
         f"initialized={bot.bot.config.initialized} "
@@ -274,12 +413,23 @@ def _draw_prestart_window() -> None:
     config.restock_consumables = PyImGui.checkbox("Restock Consumables", config.restock_consumables)
     PyImGui.end_disabled()
     config.auto_loot = PyImGui.checkbox("Auto Loot", config.auto_loot)
+    config.upkeep_auto_inventory_management_active = PyImGui.checkbox(
+        "Auto Inventory Management",
+        config.upkeep_auto_inventory_management_active,
+    )
+    config.skip_merchant_actions = PyImGui.checkbox("Skip Merchant Actions", config.skip_merchant_actions)
     PyImGui.text("Material Handling")
+    PyImGui.begin_disabled(config.skip_merchant_actions)
     config.sell_non_cons_materials = PyImGui.checkbox("Sell Non-Cons Materials", config.sell_non_cons_materials)
     config.sell_all_common_materials = PyImGui.checkbox("Sell All Common Materials", config.sell_all_common_materials)
     config.buy_ectoplasm = PyImGui.checkbox("Buy Ectoplasm", config.buy_ectoplasm)
-    _draw_inventory_location_combo()
-    _draw_entrypoint_combo()
+    _draw_inventory_location_combo(disabled=config.skip_merchant_actions)
+    _draw_combat_widget_combo(disabled=config.skip_merchant_actions)
+    PyImGui.end_disabled()
+    _draw_entry_method_combo()
+    _draw_entrypoint_combo(disabled=_uses_temple_kneel_entry())
+    if _uses_temple_kneel_entry():
+        PyImGui.text_wrapped("Temple of the Ages is used automatically when /kneel entry is selected.")
     config.debug_logging = PyImGui.checkbox("Debug Logging", config.debug_logging)
 
     PyImGui.separator()
@@ -343,6 +493,18 @@ def _draw_main() -> None:
     if new_auto_loot != config.auto_loot:
         config.auto_loot = new_auto_loot
         _queue_rebuild()
+    new_auto_inventory_management = PyImGui.checkbox(
+        "Auto Inventory Management",
+        config.upkeep_auto_inventory_management_active,
+    )
+    if new_auto_inventory_management != config.upkeep_auto_inventory_management_active:
+        config.upkeep_auto_inventory_management_active = new_auto_inventory_management
+        _queue_rebuild()
+    new_skip_merchant_actions = PyImGui.checkbox("Skip Merchant Actions", config.skip_merchant_actions)
+    if new_skip_merchant_actions != config.skip_merchant_actions:
+        config.skip_merchant_actions = new_skip_merchant_actions
+        _queue_rebuild()
+    PyImGui.begin_disabled(config.skip_merchant_actions)
     new_sell_non_cons_materials = PyImGui.checkbox("Sell Non-Cons Materials", config.sell_non_cons_materials)
     if new_sell_non_cons_materials != config.sell_non_cons_materials:
         config.sell_non_cons_materials = new_sell_non_cons_materials
@@ -355,8 +517,13 @@ def _draw_main() -> None:
     if new_buy_ectoplasm != config.buy_ectoplasm:
         config.buy_ectoplasm = new_buy_ectoplasm
         _queue_rebuild()
-    _draw_inventory_location_combo(disabled=is_running)
-    _draw_entrypoint_combo(disabled=is_running)
+    _draw_inventory_location_combo(disabled=is_running or config.skip_merchant_actions)
+    _draw_combat_widget_combo(disabled=is_running or config.skip_merchant_actions)
+    PyImGui.end_disabled()
+    _draw_entry_method_combo(disabled=is_running)
+    _draw_entrypoint_combo(disabled=is_running or _uses_temple_kneel_entry())
+    if _uses_temple_kneel_entry():
+        PyImGui.text_wrapped("Temple of the Ages is used automatically when /kneel entry is selected.")
     PyImGui.end_disabled()
 
     config.save_throttled()
@@ -365,8 +532,24 @@ def _draw_main() -> None:
 def _draw_settings() -> None:
     is_running = bool(bot is not None and bot.bot.config.fsm_running)
     PyImGui.begin_disabled(is_running)
-    _draw_inventory_location_combo(disabled=bool(bot is not None and bot.bot.config.fsm_running))
-    _draw_entrypoint_combo(disabled=bool(bot is not None and bot.bot.config.fsm_running))
+    new_auto_inventory_management = PyImGui.checkbox(
+        "Auto Inventory Management",
+        config.upkeep_auto_inventory_management_active,
+    )
+    if new_auto_inventory_management != config.upkeep_auto_inventory_management_active:
+        config.upkeep_auto_inventory_management_active = new_auto_inventory_management
+        _queue_rebuild()
+    new_skip_merchant_actions = PyImGui.checkbox("Skip Merchant Actions", config.skip_merchant_actions)
+    if new_skip_merchant_actions != config.skip_merchant_actions:
+        config.skip_merchant_actions = new_skip_merchant_actions
+        _queue_rebuild()
+    _draw_inventory_location_combo(disabled=bool(bot is not None and bot.bot.config.fsm_running) or config.skip_merchant_actions)
+    _draw_entry_method_combo(disabled=is_running)
+    _draw_entrypoint_combo(disabled=is_running or _uses_temple_kneel_entry())
+    if _uses_temple_kneel_entry():
+        PyImGui.text_wrapped("Temple of the Ages is used automatically when /kneel entry is selected.")
+    PyImGui.begin_disabled(config.skip_merchant_actions)
+    _draw_combat_widget_combo(disabled=is_running or config.skip_merchant_actions)
     new_sell_non_cons_materials = PyImGui.checkbox("Sell Non-Cons Materials", config.sell_non_cons_materials)
     if new_sell_non_cons_materials != config.sell_non_cons_materials:
         config.sell_non_cons_materials = new_sell_non_cons_materials
@@ -379,6 +562,7 @@ def _draw_settings() -> None:
     if new_buy_ectoplasm != config.buy_ectoplasm:
         config.buy_ectoplasm = new_buy_ectoplasm
         _queue_rebuild()
+    PyImGui.end_disabled()
     PyImGui.end_disabled()
     config.debug_logging = PyImGui.checkbox("Debug Logging", config.debug_logging)
     config.save_throttled()
@@ -391,8 +575,10 @@ def _draw_help() -> None:
     PyImGui.bullet_text("Uses the same FoW route builder as the standalone modular bot")
     PyImGui.bullet_text("Loads quest steps from Sources/modular_bot/quests/FoW/*.json")
     PyImGui.bullet_text("Supports inventory management in Guild Hall or Eye of the North")
+    PyImGui.bullet_text("Optional skip for all merchant/inventory management setup actions")
     PyImGui.bullet_text("Optional material selling before entry at the selected inventory location")
     PyImGui.bullet_text("Optional ectoplasm buying from current character gold only")
+    PyImGui.bullet_text("Supports FoW entry with either a scroll or Temple of the Ages /kneel")
     PyImGui.bullet_text("Groups on the selected FoW entrypoint map before scrolling in")
     PyImGui.bullet_text("Supports FoW entry from Zin Ku Corridor, Chantry of Secrets, Temple of the Ages, or Embark Beach")
     PyImGui.bullet_text("Keeps widget options for hard mode, consumables, autoloot, and debug logging")
@@ -402,10 +588,9 @@ def _draw_help() -> None:
 def main():
     global bot, _BOT_REBUILD_PENDING
 
-    if not _should_show_widget():
-        return
-
     if bot is None:
+        if not _should_show_widget():
+            return
         _draw_prestart_window()
         return
 

@@ -20,7 +20,7 @@ from Sources.oazix.CustomBehaviors.primitives.skills.bonds.custom_buff_target_pe
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.skills.necromancer.blood_is_power_utility import BloodIsPowerUtility
-
+from Sources.oazix.CustomBehaviors.skills.plugins.targeting_modifiers.buff_configurator import BuffConfigurator
 
 class BloodRitualUtility(CustomSkillUtilityBase):
     def __init__(self,
@@ -46,12 +46,7 @@ class BloodRitualUtility(CustomSkillUtilityBase):
 
         self.score_definition: ScoreStaticDefinition = score_definition
 
-        data: str | None = PersistenceLocator().skills.read(self.custom_skill.skill_name, "buff_configuration")
-        if data is not None:
-            self.buff_configuration: CustomBuffMultipleTarget = CustomBuffMultipleTarget.instanciate_from_string(self.event_bus, self.custom_skill, data)
-        else:
-            self.buff_configuration: CustomBuffMultipleTarget = CustomBuffMultipleTarget(self.event_bus, self.custom_skill, buff_configuration_per_profession= BuffConfigurationPerProfession.BUFF_CONFIGURATION_CASTERS)
-
+        self.add_plugin_targetting_modifier(lambda x: BuffConfigurator(event_bus, self.custom_skill, buff_configuration_per_profession= BuffConfigurationPerProfession.BUFF_CONFIGURATION_CASTERS))
         self.sacrifice_life_limit_percent: float = sacrifice_life_limit_percent
         self.sacrifice_life_limit_absolute: int = sacrifice_life_limit_absolute
         self.required_target_mana_lower_than_percent: float = required_target_mana_lower_than_percent
@@ -67,7 +62,7 @@ class BloodRitualUtility(CustomSkillUtilityBase):
                 within_range=Range.Spellcast.value,
                 condition=lambda agent_id:
                     agent_id != Player.GetAgentID() and
-                    self.buff_configuration.get_agent_id_predicate()(agent_id) and
+                    self.get_plugin_targeting_modifiers_filtering_predicate()(agent_id) and
                     custom_behavior_helpers.Resources.get_energy_percent_in_party(agent_id) < self.required_target_mana_lower_than_percent and
                     not (GLOBAL_CACHE.Effects.EffectExists(agent_id, self.custom_skill.skill_id) or GLOBAL_CACHE.Effects.BuffExists(agent_id, self.custom_skill.skill_id)) and
                     not CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(self._get_lock_key(agent_id)),
@@ -89,7 +84,6 @@ class BloodRitualUtility(CustomSkillUtilityBase):
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
-
         target = self._get_target()
         if target is None: return BehaviorResult.ACTION_SKIPPED
 
@@ -102,20 +96,10 @@ class BloodRitualUtility(CustomSkillUtilityBase):
         return result
 
     @override
-    def get_buff_configuration(self) -> CustomBuffMultipleTarget | None:
-        return self.buff_configuration
-
-    @override
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
-        PyImGui.bullet_text(f"sacrifice_life_cost : {self.sacrifice_life_cost}")
-        #self.sacrifice_life_limit_absolute = PyImGui.input_int("##sacrifice_life_cost", self.sacrifice_life_cost)
-        PyImGui.bullet_text(f"sacrifice_life_limit_percent :")
-        self.sacrifice_life_limit_percent = PyImGui.input_float("##sacrifice_life_limit_percent", self.sacrifice_life_limit_percent)
-        PyImGui.bullet_text(f"sacrifice_life_limit_absolute :")
-        self.sacrifice_life_limit_absolute = PyImGui.input_int("##sacrifice_life_limit_absolute", self.sacrifice_life_limit_absolute)
-        PyImGui.bullet_text(f"required_target_mana_lower_than_percent :")
-        self.required_target_mana_lower_than_percent = PyImGui.input_float("##required_target_mana_lower_than_percent", self.required_target_mana_lower_than_percent)
-
+        self.sacrifice_life_limit_percent = PyImGui.input_float("sacrifice_life_limit_percent##sacrifice_life_limit_percent", self.sacrifice_life_limit_percent)
+        self.sacrifice_life_limit_absolute = PyImGui.input_int("sacrifice_life_limit_absolute##sacrifice_life_limit_absolute", self.sacrifice_life_limit_absolute)
+        self.required_target_mana_lower_than_percent = PyImGui.input_float("required_target_mana_lower_than_percent##required_target_mana_lower_than_percent", self.required_target_mana_lower_than_percent)
 
     @override
     def has_persistence(self) -> bool:
@@ -123,7 +107,7 @@ class BloodRitualUtility(CustomSkillUtilityBase):
 
     @override
     def persist_configuration_for_account(self):
-        PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "buff_configuration", self.buff_configuration.serialize_to_string())
+        super().persist_configuration_for_account()
         PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "sacrifice_life_limit_percent", f"{self.sacrifice_life_limit_percent:.2f}")
         PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "sacrifice_life_limit_absolute", str(self.sacrifice_life_limit_absolute))
         PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "required_target_mana_lower_than_percent", f"{self.required_target_mana_lower_than_percent:.2f}")
@@ -131,7 +115,7 @@ class BloodRitualUtility(CustomSkillUtilityBase):
 
     @override
     def persist_configuration_as_global(self):
-        PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "buff_configuration", self.buff_configuration.serialize_to_string())
+        super().persist_configuration_as_global()
         PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "sacrifice_life_limit_percent", f"{self.sacrifice_life_limit_percent:.2f}")
         PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "sacrifice_life_limit_absolute", str(self.sacrifice_life_limit_absolute))
         PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "required_target_mana_lower_than_percent", f"{self.required_target_mana_lower_than_percent:.2f}")
@@ -139,8 +123,7 @@ class BloodRitualUtility(CustomSkillUtilityBase):
 
     @override
     def delete_persisted_configuration(self):
-        PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "buff_configuration")
-        PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "buff_configuration")
+        super().delete_persisted_configuration()
         PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "sacrifice_life_limit_percent")
         PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "sacrifice_life_limit_absolute")
         PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "required_target_mana_lower_than_percent")

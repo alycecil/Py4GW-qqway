@@ -25,6 +25,7 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.drain_enchantment_utility impor
 from Sources.oazix.CustomBehaviors.skills.mesmer.ether_nightmare_utility import EtherNightmareUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.leech_signet_utility import LeechSignetUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.mistrust_utility import MistrustUtility
+from Sources.oazix.CustomBehaviors.skills.mesmer.overload_utility import OverloadUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.power_drain_utility import PowerDrainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.shatter_enchantment_utility import ShatterEnchantmentUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.shatter_hex_utility import ShatterHexUtility
@@ -32,6 +33,7 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.spiritual_pain_utility import S
 from Sources.oazix.CustomBehaviors.skills.mesmer.unnatural_signet_utility import UnnaturalSignetUtility
 from Sources.oazix.CustomBehaviors.skills.paragon.fall_back_utility import FallBackUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.necrosis_utility import NecrosisUtility
+from Sources.oazix.CustomBehaviors.skills.mesmer.overload_utility import OverloadUtility
 
 class MesmerESurgery_UtilitySkillBar(CustomBehaviorBaseUtility):
 
@@ -62,7 +64,7 @@ class MesmerESurgery_UtilitySkillBar(CustomBehaviorBaseUtility):
             score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte:89 if enemy_qte >= 3 else 79),
             allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
             mana_required_to_cast=7)
-        self.overload_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Overload"), current_build=in_game_build, mana_required_to_cast=15)
+        self.overload_utility: CustomSkillUtilityBase = OverloadUtility(event_bus=self.event_bus, current_build=in_game_build)
         self.chaos_storm_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Chaos_Storm"), current_build=in_game_build, mana_required_to_cast=15)
         self.wastrels_demise_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Wastrels_Demise"), current_build=in_game_build, mana_required_to_cast=15)
         self.spiritual_pain_utility: CustomSkillUtilityBase = SpiritualPainUtility(event_bus=self.event_bus, current_build=in_game_build, mana_required_to_cast=10)

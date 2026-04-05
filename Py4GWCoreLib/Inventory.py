@@ -1474,13 +1474,11 @@ class Inventory:
         remaining_quantity = quantity
         moved_any = False
 
-        for bag_enum in storage_bags:
-            bag = PyInventory.Bag(bag_enum.value, bag_enum.name)
-            size = bag.GetSize()
-            items = bag.GetItems()
-
-            # Fill existing partial stacks (only if stackable)
-            if is_stackable:
+        # Fill every partial stack across all storage bags before using empty slots.
+        if is_stackable:
+            for bag_enum in storage_bags:
+                bag = PyInventory.Bag(bag_enum.value, bag_enum.name)
+                items = bag.GetItems()
                 for item in items:
                     if item.model_id == Item.GetModelID(item_id):
                         item_qty = Item.Properties.GetQuantity(item.item_id)
@@ -1493,6 +1491,11 @@ class Inventory:
                                 moved_any = True
                                 if remaining_quantity == 0:
                                     return True
+
+        for bag_enum in storage_bags:
+            bag = PyInventory.Bag(bag_enum.value, bag_enum.name)
+            size = bag.GetSize()
+            items = bag.GetItems()
 
             # Fill empty slots
             occupied_slots = {item.slot for item in items}
@@ -1533,13 +1536,11 @@ class Inventory:
         remaining_quantity = quantity
         moved_any = False
 
-        for bag_enum in inventory_bags:
-            bag = PyInventory.Bag(bag_enum.value, bag_enum.name)
-            size = bag.GetSize()
-            items = bag.GetItems()
-
-            # Fill existing partial stacks
-            if is_stackable:
+        # Fill every partial stack across all inventory bags before using empty slots.
+        if is_stackable:
+            for bag_enum in inventory_bags:
+                bag = PyInventory.Bag(bag_enum.value, bag_enum.name)
+                items = bag.GetItems()
                 for item in items:
                     if item.model_id == Item.GetModelID(item_id):
                         item_qty = Item.Properties.GetQuantity(item.item_id)
@@ -1552,6 +1553,11 @@ class Inventory:
                                 moved_any = True
                                 if remaining_quantity == 0:
                                     return True
+
+        for bag_enum in inventory_bags:
+            bag = PyInventory.Bag(bag_enum.value, bag_enum.name)
+            size = bag.GetSize()
+            items = bag.GetItems()
 
             # Fill empty slots
             occupied_slots = {item.slot for item in items}

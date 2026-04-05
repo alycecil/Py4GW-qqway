@@ -1,4 +1,4 @@
-﻿import PyInventory
+import PyInventory
 import PyImGui
 import random
 import time
@@ -45,6 +45,23 @@ _active_ini_path = ""                              # Full path to the active INI
 _last_saved_anniversary_slot_unlocked = False      # Tracks whether the anniversary flag needs re-saving
 _selected_settings_account = ""                    # Account selected in the settings copy-from dropdown
 _last_window_width = float(COMPACT_WINDOW_MIN_WIDTH)  # Cached window width used for anchor positioning
+
+# Idle-performance: throttled stats cache — avoids scanning all storage bags every frame
+_idle_refresh_timer = ThrottledTimer(2000)         # how often to recompute bag stats and sort quality
+_cache_needs_refresh = True                        # set True to force immediate refresh (e.g. after sort)
+_cached_available_bags = []                        # last result of _get_available_storage_bags
+_cached_bag_infos = []                             # last computed per-bag info list
+_cached_tabs_total_used = 0
+_cached_tabs_total_size = 0
+_cached_correct_items = 0
+_cached_total_items = 0
+_cached_correct_ratio = 1.0
+
+# Cached UIManager anchor-position state — frame IDs are resolved once (JSON/hash lookup)
+# and reused every frame; only GetFrameCoords runs each frame (fast GW memory read).
+_anchor_cached_frame_id = 0           # primary vault frame ID; 0 = not yet resolved
+_anchor_cached_fallback_frame_id = 0  # inventory fallback frame ID; 0 = not yet resolved
+_anchor_frame_ids_resolved = False    # True once the one-time lookup has completed
 
 # Per-bag filter state — keyed by bag_enum.value
 _allowed_types_by_storage = {}              # type-name lists allowed per pane
@@ -2548,6 +2565,9 @@ def _process_phase_finalize(task, ctx):
 	# Keep the progress bar visible for 2 s after completion so the game
 	# item animations are still visible while the bar shows "Done".
 	_sort_done_until = time.monotonic() + 2.0
+	# Force stats cache refresh so the progress bars reflect the post-sort state.
+	global _cache_needs_refresh
+	_cache_needs_refresh = True
 	return True
 
 
@@ -2745,8 +2765,12 @@ def _sort_storage_items(available_storage_bags):
 def _get_available_storage_bags(anniversary_slot_unlocked: bool):
 	"""Return the list of storage pane enums that are actually available in the current session.
 
-	Panes are probed in order (Storage1–Storage13, optionally Storage14).
-	The last pane is excluded when anniversary_slot_unlocked is False.
+	Storage1-13 are regular purchasable panes (up to 13 total).
+	Storage14 is the anniversary pane.
+
+	GW accurately reports GetSize() > 0 only for purchased panes and 0 for unpurchased ones —
+	there is no phantom preview slot.  The anniversary checkbox acts as a manual override in
+	case GW does not report Storage14 correctly for a given account.
 	"""
 	bag_order = [
 		Bags.Storage1,
@@ -2762,19 +2786,13 @@ def _get_available_storage_bags(anniversary_slot_unlocked: bool):
 		Bags.Storage11,
 		Bags.Storage12,
 		Bags.Storage13,
+		Bags.Storage14,
 	]
 
-	if anniversary_slot_unlocked:
-		bag_order.append(Bags.Storage14)
+	available_bags = [b for b in bag_order if _get_storage_bag_info(b)["available"]]
 
-	available_bags = []
-	for bag_enum in bag_order:
-		info = _get_storage_bag_info(bag_enum)
-		if info["available"]:
-			available_bags.append(bag_enum)
-
-	if not anniversary_slot_unlocked and len(available_bags) > 0:
-		available_bags.pop()
+	if not anniversary_slot_unlocked and available_bags:
+		available_bags.pop()  # GW reports one phantom slot ahead — remove it.
 
 	return available_bags
 
@@ -2835,50 +2853,79 @@ def _get_slot_item_type_rows(bag_enum, allowed_types=None):
 def _get_storage_anchor_position(anchor_window_width=None):
 	"""Calculate the screen position where our overlay window should be anchored.
 
-	Looks up the Xunlai vault frame by alias, then by hash, then falls back to the
-	inventory panel. Returns (x, y) or None when no suitable frame is visible.
+	Frame IDs are resolved lazily.  The primary ID is cached only once a real hash-based
+	or label-based lookup succeeds — the hardcoded CHEST_FRAME_ID fallback is used
+	on-the-fly without caching so the lookup is retried every frame until GW's UI is ready.
+	GetFrameCoords / FrameExists are fast per-frame GW memory reads with no file I/O.
 	"""
+	global _anchor_cached_frame_id, _anchor_cached_fallback_frame_id, _anchor_frame_ids_resolved
+
 	if anchor_window_width is None:
 		anchor_window_width = max(float(_last_window_width), float(COMPACT_WINDOW_MIN_WIDTH))
 	else:
 		anchor_window_width = max(float(anchor_window_width), 1.0)
-	frame_id = 0
 
-	try:
-		frame_id = UIManager.GetFrameIDByCustomLabel(FRAME_ALIAS_FILE, "Xunlai Window")
-	except Exception:
+	# Resolve frame IDs — retried every frame until a real (non-hardcoded) ID is found.
+	if not _anchor_frame_ids_resolved:
 		frame_id = 0
-
-	if frame_id == 0:
-		frame_id = UIManager.GetFrameIDByHash(XUNLAI_WINDOW_HASH)
-
-	if frame_id == 0:
-		frame_id = CHEST_FRAME_ID
-
-	if frame_id > 0 and UIManager.FrameExists(frame_id):
-		left, top, right, bottom = UIManager.GetFrameCoords(frame_id)
-		x1 = min(left, right)
-		y1 = min(top, bottom)
-		y2 = max(top, bottom)
-
-		anchor_x = float(x1 - ANCHOR_OFFSET_X - anchor_window_width)
-
-		if y2 > y1:
-			anchor_y = float(y1 + ANCHOR_OFFSET_Y)
+		try:
+			frame_id = UIManager.GetFrameIDByCustomLabel(FRAME_ALIAS_FILE, "Xunlai Window")
+		except Exception:
+			frame_id = 0
+		if frame_id == 0:
+			frame_id = UIManager.GetFrameIDByHash(XUNLAI_WINDOW_HASH)
+		if frame_id > 0:
+			# Real ID found — cache it and stop retrying.
+			_anchor_cached_frame_id = frame_id
+			try:
+				_anchor_cached_fallback_frame_id = UIManager.GetFrameIDByHash(INVENTORY_FRAME_HASH)
+			except Exception:
+				_anchor_cached_fallback_frame_id = 0
+			_anchor_frame_ids_resolved = True
 		else:
-			anchor_y = float(top + ANCHOR_OFFSET_Y)
+			# GW UI not ready yet — resolve the fallback but do not set _anchor_frame_ids_resolved
+			# so we keep retrying the primary lookup next frame.
+			try:
+				_anchor_cached_fallback_frame_id = UIManager.GetFrameIDByHash(INVENTORY_FRAME_HASH)
+			except Exception:
+				_anchor_cached_fallback_frame_id = 0
 
-		return anchor_x, anchor_y
+	# Primary: hash/label-resolved frame ID.
+	if _anchor_cached_frame_id > 0 and UIManager.FrameExists(_anchor_cached_frame_id):
+		try:
+			left, top, right, bottom = UIManager.GetFrameCoords(_anchor_cached_frame_id)
+			x1 = min(left, right)
+			y1 = min(top, bottom)
+			y2 = max(top, bottom)
+			anchor_x = float(x1 - ANCHOR_OFFSET_X - anchor_window_width)
+			anchor_y = float(y1 + ANCHOR_OFFSET_Y) if y2 > y1 else float(top + ANCHOR_OFFSET_Y)
+			return anchor_x, anchor_y
+		except Exception:
+			pass
 
-	fallback_frame_id = UIManager.GetFrameIDByHash(INVENTORY_FRAME_HASH)
-	if fallback_frame_id == 0 or not UIManager.FrameExists(fallback_frame_id):
-		return None
+	# Fallback: inventory frame hash.
+	if _anchor_cached_fallback_frame_id > 0 and UIManager.FrameExists(_anchor_cached_fallback_frame_id):
+		try:
+			left, top, right, _ = UIManager.GetFrameCoords(_anchor_cached_fallback_frame_id)
+			if right > left:
+				return float(left - ANCHOR_OFFSET_X - anchor_window_width), float(top + ANCHOR_OFFSET_Y)
+		except Exception:
+			pass
 
-	left, top, right, _ = UIManager.GetFrameCoords(fallback_frame_id)
-	if right <= left:
-		return None
+	# Last resort: hardcoded frame ID — not cached, retried every frame.
+	if UIManager.FrameExists(CHEST_FRAME_ID):
+		try:
+			left, top, right, bottom = UIManager.GetFrameCoords(CHEST_FRAME_ID)
+			x1 = min(left, right)
+			y1 = min(top, bottom)
+			y2 = max(top, bottom)
+			anchor_x = float(x1 - ANCHOR_OFFSET_X - anchor_window_width)
+			anchor_y = float(y1 + ANCHOR_OFFSET_Y) if y2 > y1 else float(top + ANCHOR_OFFSET_Y)
+			return anchor_x, anchor_y
+		except Exception:
+			pass
 
-	return float(left - ANCHOR_OFFSET_X - anchor_window_width), float(top + ANCHOR_OFFSET_Y)
+	return None
 
 
 # -----------------------------------------------------------------------------
@@ -2989,6 +3036,15 @@ def _draw_window():
 	global _sort_done_until
 	global _selected_settings_account
 	global _last_window_width
+	global _idle_refresh_timer
+	global _cache_needs_refresh
+	global _cached_available_bags
+	global _cached_bag_infos
+	global _cached_tabs_total_used
+	global _cached_tabs_total_size
+	global _cached_correct_items
+	global _cached_total_items
+	global _cached_correct_ratio
 
 	if not GLOBAL_CACHE.Inventory.IsStorageOpen():
 		return
@@ -3007,7 +3063,7 @@ def _draw_window():
 	if not SHOW_SETTINGS:
 		PyImGui.set_next_window_size(COMPACT_WINDOW_MIN_WIDTH, COMPACT_WINDOW_MIN_HEIGHT)
 	anchor_pos = _get_storage_anchor_position()
-	if anchor_pos is not None:
+	if anchor_pos is not None and not SHOW_SETTINGS:
 		PyImGui.set_next_window_pos(anchor_pos[0], anchor_pos[1])
 		window_flags |= PyImGui.WindowFlags.NoMove
 
@@ -3031,10 +3087,14 @@ def _draw_window():
 			ini_handler.write_key(INI_KEY, "show_debug", SHOW_DEBUG)
 
 		ANNIVERSARY_SLOT_UNLOCKED = PyImGui.checkbox("Anniversary slot unlocked", ANNIVERSARY_SLOT_UNLOCKED)
-		if ANNIVERSARY_SLOT_UNLOCKED != _last_saved_anniversary_slot_unlocked and save_timer.IsExpired():
-			ini_handler.write_key(INI_KEY, "anniversary_slot_unlocked", ANNIVERSARY_SLOT_UNLOCKED)
-			_last_saved_anniversary_slot_unlocked = ANNIVERSARY_SLOT_UNLOCKED
-			save_timer.Reset()
+		PyImGui.same_line(0, 6)
+		PyImGui.text(f"({len(_cached_available_bags)} pane(s) detected)")
+		if ANNIVERSARY_SLOT_UNLOCKED != _last_saved_anniversary_slot_unlocked:
+			_cache_needs_refresh = True  # available bags depend on anniversary unlock
+			if save_timer.IsExpired():
+				ini_handler.write_key(INI_KEY, "anniversary_slot_unlocked", ANNIVERSARY_SLOT_UNLOCKED)
+				_last_saved_anniversary_slot_unlocked = ANNIVERSARY_SLOT_UNLOCKED
+				save_timer.Reset()
 
 		previous_slow_mode = SLOW_MODE
 		SLOW_MODE = PyImGui.checkbox("Slow Mode", SLOW_MODE)
@@ -3051,7 +3111,21 @@ def _draw_window():
 		if AUTO_DEPOSIT_MATERIALS != previous_auto_deposit_materials:
 			ini_handler.write_key(INI_KEY, "auto_deposit_materials", AUTO_DEPOSIT_MATERIALS)
 
-	available_storage_bags = _get_available_storage_bags(ANNIVERSARY_SLOT_UNLOCKED)
+	# Refresh expensive storage stats at most once every 2 s (or immediately when flagged).
+	if _cache_needs_refresh or _idle_refresh_timer.IsExpired():
+		_cached_available_bags = _get_available_storage_bags(ANNIVERSARY_SLOT_UNLOCKED)
+		_cached_bag_infos = []
+		_cached_tabs_total_used = 0
+		_cached_tabs_total_size = 0
+		for _ce_bag in _cached_available_bags:
+			_ce_info = _get_storage_bag_info(_ce_bag)
+			_cached_bag_infos.append((_ce_bag, _ce_info))
+			_cached_tabs_total_used += _ce_info["used"]
+			_cached_tabs_total_size += _ce_info["size"]
+		_cached_correct_items, _cached_total_items, _cached_correct_ratio = _calculate_correct_item_progress(_cached_available_bags)
+		_idle_refresh_timer.Reset()
+		_cache_needs_refresh = False
+	available_storage_bags = _cached_available_bags
 	_draw_storage_hover_modelid_tooltip(available_storage_bags)
 	if _sort_task_state is None:
 		if PyImGui.button("Sort"):
@@ -3078,19 +3152,14 @@ def _draw_window():
 		PyImGui.end()
 		return
 
-	bag_infos = []
-	tabs_total_used = 0
-	tabs_total_size = 0
-	for bag_enum in available_storage_bags:
-		info = _get_storage_bag_info(bag_enum)
-		bag_infos.append((bag_enum, info))
-		tabs_total_used += info["used"]
-		tabs_total_size += info["size"]
+	bag_infos = _cached_bag_infos
+	tabs_total_used = _cached_tabs_total_used
+	tabs_total_size = _cached_tabs_total_size
 
 	tabs_used_ratio = (float(tabs_total_used) / float(tabs_total_size)) if tabs_total_size > 0 else 0.0
 	PyImGui.text("Overall (all tabs):")
 	PyImGui.progress_bar(tabs_used_ratio, -1, 0, f"{tabs_used_ratio * 100.0:.1f}% Full ({tabs_total_used}/{tabs_total_size})")
-	correct_items, total_items, correct_ratio = _calculate_correct_item_progress(available_storage_bags)
+	correct_items, total_items, correct_ratio = _cached_correct_items, _cached_total_items, _cached_correct_ratio
 	PyImGui.progress_bar(correct_ratio, -1, 0, f"{correct_ratio * 100.0:.1f}% Sorted ({correct_items}/{total_items})")
 	if _sort_task_state is not None or time.monotonic() < _sort_done_until:
 		progress_text = _sort_progress_text if _sort_progress_text else "Sortiere..."
@@ -3233,6 +3302,11 @@ def _draw_window():
 							_save_allowed_model_ids_for_storage(bag_enum)
 					PyImGui.end_tab_item()
 			PyImGui.end_tab_bar()
+
+		PyImGui.separator()
+		if PyImGui.button("Close Settings"):
+			SHOW_SETTINGS = False
+			ini_handler.write_key(INI_KEY, "show_settings", SHOW_SETTINGS)
 
 	window_size = PyImGui.get_window_size()
 	if isinstance(window_size, (tuple, list)) and len(window_size) >= 2:

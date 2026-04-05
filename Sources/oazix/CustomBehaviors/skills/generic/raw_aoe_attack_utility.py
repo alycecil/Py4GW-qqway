@@ -20,7 +20,8 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
     mana_required_to_cast: int = 12,
     allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
     within_range: Range = Range.Spellcast,
-    ignore_spirits: bool = False
+    ignore_spirits: bool = False,
+    custom_agent_targeting_predicate: Callable[[int], bool] | None = None
     ) -> None:
 
         super().__init__(
@@ -34,6 +35,7 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
         self.score_definition: ScorePerAgentQuantityDefinition = score_definition
         self.within_range = within_range
         self.ignore_spirits = ignore_spirits
+        self.custom_agent_targeting_predicate: Callable[[int], bool] | None = custom_agent_targeting_predicate
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
 
@@ -43,7 +45,7 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
             return True
 
         return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
-            condition=condition,
+            condition= lambda agent_id: condition(agent_id) and (self.custom_agent_targeting_predicate is None or self.custom_agent_targeting_predicate(agent_id)),
             within_range=self.within_range,
             sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_DESC),
             range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id))

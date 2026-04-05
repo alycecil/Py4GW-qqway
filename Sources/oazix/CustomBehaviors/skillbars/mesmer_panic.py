@@ -9,6 +9,7 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomS
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.skills.common.finish_him_utility import FinishHimUtility
 
+from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_attack_utility import RawSimpleAttackUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.mistrust_utility import MistrustUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_pain_utility import CryOfPainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.unnatural_signet_utility import UnnaturalSignetUtility
@@ -16,6 +17,7 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.auspicious_incantation_utility 
 
 from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
+from Sources.oazix.CustomBehaviors.skills.mesmer.panic_utility import PanicUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.spiritual_pain_utility import SpiritualPainUtility
 from Sources.oazix.CustomBehaviors.skills.paragon.fall_back_utility import FallBackUtility
 
@@ -26,13 +28,8 @@ class MesmerPanic_UtilitySkillBar(CustomBehaviorBaseUtility):
         in_game_build = list(self.skillbar_management.get_in_game_build().values())
 
         # Required panic-related utilities (use generic RawAoeAttackUtility for skill ids that are simple casts)
-        self.panic_utility: CustomSkillUtilityBase = RawAoeAttackUtility(
-            event_bus=self.event_bus,
-            skill=CustomSkill("Panic"),
-            current_build=in_game_build,
-            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 80 if enemy_qte >= 3 else 52 if enemy_qte <= 2 else 0),
-            mana_required_to_cast=0
-        )
+        self.panic_utility: CustomSkillUtilityBase = PanicUtility(event_bus=self.event_bus,current_build=in_game_build,score_definition=ScoreStaticDefinition(88),mana_required_to_cast=0)
+
         self.mistrust_utility: CustomSkillUtilityBase = MistrustUtility(
             event_bus=self.event_bus,
             current_build=in_game_build,

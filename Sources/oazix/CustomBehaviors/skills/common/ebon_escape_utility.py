@@ -17,6 +17,7 @@ from Sources.oazix.CustomBehaviors.primitives.skills.bonds.custom_buff_multiple_
 from Sources.oazix.CustomBehaviors.primitives.skills.bonds.custom_buff_target_per_profession import BuffConfigurationPerProfession
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
+from Sources.oazix.CustomBehaviors.skills.plugins.targeting_modifiers.buff_configurator import BuffConfigurator
 
 class EbonEscapeUtility(CustomSkillUtilityBase):
 
@@ -37,12 +38,7 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
             allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO, BehaviorState.IDLE])
                 
         self.score_definition: ScorePerHealthGravityDefinition = score_definition
-
-        data: str | None = PersistenceLocator().skills.read(self.custom_skill.skill_name, "buff_configuration")
-        if data is not None:
-            self.buff_configuration: CustomBuffMultipleTarget = CustomBuffMultipleTarget.instanciate_from_string(self.event_bus, self.custom_skill, data)
-        else:
-            self.buff_configuration: CustomBuffMultipleTarget = CustomBuffMultipleTarget(event_bus, self.custom_skill, buff_configuration_per_profession= BuffConfigurationPerProfession.BUFF_CONFIGURATION_ALL)
+        self.add_plugin_targetting_modifier(lambda x: BuffConfigurator(event_bus, self.custom_skill, buff_configuration_per_profession= BuffConfigurationPerProfession.BUFF_CONFIGURATION_ALL))
 
     def _save_the_turtle(self) -> list[custom_behavior_helpers.SortableAgentData] | None:
         # underworld
@@ -89,7 +85,7 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
             condition=lambda agent_id: 
                 agent_id != Player.GetAgentID() and 
                 Agent.GetHealth(agent_id) < 0.8 and
-                self.buff_configuration.get_agent_id_predicate()(agent_id),
+                self.get_plugin_targeting_modifiers_filtering_predicate()(agent_id),
             sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC))
         return targets
 
@@ -179,22 +175,3 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
         my_x, my_y = Agent.GetXY(my_id)
         distance = Utils.Distance((leader_x, leader_y), (my_x, my_y))
         return distance
-
-    @override
-    def get_buff_configuration(self) -> CustomBuffMultipleTarget | None:
-        return self.buff_configuration
-
-    @override
-    def has_persistence(self) -> bool:
-        return True
-    
-    @override
-    def persist_configuration_for_account(self):
-        PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "buff_configuration", self.buff_configuration.serialize_to_string())
-        print("configuration saved for account")
-
-    @override
-    def persist_configuration_as_global(self):
-        PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "buff_configuration", self.buff_configuration.serialize_to_string())
-        print("configuration saved as global")
-

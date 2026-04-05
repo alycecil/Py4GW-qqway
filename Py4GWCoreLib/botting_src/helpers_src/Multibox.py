@@ -54,6 +54,7 @@ class _Multibox:
             self.PlayerFacingAngle = account_data.AgentData.RotationAngle
             self.PlayerTargetID = account_data.AgentData.TargetID
             self.PlayerLoginNumber = account_data.AgentData.LoginNumber
+            self.PlayerPrimaryProfession = int(account_data.AgentData.Profession[0]) if account_data.AgentData.Profession else 0
             self.PlayerIsTicked = account_data.AgentPartyData.IsTicked
             self.PartyID = account_data.AgentPartyData.PartyID
             self.PartyPosition = account_data.AgentPartyData.PartyPosition
@@ -192,6 +193,24 @@ class _Multibox:
         
         if not player_data:
             return
+
+        # Invite order priority:
+        # 1) melee-like first (R/W/A/D), 2) Mesmer, 3) Paragon, 4) Necro, 5) Ritualist, 6) others.
+        melee_professions = {1, 2, 7, 10}
+        priority_by_profession = {
+            5: 1,  # Mesmer
+            9: 2,  # Paragon
+            4: 3,  # Necromancer
+            8: 4,  # Ritualist
+        }
+
+        def _invite_priority(account: "_Multibox._AccountData") -> tuple[int, str]:
+            prof = int(getattr(account, "PlayerPrimaryProfession", 0) or 0)
+            if prof in melee_professions:
+                return (0, str(getattr(account, "CharacterName", "") or ""))
+            return (priority_by_profession.get(prof, 5), str(getattr(account, "CharacterName", "") or ""))
+
+        all_accounts.sort(key=_invite_priority)
         
         for account in all_accounts:
             if (player_data.MapID == account.MapID and
@@ -250,6 +269,26 @@ class _Multibox:
             if player_data.PartyID == account.PartyID and player_data.AccountEmail != account.AccountEmail:
                 GLOBAL_CACHE.Party.Players.KickPlayer(account.CharacterName)
                 yield from Routines.Yield.wait(500)
+
+    def _leave_party_on_all_accounts(self):
+        from ...GlobalCache import GLOBAL_CACHE
+        from ...Routines import Routines
+
+        sender_email = Player.GetAccountEmail()
+        accounts = GLOBAL_CACHE.ShMem.GetAllAccountData()
+
+        for account in accounts:
+            if sender_email == account.AccountEmail:
+                continue
+
+            GLOBAL_CACHE.ShMem.SendMessage(
+                sender_email,
+                account.AccountEmail,
+                SharedCommandType.LeaveParty,
+                (0, 0, 0, 0),
+                ("", "", "", ""),
+            )
+            yield from Routines.Yield.wait(250)
         
     def _resignParty(self):
         from ...GlobalCache import GLOBAL_CACHE
@@ -462,7 +501,11 @@ class _Multibox:
     @_yield_step(label="KickAllAccounts", counter_key="KICK_ALL_ACCOUNTS")
     def kick_all_accounts(self):
         yield from self._kick_all_accounts()
-        
+
+    @_yield_step(label="LeavePartyOnAllAccounts", counter_key="LEAVE_PARTY_ON_ALL_ACCOUNTS")
+    def leave_party_on_all_accounts(self):
+        yield from self._leave_party_on_all_accounts()
+
     @_yield_step(label="KickAccountByEmail", counter_key="KICK_ACCOUNT_BY_EMAIL")
     def kick_account_by_email(self, email: str):
         yield from self._kick_account_by_email(email)
@@ -570,6 +613,45 @@ class _Multibox:
     @_yield_step(label="AbandonQuest", counter_key="ABANDON_QUEST")
     def abandon_quest(self, quest_id: int):
         yield from self._abandon_quest_message(quest_id)
+
+    def _get_email_from_char_name(self, char_name: str) -> Optional[str]:
+        for account in self._get_all_account_data():
+            if account.CharacterName == char_name:
+                return account.AccountEmail
+        return None
+
+    def _equip_item_message(self, email: str, model_id: int):
+        from ...GlobalCache import GLOBAL_CACHE
+        from ...Routines import Routines
+        sender_email = Player.GetAccountEmail()
+        ConsoleLog("Messaging", f"Sending EquipItem ({model_id}) to {email}", log=False)
+        GLOBAL_CACHE.ShMem.SendMessage(sender_email, email, SharedCommandType.EquipItem, (float(model_id), 0.0, 0.0, 0.0))
+        yield from Routines.Yield.wait(500)
+
+    @_yield_step(label="EquipItemOnAccount", counter_key="EQUIP_ITEM_ON_ACCOUNT")
+    def equip_item_on_account(self, char_name: str, model_id: int):
+        email = self._get_email_from_char_name(char_name)
+        if not email:
+            ConsoleLog("Messaging", f"EquipItemOnAccount: no account found for char '{char_name}'", log=True)
+            return
+        yield from self._equip_item_message(email, model_id)
+
+    def _equip_item_on_all_accounts_message(self, char_name_to_model_id: dict):
+        from ...GlobalCache import GLOBAL_CACHE
+        from ...Routines import Routines
+        sender_email = Player.GetAccountEmail()
+        for char_name, model_id in char_name_to_model_id.items():
+            email = self._get_email_from_char_name(char_name)
+            if not email:
+                ConsoleLog("Messaging", f"EquipItemOnAllAccounts: no account found for char '{char_name}', skipping", log=True)
+                continue
+            ConsoleLog("Messaging", f"Sending EquipItem ({model_id}) to {char_name} ({email})", log=False)
+            GLOBAL_CACHE.ShMem.SendMessage(sender_email, email, SharedCommandType.EquipItem, (float(model_id), 0.0, 0.0, 0.0))
+            yield from Routines.Yield.wait(500)
+
+    @_yield_step(label="EquipItemOnAllAccounts", counter_key="EQUIP_ITEM_ON_ALL_ACCOUNTS")
+    def equip_item_on_all_accounts(self, char_name_to_model_id: dict):
+        yield from self._equip_item_on_all_accounts_message(char_name_to_model_id)
 
     def get_all_account_data(self) -> List[_AccountData]:
         return self._get_all_account_data()

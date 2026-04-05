@@ -13,6 +13,7 @@ from Sources.oazix.CustomBehaviors.skills.common.ebon_escape_utility import Ebon
 from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.common.great_dwarf_weapon_utility import GreatDwarfWeaponUtility
 from Sources.oazix.CustomBehaviors.skills.common.i_am_unstoppable_utility import IAmUnstoppableUtility
+from Sources.oazix.CustomBehaviors.skills.common.you_are_all_weaklings_utility import YouAreAllWeaklingsUtility
 from Sources.oazix.CustomBehaviors.skills.generic.generic_resurrection_utility import GenericResurrectionUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_pain_utility import CryOfPainUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.blood_bond_utility import BloodBondUtility
@@ -63,6 +64,7 @@ class NecromancerBipRestoration_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.fall_back_utility: CustomSkillUtilityBase = FallBackUtility(event_bus=self.event_bus, current_build=in_game_build)
         self.signet_of_lost_souls_utility: CustomSkillUtilityBase = SignetOfLostSoulsUtility(event_bus=self.event_bus, current_build=in_game_build)
         self.by_urals_hammer_utility: CustomSkillUtilityBase = ByUralsHammerUtility(event_bus=self.event_bus, current_build=in_game_build)
+        self.you_are_all_weaklings_utility: CustomSkillUtilityBase = YouAreAllWeaklingsUtility(event_bus=self.event_bus, current_build=in_game_build)
 
         self.ebon_escape_utility: CustomSkillUtilityBase = EbonEscapeUtility(event_bus=self.event_bus, current_build=in_game_build)
 
@@ -87,6 +89,7 @@ class NecromancerBipRestoration_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.mending_grip_utility,
             self.ebon_vanguard_assassin_support,
             self.ebon_battle_standard_of_wisdom,
+            self.you_are_all_weaklings_utility,
             self.i_am_unstopabble,
             self.fall_back_utility,
             self.signet_of_lost_souls_utility,

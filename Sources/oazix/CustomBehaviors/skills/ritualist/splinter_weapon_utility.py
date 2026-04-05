@@ -16,6 +16,7 @@ from Sources.oazix.CustomBehaviors.primitives.skills.bonds.custom_buff_multiple_
 from Sources.oazix.CustomBehaviors.primitives.skills.bonds.custom_buff_target_per_profession import BuffConfigurationPerProfession
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
+from Sources.oazix.CustomBehaviors.skills.plugins.targeting_modifiers.buff_configurator import BuffConfigurator
 
 class SplinterWeaponUtility(CustomSkillUtilityBase):
 
@@ -42,6 +43,7 @@ class SplinterWeaponUtility(CustomSkillUtilityBase):
             self.buff_configuration: CustomBuffMultipleTarget = CustomBuffMultipleTarget.instanciate_from_string(self.event_bus, self.custom_skill, data)
         else:
             self.buff_configuration: CustomBuffMultipleTarget = CustomBuffMultipleTarget(event_bus, self.custom_skill, buff_configuration_per_profession= BuffConfigurationPerProfession.BUFF_CONFIGURATION_MARTIAL)
+        # TODO self.add_plugin_targetting_modifier(lambda x: BuffConfigurator(event_bus, self.custom_skill, buff_configuration_per_profession= BuffConfigurationPerProfession.BUFF_CONFIGURATION_MARTIAL))
 
         self.should_target_ebon_vanguard_assassin = bool(PersistenceLocator().skills.read_or_default(self.custom_skill.skill_name, "should_target_ebon_vanguard_assassin", "1") == "1")
         self.ebon_vanguard_assassin_model_id = 5903
@@ -67,7 +69,7 @@ class SplinterWeaponUtility(CustomSkillUtilityBase):
             npc_agent_id : int = Routines.Agents.GetNearestAliveAgentByModelID(self.ebon_vanguard_assassin_model_id, Range.Spellcast.value)
             if npc_agent_id != None and npc_agent_id != 0 and not Agent.IsWeaponSpelled(npc_agent_id):
                 return npc_agent_id
-    
+
         return target
 
     @override
@@ -110,7 +112,7 @@ class SplinterWeaponUtility(CustomSkillUtilityBase):
     @override
     def has_persistence(self) -> bool:
         return True
-    
+
     @override
     def persist_configuration_for_account(self):
         PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "buff_configuration", self.buff_configuration.serialize_to_string())

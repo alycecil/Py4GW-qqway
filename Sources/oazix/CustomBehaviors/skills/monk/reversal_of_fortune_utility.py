@@ -16,7 +16,11 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base i
 from Sources.oazix.CustomBehaviors.skills.monk.spirit_bond_utility import SpiritBondUtility
 
 
-class Reversal_of_Fortune_SpiritBondUtility(CustomSkillUtilityBase):
+class ReversalOfFortuneUtility(CustomSkillUtilityBase):
+    """
+    Utility for Reversal of Fortune - a simple protective enchantment.
+    Targets allies with low health, prioritizing the most damaged.
+    """
 
     def __init__(self,
                  event_bus: EventBus,
@@ -43,10 +47,11 @@ class Reversal_of_Fortune_SpiritBondUtility(CustomSkillUtilityBase):
             self.buff_configuration: CustomBuffMultipleTarget = CustomBuffMultipleTarget(event_bus, self.custom_skill, buff_configuration_per_profession= BuffConfigurationPerProfession.BUFF_CONFIGURATION_ALL)
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
+        """Get allies with low health, ordered by lowest health first."""
         targets: list[custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
-            within_range=Range.Spellcast.value * 1.2,
+            within_range=Range.Spellcast.value,
             condition=lambda agent_id: (
-                    Agent.GetHealth(agent_id) < 0.9 and
+                    Agent.GetHealth(agent_id) < 0.85 and
                     not Routines.Checks.Effects.HasBuff(agent_id, self.custom_skill.skill_id) and
                     self.buff_configuration.get_agent_id_predicate()(agent_id)
             ),
@@ -55,22 +60,23 @@ class Reversal_of_Fortune_SpiritBondUtility(CustomSkillUtilityBase):
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
-
         targets = self._get_targets()
-        if len(targets) == 0: return None
+        if len(targets) == 0:
+            return None
 
+        # Higher priority for more damaged allies
         if targets[0].hp < 0.40:
             return self.score_definition.get_score(HealingScore.MEMBER_DAMAGED_EMERGENCY)
-        if targets[0].hp < 0.80:
+        if targets[0].hp < 0.85:
             return self.score_definition.get_score(HealingScore.MEMBER_DAMAGED)
 
         return None
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
-
         targets = self._get_targets()
         if len(targets) == 0: return BehaviorResult.ACTION_SKIPPED
+
         target = targets[0]
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
         return result
