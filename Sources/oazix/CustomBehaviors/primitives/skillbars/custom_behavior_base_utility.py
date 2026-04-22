@@ -1,13 +1,16 @@
 from abc import abstractmethod
 from collections import deque
 import inspect
-from typing import Generator, Any
+import traceback
+from typing import List, Generator, Any, override
 import time
 
 from Py4GWCoreLib import GLOBAL_CACHE, Routines, Map, Agent, Player
+from Py4GWCoreLib.Pathing import AutoPathing
 from Py4GWCoreLib.Py4GWcorelib import ThrottledTimer, Timer
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
+from Sources.oazix.CustomBehaviors.primitives.bus.event_type import EventType
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
 from Sources.oazix.CustomBehaviors.primitives.parties.memory_cache_manager import MemoryCacheManager
@@ -18,6 +21,7 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomS
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_execution_strategy import UtilitySkillExecutionStrategy
 from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_execution_history import UtilitySkillExecutionHistory
+from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_typology import UtilitySkillTypology
 from Sources.oazix.CustomBehaviors.skills.blessing.take_near_blessing import TakeNearBlessingUtility
 from Sources.oazix.CustomBehaviors.skills.blessing.take_near_blessing import TakeNearBlessingUtility
 from Sources.oazix.CustomBehaviors.skills.botting.move_if_stuck import MoveIfStuckUtility
@@ -26,14 +30,19 @@ from Sources.oazix.CustomBehaviors.skills.deamon.death_detection import DeathDet
 from Sources.oazix.CustomBehaviors.skills.deamon.map_changed import MapChangedUtility
 from Sources.oazix.CustomBehaviors.skills.deamon.stuck_detection import StuckDetectionUtility
 from Sources.oazix.CustomBehaviors.skills.following.follow_flag_utility import FollowFlagUtility
+from Sources.oazix.CustomBehaviors.skills.following.follow_party_leader_only_utility import FollowPartyLeaderOnlyUtility
+from Sources.oazix.CustomBehaviors.skills.following.follow_party_leader_new_utility import FollowPartyLeaderNewUtility
 from Sources.oazix.CustomBehaviors.skills.following.follow_party_leader_utility import FollowPartyLeaderUtility
 from Sources.oazix.CustomBehaviors.skills.following.spread_during_combat_utility import SpreadDuringCombatUtility
 from Sources.oazix.CustomBehaviors.skills.generic.auto_combat_utility import AutoCombatUtility
 from Sources.oazix.CustomBehaviors.primitives.scores.comon_score import CommonScore
+from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.helpers.eval_profiler import EvalProfiler
 from Sources.oazix.CustomBehaviors.primitives.helpers.utility_skill_metrics import UtilitySkillMetrics
+from Sources.oazix.CustomBehaviors.skills.inventory.id_if_needed_utility import IdIfNeededUtility
 from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import MerchantRefillIfNeededUtility
+from Sources.oazix.CustomBehaviors.skills.inventory.salvage_if_needed_utility import SalvageIfNeededUtility
 from Sources.oazix.CustomBehaviors.skills.looting.loot_utility import LootUtility
 from Sources.oazix.CustomBehaviors.skills.looting.open_near_chest_utility import OpenNearChestUtility
 from Sources.oazix.CustomBehaviors.skills.looting.open_near_dungeon_chest_utility import OpenNearDungeonChestUtility
@@ -92,6 +101,8 @@ class CustomBehaviorBaseUtility():
 
             # INVENTORY_MANAGEMENT
             MerchantRefillIfNeededUtility(event_bus=self.event_bus, current_build=self.in_game_build),
+            SalvageIfNeededUtility(event_bus=self.event_bus, current_build=self.in_game_build),
+            IdIfNeededUtility(event_bus=self.event_bus, current_build=self.in_game_build),
         ]
         
         self.utility_generator: Generator[Any | None, Any | None, BehaviorResult] | None = None

@@ -45,7 +45,6 @@ class Technobabble_Utility(CustomSkillUtilityBase):
          
         targets = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
                     within_range=Range.Spellcast,
-                    condition=lambda agent_id: Agent.IsHexed(agent_id) or Agent.IsConditioned(agent_id),
                     sort_key=(TargetingOrder.HP_ASC, TargetingOrder.CASTER_THEN_MELEE))
         return targets
     
@@ -53,7 +52,16 @@ class Technobabble_Utility(CustomSkillUtilityBase):
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
         targets = self._get_targets()
         if len(targets) == 0: return None
-        return self.score_definition.get_score()
+
+        target = targets[0]
+
+        mult = 1.0
+        if Agent.HasBossGlow(target.agent_id):
+            mult = 0.50
+        if Agent.IsCasting(target.agent_id):
+            mult += 0.50
+
+        return self.score_definition.get_score() * mult
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:

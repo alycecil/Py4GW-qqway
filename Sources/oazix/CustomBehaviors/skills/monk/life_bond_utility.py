@@ -1,5 +1,6 @@
 from typing import Any, Generator, override
 
+from Py4GWCoreLib import Player
 from Py4GWCoreLib import Range
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
@@ -44,7 +45,7 @@ class LifeBondUtility(CustomSkillUtilityBase):
 
         targets = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
                 within_range=Range.Spellcast.value,
-                condition=lambda agent_id: self.get_plugin_targeting_modifiers_filtering_predicate()(agent_id),
+                condition=lambda agent_id: self.get_plugin_targeting_modifiers_filtering_predicate()(agent_id) and agent_id != Player.GetAgentID(),
                 sort_key=(TargetingOrder.DISTANCE_ASC,),
                 range_to_count_enemies=None,
                 range_to_count_allies=None)

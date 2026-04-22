@@ -81,20 +81,24 @@ class UnyieldingAuraUtility(CustomSkillUtilityBase):
     
         dead_allies = self._get_dead_allies()
         is_party_member_dead = dead_allies is not None and len(dead_allies) > 0
-        
-        if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(self._get_lock_key(dead_allies[0].agent_id)) == False: 
-            return BehaviorResult.ACTION_SKIPPED
-        
-        try:
-            # If party member is dead and we have the buff, drop it first
-            if is_party_member_dead and has_buff:
-                self._drop_unyielding_aura()
-                # Wait a moment for the buff to be dropped
-                yield from custom_behavior_helpers.Helpers.wait_for(500)
+
+        if is_party_member_dead:
+            try:
+                if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(
+                        self._get_lock_key(dead_allies[0].agent_id)):
+                    return BehaviorResult.ACTION_SKIPPED
+
+                # If party member is dead and we have the buff, drop it first
+                if is_party_member_dead and has_buff:
+                    self._drop_unyielding_aura()
+                    # Wait a moment for the buff to be dropped
+                    yield from custom_behavior_helpers.Helpers.wait_for(500)
+                    return BehaviorResult.ACTION_PERFORMED
+            finally:
+                CustomBehaviorParty().get_shared_lock_manager().release_lock(self._get_lock_key(dead_allies[0].agent_id))
                 return BehaviorResult.ACTION_PERFORMED
-        finally:
-            CustomBehaviorParty().get_shared_lock_manager().release_lock(self._get_lock_key(dead_allies[0].agent_id))
-            return BehaviorResult.ACTION_PERFORMED
+        else:
+            return BehaviorResult.ACTION_SKIPPED
         
         
 

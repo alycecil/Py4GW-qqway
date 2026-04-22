@@ -40,8 +40,6 @@ class RitualistSos_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.bloodsong_utility: CustomSkillUtilityBase = RawSpiritUtility(event_bus=self.event_bus, skill=CustomSkill("Bloodsong"), current_build=in_game_build, score_definition=ScoreStaticDefinition(90), owned_spirit_model_id=SpiritModelID.BLOODSONG)
         self.boon_of_creation_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Boon_of_Creation"), current_build=in_game_build, score_definition=ScoreStaticDefinition(85), renew_before_expiration_in_milliseconds=1800, allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO])
         self.gaze_of_fury_utility: CustomSkillUtilityBase = GazeOfFuryUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(80))
-        self.summon_spirit_kurzick: CustomSkillUtilityBase = SummonSpiritUtility(event_bus=self.event_bus, skill=CustomSkill("Summon_Spirits_kurzick"), current_build=in_game_build, score_definition=ScoreStaticDefinition(95))
-        self.summon_spirit_luxon: CustomSkillUtilityBase = SummonSpiritUtility(event_bus=self.event_bus, skill=CustomSkill("Summon_Spirits_luxon"), current_build=in_game_build, score_definition=ScoreStaticDefinition(95))
 
         #optional
         self.painful_bond_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Painful_Bond"), current_build=in_game_build, mana_required_to_cast=25, score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 40 if enemy_qte >= 3 else 0 if enemy_qte <= 2 else 0))
@@ -65,8 +63,6 @@ class RitualistSos_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.bloodsong_utility,
             self.boon_of_creation_utility,
             self.gaze_of_fury_utility,
-            self.summon_spirit_kurzick,
-            self.summon_spirit_luxon,
             self.painful_bond_utility,
             self.armor_of_unfeeling_utility,
             self.air_of_superiority_utility,

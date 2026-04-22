@@ -194,8 +194,17 @@ class AutoInventoryHandler():
                 continue
             if is_white and is_material and is_material_salvageable and not self.salvage_rare_materials:
                 continue
-            if is_white and not is_material and not self.salvage_whites:
-                continue
+            from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryMode
+            action_for_item = self.action_for_item(item_id)
+            inventory_mode_salvage_ = [InventoryMode.SALVAGE]
+            if Inventory.GetFreeSlotCount() < 5:
+                inventory_mode_salvage_ = [InventoryMode.SALVAGE, InventoryMode.SELL_DONT_IDENTIFY, InventoryMode.SELL]
+
+            if action_for_item in inventory_mode_salvage_:
+                pass
+            else:
+                if is_white and not is_material and not self.salvage_whites:
+                    continue
             if is_blue and not self.salvage_blues:
                 continue
             # Greens are not salvageable in Guild Wars; skip explicitly.
@@ -453,7 +462,13 @@ class AutoInventoryHandler():
                     GLOBAL_CACHE.Inventory.DepositItemToStorage(item_id)
                     yield from Routines.Yield.wait(350)
                     deposited = True
-                         
+
+                from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryMode
+                if not deposited and self.action_for_item(item_id) in [InventoryMode.DEPOSIT]:
+                    GLOBAL_CACHE.Inventory.DepositItemToStorage(item_id)
+                    yield from Routines.Yield.wait(350)
+                    deposited = True
+
                 if ((not deposited) and
                     (model_id in event_items) and 
                     self.deposit_event_items and
@@ -492,5 +507,96 @@ class AutoInventoryHandler():
         self.status = "Idle"
         #ConsoleLog("AutoInventoryHandler", "ID, Salvage and Deposit routine completed", Console.MessageType.Success)
 
+    def action_for_item(self, item_id):
+        from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
+        from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import string_to_dict
+        from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
+        data: str | None = PersistenceLocator().skills.read("my_inventory_utils_config", "inventory_utils_config")
+        if data is not None:
+            inventory_utils_config = string_to_dict(data)
+        else:
+            inventory_utils_config = InventoryUtilsConfig()
+
+        inventory_utils = InventoryUtils()
+
+        return inventory_utils.get_action_for_item(inventory_utils_config, item_id)
+
+    def DepositMaterials(self):
+        from Py4GWCoreLib import Map
+        from Py4GWCoreLib import UIManager
+        FRAME_ALIAS_FILE = ".\\Py4GWCoreLib\\frame_aliases.json"  # JSON file mapping human-readable frame labels
+        XUNLAI_WINDOW_HASH = 2315448754       # UIManager hash for the Xunlai vault window
+
+        def GetAllChildFrameIDs(root_frame_id: int):
+            """
+            Finds all frame IDs that match the given offset path from the parent hash.
+            Unlike GetChildFrameID, this returns *all* frames that match the offset chain.
+
+            :param root_frame_id: The root hash of the UI dialog
+            :return: List of matching frame IDs
+            """
+            frame_array = UIManager.GetFrameArray()
+
+            matching_ids = []
+
+            for fid in frame_array:
+                from Py4GWCoreLib import PyUIManager
+                current = PyUIManager.UIFrame(fid)
+                offsets = []
+                trace = current
+
+                if trace.frame_id == root_frame_id:
+                    matching_ids.append(current.frame_id)
+
+            return matching_ids
+
+        def find_deposit_all_frame_id(FRAME_ALIAS_FILE, GetAllChildFrameIDs, XUNLAI_WINDOW_HASH):
+            _frame_id = 0
+
+            try:
+                _frame_id = UIManager.GetFrameIDByCustomLabel(FRAME_ALIAS_FILE, "DepositAllMaterials")
+            except Exception:
+                _frame_id = 0
+
+            if _frame_id > 0:
+                return _frame_id
+
+            try:
+                _frame_id = UIManager.GetFrameIDByCustomLabel(FRAME_ALIAS_FILE, "Xunlai Window")
+            except Exception:
+                _frame_id = 0
+
+            if _frame_id == 0:
+                _frame_id = UIManager.GetFrameIDByHash(XUNLAI_WINDOW_HASH)
+
+            if _frame_id > 0 and UIManager.FrameExists(_frame_id):
+                children = GetAllChildFrameIDs(_frame_id)
+                for child_frame_id in children:
+                    from Py4GWCoreLib import PyUIManager
+                    child_frame = PyUIManager.UIFrame(child_frame_id)
+                    if child_frame is not None and child_frame.child_offset_id == 4:
+                        return child_frame_id
+
+            return None
+
+        if Map.IsOutpost():
+            from Py4GWCoreLib import Routines
+            from Py4GWCoreLib import GLOBAL_CACHE
+
+            if not GLOBAL_CACHE.Inventory.IsStorageOpen():
+                GLOBAL_CACHE.Inventory.OpenXunlaiWindow()
+                yield from Routines.Yield.wait(150)
+
+            yield from Routines.Yield.wait(350)
+            if GLOBAL_CACHE.Inventory.IsStorageOpen():
+                yield from Routines.Yield.wait(150)
+
+                frame_id = find_deposit_all_frame_id(FRAME_ALIAS_FILE, GetAllChildFrameIDs, XUNLAI_WINDOW_HASH)
+
+                if frame_id is not None:
+                    Console.Log("DepositMaterials", f"Clicked on frame {frame_id} to Deposit All Items", Console.MessageType.Info)
+                    print ()
+                    UIManager.FrameClick(frame_id)
+        pass
 
 #endregion

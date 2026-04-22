@@ -7,6 +7,7 @@ from typing import Any, Callable, Optional, Tuple
 from Py4GWCoreLib.GlobalCache.SharedMemory import AccountStruct
 from Py4GWCoreLib.enums_src.GameData_enums import Profession, SkillType
 from Py4GWCoreLib.enums_src.Model_enums import GadgetModelID
+from Py4GWCoreLib.routines_src.Yield import Yield
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers_tests
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
 from Sources.oazix.CustomBehaviors.primitives.helpers.custom_behavior_helpers_target import CustomTargeting
@@ -149,6 +150,7 @@ class Resources:
             GadgetModelID.CHEST_KOURNAN.value,
             GadgetModelID.CHEST_DARKSTONE.value,
             GadgetModelID.CHEST_GENERIC.value,
+            74, #obsidian
         ]
 
         gadget_array = AgentArray.GetGadgetArray()
@@ -224,6 +226,13 @@ class Resources:
 
         if profession == "Ranger" or skill_type == "Ritual":
             energy_cost = Routines.Checks.Skills.apply_expertise_reduction(energy_cost, get_attribute_level("Expertise"), skill.skill_id)
+
+        if profession == "Ritualist" and skill_type == "Ritual":
+            has_soul_twisting = Routines.Checks.Effects.HasBuff(Player.GetAgentID(), CustomSkill("Soul_Twisting").skill_id)
+            if has_soul_twisting and energy_cost > 10:
+                energy_cost -= 15
+                if energy_cost < 10:
+                    energy_cost = 10
 
         return energy_cost
 
@@ -341,7 +350,7 @@ class Actions:
         return BehaviorResult.ACTION_SKIPPED
 
     @staticmethod
-    def cast_skill_to_lambda(skill: CustomSkill, select_target: Optional[Callable[[], int | None]], call_target: bool = False) -> Generator[Any, Any, BehaviorResult]:
+    def cast_skill_to_lambda(skill: CustomSkill, select_target: Optional[Callable[[], int | None]], call_target: bool = False, after_cast_delay: bool = True) -> Generator[Any, Any, BehaviorResult]:
 
         if not Routines.Checks.Skills.IsSkillSlotReady(skill.skill_slot):
             yield
@@ -368,7 +377,10 @@ class Actions:
         if call_target:
             yield from Routines.Yield.Keybinds.CallTarget(False)
         if constants.DEBUG: print(f"cast_skill_to_target {skill.skill_name} to {target_agent_id}")
-        yield from Helpers.delay_aftercast(skill)
+        if after_cast_delay:
+            yield from Helpers.delay_aftercast(skill)
+        else:
+            yield from Helpers.wait_for(223) # just fuck off for a split second
         return BehaviorResult.ACTION_PERFORMED
 
     @staticmethod
@@ -376,8 +388,8 @@ class Actions:
         return (yield from Actions.cast_skill_to_lambda(skill, select_target=lambda: target_agent_id, call_target=call_target))
 
     @staticmethod
-    def cast_skill(skill: CustomSkill) -> Generator[Any, Any, BehaviorResult]:
-        return (yield from Actions.cast_skill_to_lambda(skill, select_target=None))
+    def cast_skill(skill: CustomSkill, after_cast_delay: bool = True) -> Generator[Any, Any, BehaviorResult]:
+        return (yield from Actions.cast_skill_to_lambda(skill, select_target=None, after_cast_delay=after_cast_delay))
 
     @staticmethod
     def cast_effect_before_expiration(skill: CustomSkill, time_before_expire: int) -> Generator[Any, Any, BehaviorResult]:
@@ -556,6 +568,100 @@ class Targets:
         spirits = Targets.get_all_spirits_raw(within_range, spirit_model_ids, condition)
         if len(spirits) == 0: return None
         return spirits[0]
+
+    @staticmethod
+    def get_all_possible_ncs_of_model_ordered_by_priority_raw(
+            model_ids: list[int],
+            within_range: float,
+            condition: Callable[[int], bool] | None = None,
+            sort_key: tuple[TargetingOrder, ...] | None = None,
+            range_to_count_enemies: float | None = None,
+            range_to_count_allies: float | None = None
+    ) -> list[SortableAgentData]:
+        with EvalProfiler().measure("ally_targeting"):
+            player_pos: tuple[float, float] = Player.GetXY()
+            all_agent_ids: list[int] = AgentArray.GetAllyArray()
+            all_enemies_ids: list[int] = AgentArray.GetEnemyArray()
+
+            # todo after i feel like restarting npc_agent_ids: list[int] = Routines.Agents.GetAliveAgentsByModelID(model_id, within_range)
+            player_pos = Player.GetXY()
+            agent_array = AgentArray.GetAgentArray()
+            agent_array = AgentArray.Filter.ByDistance(agent_array, player_pos, within_range)
+            agent_array = AgentArray.Filter.ByCondition(agent_array, lambda agent_id: Agent.IsAlive(agent_id))
+            agent_array = AgentArray.Filter.ByCondition(agent_array, lambda agent_id: Agent.GetModelID(agent_id) in model_ids)
+            agent_array = AgentArray.Sort.ByDistance(agent_array, player_pos)
+
+            agent_ids = AgentArray.Filter.ByDistance(agent_array, player_pos, within_range)
+            if condition is not None: agent_ids = AgentArray.Filter.ByCondition(agent_ids, condition)
+
+            _profiler = EvalProfiler()
+
+            def build_sortable_array(agent_id):
+                agent_pos = Agent.GetXY(agent_id)
+
+                # scan enemies within range
+                enemies_ids = AgentArray.Filter.ByCondition(all_enemies_ids, lambda agent_id: Agent.IsAlive(agent_id))
+                enemies_ids = AgentArray.Filter.ByDistance(enemies_ids, player_pos, within_range)
+                enemies_quantity_within_range = 0
+                allies_quantity_within_range = 0
+
+                if range_to_count_enemies is not None or range_to_count_allies is not None:
+                    with _profiler.measure("ally_neighbor_counting"):
+                        if range_to_count_enemies is not None:
+                            for enemy_id in enemies_ids:
+                                if Utils.Distance(Agent.GetXY(enemy_id), agent_pos) <= range_to_count_enemies:
+                                    enemies_quantity_within_range += 1
+
+                        if range_to_count_allies is not None:
+                            for other_agent_id in all_agent_ids:
+                                if other_agent_id != agent_id and Utils.Distance(Agent.GetXY(other_agent_id), agent_pos) <= range_to_count_allies:
+                                    allies_quantity_within_range += 1
+
+                return SortableAgentData(
+                    agent_id=agent_id,
+                    distance_from_player=Utils.Distance(agent_pos, player_pos),
+                    hp=Agent.GetHealth(agent_id),
+                    is_caster=Agent.IsCaster(agent_id),
+                    is_melee=Agent.IsMelee(agent_id),
+                    is_martial=Agent.IsMartial(agent_id),
+                    enemy_quantity_within_range=enemies_quantity_within_range,
+                    agent_quantity_within_range=allies_quantity_within_range,
+                    energy=Resources.get_energy_percent_in_party(agent_id)
+                )
+
+            data_to_sort = list(map(lambda agent_id: build_sortable_array(agent_id), agent_ids))
+
+            if not sort_key:  # If no sort_key is provided
+                return data_to_sort
+
+            # Iterate over sort_key in reverse order (apply less important sort criteria first)
+            for criterion in reversed(sort_key):
+                if criterion == TargetingOrder.DISTANCE_ASC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: x.distance_from_player)
+                elif criterion == TargetingOrder.DISTANCE_DESC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: -x.distance_from_player)
+                elif criterion == TargetingOrder.HP_ASC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: x.hp)
+                elif criterion == TargetingOrder.HP_DESC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: -x.hp)
+                elif criterion == TargetingOrder.ENERGY_ASC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: x.energy)
+                elif criterion == TargetingOrder.ENERGY_DESC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: -x.energy)
+                elif criterion == TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: -x.agent_quantity_within_range)
+                elif criterion == TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_ASC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: x.agent_quantity_within_range)
+                elif criterion == TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: -x.enemy_quantity_within_range)
+                elif criterion == TargetingOrder.CASTER_THEN_MELEE:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: x.is_caster)
+                elif criterion == TargetingOrder.MELEE_THEN_CASTER:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: x.is_melee)
+                else:
+                    raise ValueError(f"Invalid sorting criterion: {criterion}")
+
+            return data_to_sort
 
     @staticmethod
     def get_all_possible_allies_ordered_by_priority_raw(
@@ -791,6 +897,8 @@ class Targets:
                     data_to_sort = sorted(data_to_sort, key=lambda x: x.is_melee)
                 else:
                     raise ValueError(f"Invalid sorting criterion: {criterion}")
+
+            data_to_sort = sorted(data_to_sort, key=lambda x: not Agent.IsSpirit(x.agent_id))
 
             if should_prioritize_party_target:
                 party_forced_target_agent_id: int | None = CustomBehaviorHelperParty.get_party_custom_target()

@@ -14,8 +14,8 @@ class _STATES:
     def AddCustomState(self, execute_fn, name: str) -> None:
         self._config.FSM.AddSelfManagedYieldStep(name=name, coroutine_fn=execute_fn)
 
-    def AddHeader(self, step_name: str) -> None:
-        self._helpers.States.insert_header_step(step_name)
+    def AddHeader(self, step_name: str) -> str:
+        return self._helpers.States.insert_header_step(step_name)
 
     def JumpToStepName(self, step_name: str) -> None:
         self._helpers.States.jump_to_step_name(step_name)

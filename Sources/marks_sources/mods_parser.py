@@ -378,7 +378,7 @@ class ParsedModifierResult:
         """Human-readable summary of all mods on the item."""
         lines = []
         lines.append(
-            f"Damage: {self.damage}  |  Armor: {self.shield_armor}  |  Req: {self.attribute.name} {self.requirements}"
+            f"|  Damage: {self.damage}  \n|  Armor: {self.shield_armor}  \n|  Req: {self.attribute.name} {self.requirements}"
         )
 
         for label, mod_type in [("Prefix", ModType.Prefix), ("Inherent", ModType.Inherent), ("Suffix", ModType.Suffix)]:

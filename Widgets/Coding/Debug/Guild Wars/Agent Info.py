@@ -68,7 +68,9 @@ def DrawMainWindow():
         PyImGui.separator()
         if PyImGui.collapsing_header(f"Positional Data:"):
             flags = PyImGui.TableFlags.Borders | PyImGui.TableFlags.SizingStretchSame | PyImGui.TableFlags.Resizable
-            if PyImGui.begin_table(f"PositionalData##PositionalData{_AGENT_ID}", 5,flags):                                
+            PyImGui.text(f"ModelID: {Agent.GetModelID(_AGENT_ID)}")
+            PyImGui.text(f"GetGadgetID: {Agent.GetGadgetID(_AGENT_ID)}")
+            if PyImGui.begin_table(f"PositionalData##PositionalData{_AGENT_ID}", 5,flags):
                 PyImGui.table_next_row()
                 PyImGui.table_next_column()
                 PyImGui.text("Position")
@@ -203,6 +205,7 @@ def DrawMainWindow():
                     PyImGui.text(f"Owner ID: {Agent.GetOwnerID(_AGENT_ID)}")
                     PyImGui.table_next_column()
                     PyImGui.text(f"Player Number/ModelID: {Agent.GetPlayerNumber(_AGENT_ID)}")
+                    PyImGui.text(f"ModelID: {Agent.GetModelID(_AGENT_ID)}")
                     PyImGui.table_next_column()
                     PyImGui.text(f"Animation Code: {Agent.GetAnimationCode(_AGENT_ID)}")
                     PyImGui.table_next_row()

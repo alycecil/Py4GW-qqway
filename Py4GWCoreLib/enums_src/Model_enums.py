@@ -18,7 +18,8 @@ class GadgetModelID(IntEnum):
     CHEST_KOURNAN = 6064 #ID for Kournan Chest
     CHEST_DARKSTONE = 73 # ID for Darkstone Chest
     CHEST_GENERIC = 8141 #ID for generic chest (used in many places)
-    
+    ##225 Obsidian chest
+
     CHEST_DUNGEON_SECRET_LAIR_OF_THE_SNOWMAN = 9274 #ID for Secret Lair of the Snowman
     CHEST_DUNGEON_BOGROOT_GROWTHS = 8932 #ID for Bogroot Growths
     CHEST_DUNGEON_SLAVERS_EXILE_JUSTICIAR_THOMMIS_ROOM = 9284 #ID for Slavers Exile (Justiciar Thommis room)

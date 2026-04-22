@@ -3,7 +3,7 @@ from typing import List, Any, Generator, Callable, override
 
 import PyImGui
 
-from Py4GWCoreLib import GLOBAL_CACHE, Agent, Range
+from Py4GWCoreLib import GLOBAL_CACHE, Agent, Range, Routines, Player
 from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
@@ -19,6 +19,7 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base i
 class EbonVanguardAssassinSupportMode(Enum):
     SPIKE = 0
     CHAINED = 1
+    SPREAD = 2
 
 class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
     def __init__(self,
@@ -27,7 +28,7 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
         score_definition: ScoreStaticDefinition = ScoreStaticDefinition(40),
         mana_required_to_cast: int = 20,
         allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
-        mode: EbonVanguardAssassinSupportMode = EbonVanguardAssassinSupportMode.SPIKE
+        mode: EbonVanguardAssassinSupportMode = EbonVanguardAssassinSupportMode.SPREAD
         ) -> None:
 
         super().__init__(
@@ -47,14 +48,22 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
             str(mode.value)
         )
         self.mode: EbonVanguardAssassinSupportMode = EbonVanguardAssassinSupportMode(int(persisted_mode))
+        self.YMLAD = CustomSkill("You_Move_Like_a_Dwarf")
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
         return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
             within_range=Range.Spellcast,
             sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_ASC, TargetingOrder.DISTANCE_ASC),
-            range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id),
-            condition=lambda agent_id: Agent.GetHealth(agent_id) > 0.2)
-    
+            range_to_count_enemies=max(GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id), Range.Nearby.value), # aim for groups
+            condition=lambda agent_id: Agent.GetHealth(agent_id) > 0.2 and (
+                    self.mode != EbonVanguardAssassinSupportMode.SPREAD or
+                    not CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(self._get_lock_key(agent_id)) # Spread mode won't target those already locked
+            )
+        )
+
+    def is_YMLAD_available(self):
+        return self.YMLAD.skill_slot is not None and Routines.Checks.Skills.IsSkillSlotReady(self.YMLAD.skill_slot)
+
     def _get_lock_key(self, agent_id: int) -> str:
         return f"EbonVanguardAssassinSupport_{agent_id}"
 
@@ -72,6 +81,9 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
 
         return self.score_definition.get_score()
 
+    def _get_YMLAD_lock_key(self, agent_id: int) -> str:
+        return f"You_Move_Like_a_Dwarf_{agent_id}"
+
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
 
@@ -79,8 +91,8 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
         if len(enemies) == 0: return BehaviorResult.ACTION_SKIPPED
         target = enemies[0]
 
-        # Only use lock in CHAINED mode
-        if self.mode == EbonVanguardAssassinSupportMode.CHAINED:
+        # Only use lock in CHAINED or SPREAD mode
+        if self.mode == EbonVanguardAssassinSupportMode.CHAINED or self.mode == EbonVanguardAssassinSupportMode.SPREAD:
             lock_key = self._get_lock_key(target.agent_id)
             if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=3) == False:
                 yield
@@ -95,6 +107,12 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
             # SPIKE mode: no lock, just cast
             result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
 
+        if self.is_YMLAD_available():
+            #no lock just yolo
+            action = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.YMLAD, target_agent_id=target.agent_id)
+            if action == BehaviorResult.ACTION_PERFORMED and Agent.IsKnockedDown(target.agent_id):
+                CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(self._get_YMLAD_lock_key(target.agent_id), timeout_seconds=3)
+
         return result
 
     @override
@@ -107,6 +125,8 @@ class EbonVanguardAssassinSupportUtility(CustomSkillUtilityBase):
         mode_value = PyImGui.radio_button("SPIKE", mode_value, EbonVanguardAssassinSupportMode.SPIKE.value)
         PyImGui.same_line(0, -1)
         mode_value = PyImGui.radio_button("CHAINED", mode_value, EbonVanguardAssassinSupportMode.CHAINED.value)
+        PyImGui.same_line(0, -1)
+        mode_value = PyImGui.radio_button("SPREAD", mode_value, EbonVanguardAssassinSupportMode.SPREAD.value)
 
         # Update mode if changed
         self.mode = EbonVanguardAssassinSupportMode(mode_value)

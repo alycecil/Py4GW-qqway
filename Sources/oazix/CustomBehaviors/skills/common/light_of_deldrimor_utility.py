@@ -34,10 +34,8 @@ class LightOfDeldrimorUtility(CustomSkillUtilityBase):
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
 
         targets = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
-                    within_range=Range.Spellcast,
-                    condition=lambda agent_id: Agent.IsHexed(agent_id) or Agent.IsConditioned(agent_id),
-                    sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_ASC),
-                    range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id))
+                    within_range=Range.Area,
+                    sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_ASC))
         return targets
 
     @override
@@ -45,13 +43,12 @@ class LightOfDeldrimorUtility(CustomSkillUtilityBase):
         targets = self._get_targets()
         if len(targets) == 0: return None
 
-        target = targets[0]
-        return self.score_definition.get_score(target.agent_quantity_within_range)
+        return self.score_definition.get_score(len(targets))
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
         enemies = self._get_targets()
         if len(enemies) == 0: return BehaviorResult.ACTION_SKIPPED
         target = enemies[0]
-        result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
+        result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
         return result

@@ -44,7 +44,8 @@ class SignetOfSorrowUtility(CustomSkillUtilityBase):
         return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
             within_range=Range.Spellcast,
             condition=lambda agent_id: self.corpse_nearby(corpse_array=corpses_list, agent_id=agent_id),
-            sort_key=(TargetingOrder.HP_ASC, TargetingOrder.CASTER_THEN_MELEE))
+            sort_key=(TargetingOrder.HP_ASC, TargetingOrder.CASTER_THEN_MELEE),
+            range_to_count_enemies=Range.Nearby.value)
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:

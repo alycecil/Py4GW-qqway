@@ -7,6 +7,7 @@ import Py4GW
 import PyImGui
 from PyItem import PyItem
 
+from Py4GWCoreLib import Item
 from Py4GWCoreLib.ImGui_src.ImGuisrc import ImGui
 from Py4GWCoreLib.ImGui_src.types import Alignment
 from Py4GWCoreLib.IniManager import IniManager
@@ -248,7 +249,23 @@ def main():
             add_row("Item Type", str(item.item_type.name) if item else "N/A")
             add_row("Rarity", Rarity(item.rarity).name if item else "N/A")
             add_row("Stack Size", str(item.quantity) if item else "N/A")
-                
+
+            try:
+                from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
+                from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryUtilsConfig
+                from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryUtils
+
+                inventory_config: InventoryUtilsConfig = InventoryUtilsConfig()
+                data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")
+                if data is not None:
+                    from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import string_to_dict
+                    inventory_config: InventoryUtilsConfig = string_to_dict(data)
+
+                action = InventoryUtils().get_action_for_item(inventory_config, hovered_item_id)
+                add_row("Inventory action", str(action) if action else "N/A")
+            except Exception as e:
+                add_row("Inventory action", f"Error={e}")
+
             PyImGui.end_table()
         style.CellPadding.pop_style_var_direct()
         ImGui.pop_font()

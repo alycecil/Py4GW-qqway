@@ -1,6 +1,9 @@
 from typing import Any, Generator, override
 
-from Py4GWCoreLib import Range
+import PyImGui
+
+from Py4GWCoreLib import Range, Player, Routines, Agent
+from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
@@ -38,10 +41,11 @@ class ProtectiveBondUtility(CustomSkillUtilityBase):
         self.add_plugin_targetting_modifier(lambda x: BuffConfigurator(event_bus, self.custom_skill, buff_configuration_per_profession= BuffConfigurationPerProfession.BUFF_CONFIGURATION_ALL))
 
     def _get_target(self) -> int | None:
+        from HeroAI.utils import IsPartyMember, CheckForEffect
 
         targets = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
                 within_range=Range.Spellcast.value,
-                condition=lambda agent_id: self.get_plugin_targeting_modifiers_filtering_predicate()(agent_id),
+                condition=lambda agent_id: self.get_plugin_targeting_modifiers_filtering_predicate()(agent_id) and not CheckForEffect(agent_id, self.custom_skill.skill_id),
                 sort_key=(TargetingOrder.DISTANCE_ASC,),
                 range_to_count_enemies=None,
                 range_to_count_allies=None)

@@ -7,6 +7,9 @@ from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
 from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
+from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
+from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import \
+    ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
@@ -18,9 +21,9 @@ class IcyVeinsUtility(CustomSkillUtilityBase):
         self,
         event_bus: EventBus,
         current_build: list[CustomSkill],
-        score_definition: ScoreStaticDefinition = ScoreStaticDefinition(40),
+        score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 80 if enemy_qte >= 5 else 45 if enemy_qte >= 3 else 40),
         mana_required_to_cast: int = 15,
-        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
+        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO,BehaviorState.CLOSE_TO_AGGRO],
     ) -> None:
         super().__init__(
             event_bus=event_bus,
@@ -31,63 +34,90 @@ class IcyVeinsUtility(CustomSkillUtilityBase):
             allowed_states=allowed_states,
         )
 
-        # TODO A BETTER IMPLEMENTATION SHOULD BE DONE WITH A DEDICATED TRACKER/HELPER ; SAME FOR AS ASSASSINS_PROMISE
-        # we need that to have an effect on the targeting system. that's a deep task.
+        self.score_definition = score_definition
 
-        self.score_definition: ScoreStaticDefinition = score_definition
+    def _get_lock_key(self, agent_id: int) -> str:
+        return f"Icy_Veins_{agent_id}"
 
-    def _get_candidates(self) -> tuple[int, ...]:
-        """
-        Return enemy agent IDs ordered by priority (lowest HP, then distance) within shout/spellcast range.
-        """
+    def _get_target_score(self, target: custom_behavior_helpers.SortableAgentData) -> float:
+        score_max = 55
+        score_min = 0
+        score_offset = 0
+        if not Agent.IsHexed(target.agent_id):
+            score_offset = 10
+            score_max = 75
 
-        return custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority(
-            within_range=Range.Spellcast,
+        health = Agent.GetHealth(target.agent_id)
+
+        if health < .1:
+            # let finish him do the work here, we will waste our cast
+            score_max = 55
+            score_min = 0
+        elif health < .5:
+            score_max += 20
+            score_min = 20
+            score_offset += 10
+        elif health < .75:
+            score_max += 20
+            score_min = 20
+            score_offset += 5
+
+        if 0.25 < health < 0.6:
+            score_offset += 20
+            score_min = 40
+
+        lock_key = self._get_lock_key(target.agent_id)
+        CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(lock_key)
+
+        score: int = round(self.score_definition.get_score(target.enemy_quantity_within_range)) + score_offset
+
+        return max(min(score_max, score), score_min)
+
+    def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
+        """Get enemies ordered by cluster size and distance."""
+        by_priority_raw : list[custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
+            within_range=Range.Earshot,
             condition=lambda agent_id: not Agent.IsSpirit(agent_id),
-            sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC),
+            range_to_count_enemies=Range.Nearby.value
         )
 
-    def _get_best_target(self) -> int | None:
-        candidates = self._get_candidates()
-        if not candidates:
-            return None
-        return candidates[0]
+        by_priority_raw.sort(key=lambda target: (
+            -self._get_target_score(target),
+            -target.enemy_quantity_within_range,
+            target.is_caster,
+        ))
+
+        if constants.DEBUG:
+            print("List of targets")
+            for item in by_priority_raw:
+                print(f"item: {self._get_target_score(item)} : {item}")
+
+        return by_priority_raw
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
-        target = self._get_best_target()
-        if target is None:
-            if constants.DEBUG: print("No candidates")
-            return None
 
-        mult = 0.5
-        if self.nature_has_been_attempted_last(previously_attempted_skills):
-            mult = 0.25
+        targets = self._get_targets()
+        if len(targets) == 0: return None
+        target = targets[0]
+        lock_key = self._get_lock_key(target.agent_id)
+        if CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(lock_key): return None
 
-        # if the target is not hexed
-        if not Agent.IsHexed(target):
-            mult += 0.51
-
-        # if the lowest hp target is below 50% health lets try and get that eoe like effect
-        if Agent.GetHealth(target) < 0.5:
-            mult += 0.51
-
-        scored = self.score_definition.get_score() * mult
-
-        # default max is 61.28 but in case of overrides
-        if scored > 99:
-            scored = 99
-
-        return scored
+        return self._get_target_score(target)
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
-        """
-        Cast the spell at the chosen target.
-        """
-        target = self._get_best_target()
-        if target is None:
-            return BehaviorResult.ACTION_SKIPPED
 
-        result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target)
+        enemies = self._get_targets()
+        if len(enemies) == 0: return BehaviorResult.ACTION_SKIPPED
+        target = enemies[0]
+
+        lock_key = self._get_lock_key(target.agent_id)
+        CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key) # intentionally not blocking as still does damage
+
+        try:
+            result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
+        finally:
+            CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
         return result
+

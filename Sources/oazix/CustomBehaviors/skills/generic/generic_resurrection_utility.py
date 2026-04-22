@@ -24,7 +24,7 @@ class GenericResurrectionUtility(CustomSkillUtilityBase):
     current_build: list[CustomSkill],
     score_definition: ScorePerHealthGravityDefinition = ScorePerHealthGravityDefinition(0),
     mana_required_to_cast: int = 0,
-    allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.FAR_FROM_AGGRO, BehaviorState.CLOSE_TO_AGGRO]
+    allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.FAR_FROM_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.IDLE]
     ) -> None:
 
         super().__init__(

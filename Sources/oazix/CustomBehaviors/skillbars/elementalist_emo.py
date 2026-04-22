@@ -9,11 +9,14 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomS
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.skills.common.auto_attack_utility import AutoAttackUtility
 from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_wisdom_utility import EbonBattleStandardOfWisdom
+from Sources.oazix.CustomBehaviors.skills.common.ebon_escape_utility import EbonEscapeUtility
 from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.common.great_dwarf_weapon_utility import GreatDwarfWeaponUtility
 from Sources.oazix.CustomBehaviors.skills.common.i_am_unstoppable_utility import IAmUnstoppableUtility
+from Sources.oazix.CustomBehaviors.skills.elementalist.burning_speed_utility import BurningSpeedUtility
 from Sources.oazix.CustomBehaviors.skills.elementalist.emo_spam_on_party_if_mana_low_utility import EmoSpamOnPartyIfManaLowUtility
 from Sources.oazix.CustomBehaviors.skills.generic.dismiss_buff_if_no_mana_utility import DismissBuffIfNoManaUtility
+from Sources.oazix.CustomBehaviors.skills.elementalist.burning_speed_utility import BurningSpeedUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.maintain_effect_up_on_player_utility import MaintainEffectUpOnPlayerUtility
 from Sources.oazix.CustomBehaviors.skills.generic.protective_shout_utility import ProtectiveShoutUtility
@@ -33,7 +36,7 @@ class ElementalistEmo_UtilitySkillBar(CustomBehaviorBaseUtility):
     def __init__(self):
         super().__init__()
         in_game_build = list(self.skillbar_management.get_in_game_build().values())
-        
+
         # ORDERED BY PRIORITY
 
         # -- CORE TOP --
@@ -41,19 +44,23 @@ class ElementalistEmo_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.ether_renewal_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Ether_Renewal"), current_build=in_game_build, score_definition=ScoreStaticDefinition(81), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
         self.aura_of_restoration_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Aura_of_Restoration"), current_build=in_game_build, score_definition=ScoreStaticDefinition( 80), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
 
-        # -- CORE MIDDLE --
+        # -- CORE MIDDLE -- Scaling on risk
         self.infuse_health_utility: CustomSkillUtilityBase = InfuseHealthUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(8))
         self.protective_spirit_utility: CustomSkillUtilityBase = ProtectiveSpiritUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(7))
         self.spirit_bond_utility: CustomSkillUtilityBase = SpiritBondUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(6))
         self.reversal_of_fortune_utility: CustomSkillUtilityBase = ReversalOfFortuneUtility(event_bus=self.event_bus,current_build=in_game_build,score_definition=ScorePerHealthGravityDefinition(5))
 
-        #-- LOW --
+        #-- Normals -- 30
+        self.burning_speed_utility: CustomSkillUtilityBase = BurningSpeedUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(30), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
+
+        #-- LOW -- 20
         self.protective_bond_utility: CustomSkillUtilityBase = ProtectiveBondUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(20))
         self.life_bond_utility: CustomSkillUtilityBase = LifeBondUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(20))
         self.life_attunement_utility: CustomSkillUtilityBase = LifeAttunementUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(20))
         self.vital_blessing_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus,skill=CustomSkill("Vital_Blessing"),current_build=in_game_build,score_definition=ScoreStaticDefinition(20))
+        self.balthazars_spirit_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Balthazars_Spirit"), current_build=in_game_build, score_definition=ScoreStaticDefinition(20), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
 
-        self.dismiss_buff_if_no_mana_utility: CustomSkillUtilityBase = DismissBuffIfNoManaUtility(event_bus=self.event_bus, skill=CustomSkill("Dismiss_Buff_If_No_Mana"), 
+        self.dismiss_buff_if_no_mana_utility: CustomSkillUtilityBase = DismissBuffIfNoManaUtility(event_bus=self.event_bus, skill=CustomSkill("Dismiss_Buff_If_No_Mana"),
                                                                                                   skills_to_dismiss=[self.protective_bond_utility, self.life_attunement_utility, self.life_bond_utility],
                                                                                                   current_build=in_game_build, score_definition=ScoreStaticDefinition(79))
         # -- VERY LOW --
@@ -61,13 +68,14 @@ class ElementalistEmo_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.maintain_effect_up_on_player_1: CustomSkillUtilityBase = MaintainEffectUpOnPlayerUtility(event_bus=self.event_bus, skill=CustomSkill("Mainain_Effect_Up_On_Player_1"), skill_to_maintain=CustomSkill("Spirit_Bond"), current_build=in_game_build, score_definition=ScoreStaticDefinition(13))
         self.maintain_effect_up_on_player_2: CustomSkillUtilityBase = MaintainEffectUpOnPlayerUtility(event_bus=self.event_bus, skill=CustomSkill("Mainain_Effect_Up_On_Player_2"), skill_to_maintain=CustomSkill("Protective_Spirit"), current_build=in_game_build, score_definition=ScoreStaticDefinition(13))
         self.maintain_effect_up_on_player_3: CustomSkillUtilityBase = MaintainEffectUpOnPlayerUtility(event_bus=self.event_bus, skill=CustomSkill("Mainain_Effect_Up_On_Player_3"), skill_to_maintain=CustomSkill("Reversal_of_Fortune"), current_build=in_game_build, score_definition=ScoreStaticDefinition(13))
-        self.spam_if_mana_low_utility: CustomSkillUtilityBase = EmoSpamOnPartyIfManaLowUtility(event_bus=self.event_bus, 
+        self.spam_if_mana_low_utility: CustomSkillUtilityBase = EmoSpamOnPartyIfManaLowUtility(event_bus=self.event_bus,
                     skills=[self.protective_spirit_utility, self.spirit_bond_utility, self.infuse_health_utility, self.reversal_of_fortune_utility], current_build=in_game_build, score_definition=ScoreStaticDefinition(12))
-        
+
         # -- OPTIONAL --
         self.elemental_lord_kurzick_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Elemental_Lord_kurzick"), current_build=in_game_build, score_definition=ScoreStaticDefinition(70), mana_required_to_cast=10,allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
         self.elemental_lord_luxon_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Elemental_Lord_luxon"), current_build=in_game_build, score_definition=ScoreStaticDefinition(70), mana_required_to_cast=10,allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
-        self.burning_speed_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Burning_Speed"), current_build=in_game_build, score_definition=ScoreStaticDefinition(50), mana_required_to_cast=10,allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
+
+        self.ebon_escape_utility: CustomSkillUtilityBase = EbonEscapeUtility(event_bus=self.event_bus, current_build=in_game_build)
 
     @property
     @override
@@ -103,6 +111,9 @@ class ElementalistEmo_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.life_bond_utility,
             self.burning_speed_utility,
             self.infuse_health_utility,
+            self.ebon_escape_utility,
+            self.life_bond_utility,
+            self.balthazars_spirit_utility,
         ]
 
     @property

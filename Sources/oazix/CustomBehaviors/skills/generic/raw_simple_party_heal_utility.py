@@ -35,14 +35,14 @@ class RawSimplePartyHealUtility(CustomSkillUtilityBase):
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
-        if custom_behavior_helpers.Heals.is_party_damaged(within_range=Range.Spirit.value, min_allies_count=3, less_health_than_percent=0.4):
+        if custom_behavior_helpers.Heals.is_party_damaged(within_range=Range.Spirit.value, min_allies_count=1, less_health_than_percent=0.4):
             return self.score_definition.get_score(HealingScore.PARTY_DAMAGE_EMERGENCY)
 
         first_member_damaged: int | None = custom_behavior_helpers.Heals.get_first_member_damaged(within_range=Range.Spirit.value, less_health_than_percent=0.4, exclude_player=False)
         if first_member_damaged is not None:
             return self.score_definition.get_score(HealingScore.MEMBER_DAMAGED_EMERGENCY)
 
-        if custom_behavior_helpers.Heals.is_party_damaged(within_range=Range.Spirit.value, min_allies_count=3, less_health_than_percent=0.75):
+        if custom_behavior_helpers.Heals.is_party_damaged(within_range=Range.Spirit.value, min_allies_count=1, less_health_than_percent=0.75):
             return self.score_definition.get_score(HealingScore.PARTY_DAMAGE)
 
         return None

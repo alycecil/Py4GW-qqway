@@ -36,8 +36,6 @@ class RitualistSoulTwisting_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.shelter_utility: CustomSkillUtilityBase = ProtectiveSpiritUtility(event_bus=self.event_bus, skill=CustomSkill("Shelter"), current_build=in_game_build, score_definition=ScoreStaticDefinition(66), owned_spirit_model_id=SpiritModelID.SHELTER)
         self.union_utility: CustomSkillUtilityBase = ProtectiveSpiritUtility(event_bus=self.event_bus, skill=CustomSkill("Union"), current_build=in_game_build, score_definition=ScoreStaticDefinition(65), owned_spirit_model_id=SpiritModelID.UNION)
         self.displacement_utility: CustomSkillUtilityBase = ProtectiveSpiritUtility(event_bus=self.event_bus, skill=CustomSkill("Displacement"), current_build=in_game_build, score_definition=ScoreStaticDefinition(64), owned_spirit_model_id=SpiritModelID.DISPLACEMENT)
-        self.summon_spirit_kurzick: CustomSkillUtilityBase = SummonSpiritUtility(event_bus=self.event_bus, skill=CustomSkill("Summon_Spirits_kurzick"), current_build=in_game_build, score_definition=ScoreStaticDefinition(95))
-        self.summon_spirit_luxon: CustomSkillUtilityBase = SummonSpiritUtility(event_bus=self.event_bus, skill=CustomSkill("Summon_Spirits_luxon"), current_build=in_game_build, score_definition=ScoreStaticDefinition(95))
         self.armor_of_unfeeling_utility: CustomSkillUtilityBase = ArmorOfUnfeelingUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(80))
 
         # optional
@@ -59,8 +57,6 @@ class RitualistSoulTwisting_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.shelter_utility,
             self.union_utility,
             self.displacement_utility,
-            self.summon_spirit_kurzick,
-            self.summon_spirit_luxon,
             self.armor_of_unfeeling_utility,
             self.breath_of_the_great_dwarf_utility,
             self.earthbind_utility,
@@ -76,5 +72,5 @@ class RitualistSoulTwisting_UtilitySkillBar(CustomBehaviorBaseUtility):
         return [
             self.soul_twisting_utility.custom_skill,
             self.shelter_utility.custom_skill,
-            self.union_utility.custom_skill,
+            #self.union_utility.custom_skill,
         ]

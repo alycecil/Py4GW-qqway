@@ -598,7 +598,7 @@ def render():
 
     PyImGui.separator()
 
-    if custom_behavior_helpers.CustomBehaviorHelperParty.is_party_leader():
+    if True: # custom_behavior_helpers.CustomBehaviorHelperParty.is_party_leader():
         
         if PyImGui.tree_node_ex("[TEAM] Management :", 0):
 

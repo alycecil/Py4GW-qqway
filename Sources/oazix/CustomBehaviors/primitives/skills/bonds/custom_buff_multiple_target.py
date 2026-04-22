@@ -34,7 +34,10 @@ class CustomBuffMultipleTarget():
         else:
             raise Exception(f"Unknown buff mode: {buff_mode}")
 
-        self.event_bus.subscribe(EventType.MAP_CHANGED, self.map_changed, subscriber_name= "CustomBuffMultipleTarget_" + self.custom_skill.skill_name)
+        try:
+            self.event_bus.subscribe(EventType.MAP_CHANGED, self.map_changed, subscriber_name= "CustomBuffMultipleTarget_" + self.custom_skill.skill_name)
+        except Exception:
+            pass
 
     @classmethod
     def from_profession_config(cls, event_bus: EventBus, custom_skill: CustomSkill, buff_configuration: list[ProfessionConfiguration]) -> "CustomBuffMultipleTarget":

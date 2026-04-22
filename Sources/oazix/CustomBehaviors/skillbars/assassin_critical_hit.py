@@ -17,6 +17,8 @@ from Sources.oazix.CustomBehaviors.skills.common.i_am_unstoppable_utility import
 from Sources.oazix.CustomBehaviors.skills.generic.auto_combat_utility import AutoCombatUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_combot_attack_utility import RawCombotAttackUtility
+from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_attack_utility import RawSimpleAttackUtility
+
 
 class AssassinCriticalHit_UtilitySkillBar(CustomBehaviorBaseUtility):
 
@@ -32,6 +34,8 @@ class AssassinCriticalHit_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.critical_defenses_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Critical_Defenses"), current_build=in_game_build, score_definition=ScoreStaticDefinition(50), allowed_states=[BehaviorState.IN_AGGRO])
         self.disrupting_dagger_utility: CustomSkillUtilityBase = DisruptingDaggerUtility(event_bus=self.event_bus, score_definition=ScoreStaticDefinition(90), current_build=in_game_build)
 
+        self.Shadow_Theft_utility: CustomSkillUtilityBase = RawCombotAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Shadow_Theft"), current_build=in_game_build, score_definition=ScoreCombotDefinition(81), mana_required_to_cast=10,
+                                                                                   allowed_states = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO])
         self.jagged_strike_utility: CustomSkillUtilityBase = RawCombotAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Jagged_Strike"), current_build=in_game_build, score_definition=ScoreCombotDefinition(40), mana_required_to_cast=10)
         self.fox_fangs_utility: CustomSkillUtilityBase = RawCombotAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Fox_Fangs"), current_build=in_game_build, score_definition=ScoreCombotDefinition(40), mana_required_to_cast=10)
         self.death_blossom_utility: CustomSkillUtilityBase = RawCombotAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Death_Blossom"), current_build=in_game_build, score_definition=ScoreCombotDefinition(40), mana_required_to_cast=10)
@@ -41,10 +45,18 @@ class AssassinCriticalHit_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.ebon_battle_standard_of_honor_utility: CustomSkillUtilityBase = EbonBattleStandardOfHonorUtility(event_bus=self.event_bus, score_definition=ScorePerAgentQuantityDefinition(lambda agent_qte: 45 if agent_qte >= 3 else 35 if agent_qte <= 2 else 25), current_build=in_game_build,  mana_required_to_cast=15)
         self.ebon_battle_standard_of_wisdom: CustomSkillUtilityBase = EbonBattleStandardOfWisdom(event_bus=self.event_bus, score_definition=ScorePerAgentQuantityDefinition(lambda agent_qte: 45 if agent_qte >= 3 else 35 if agent_qte <= 2 else 25), current_build=in_game_build, mana_required_to_cast=18)
 
+        self.Whirlwind_Attack: CustomSkillUtilityBase = RawSimpleAttackUtility(
+            event_bus=self.event_bus,
+            skill=CustomSkill("Whirlwind_Attack"),
+            current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(84),
+        )
+
     @property
     @override
     def custom_skills_in_behavior(self) -> list[CustomSkillUtilityBase]:
         return [
+            self.Shadow_Theft_utility,
             self.critical_eye_utility,
             self.critical_agility_utility,
             self.way_of_the_master_utility,
@@ -58,6 +70,7 @@ class AssassinCriticalHit_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.jagged_strike_utility,
             self.fox_fangs_utility,
             self.death_blossom_utility,
+            self.Whirlwind_Attack,
         ]
 
     @property

@@ -1,6 +1,7 @@
 from typing import override
 
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
+from Sources.oazix.CustomBehaviors.primitives.scores.score_combot_definition import ScoreCombotDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import (
     ScorePerAgentQuantityDefinition,
 )
@@ -19,14 +20,20 @@ from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_
     EbonVanguardAssassinSupportUtility,
 )
 from Sources.oazix.CustomBehaviors.skills.common.finish_him_utility import FinishHimUtility
+from Sources.oazix.CustomBehaviors.skills.dervich.eremites_attack_utility import EremitesAttack_Utility
+from Sources.oazix.CustomBehaviors.skills.dervich.twin_moon_sweep_utility import TwinMoonSweep_Utility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import (
     KeepSelfEffectUpUtility,
 )
+from Sources.oazix.CustomBehaviors.skills.generic.raw_combot_attack_utility import RawCombotAttackUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_attack_utility import (
     RawSimpleAttackUtility,
 )
 from Sources.oazix.CustomBehaviors.skills.necromancer.putrid_explosion_utility import (
     PutridExplosionUtility,
+)
+from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_lost_souls_utility import (
+    SignetOfLostSoulsUtility,
 )
 
 
@@ -64,6 +71,16 @@ class NecromancerPromiseSpiker_UtilitySkillBar(CustomBehaviorBaseUtility):
             mana_required_to_cast=5,
         )
 
+
+        # scythe attacks
+        self.twin_moon_sweep_utility: CustomSkillUtilityBase = TwinMoonSweep_Utility(event_bus=self.event_bus, current_build=in_game_build)
+        self.eremites_attack_utility: CustomSkillUtilityBase = EremitesAttack_Utility(event_bus=self.event_bus, current_build=in_game_build)
+        #sin attacks
+        self.jagged_strike_utility: CustomSkillUtilityBase = RawCombotAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Jagged_Strike"), current_build=in_game_build, score_definition=ScoreCombotDefinition(40), mana_required_to_cast=13)
+        self.fox_fangs_utility: CustomSkillUtilityBase = RawCombotAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Fox_Fangs"), current_build=in_game_build, score_definition=ScoreCombotDefinition(40), mana_required_to_cast=13)
+        self.death_blossom_utility: CustomSkillUtilityBase = RawCombotAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Death_Blossom"), current_build=in_game_build, score_definition=ScoreCombotDefinition(40), mana_required_to_cast=13)
+
+
         # pve spike helpers
         self.finish_him_utility: CustomSkillUtilityBase = FinishHimUtility(
             event_bus=self.event_bus,
@@ -77,13 +94,6 @@ class NecromancerPromiseSpiker_UtilitySkillBar(CustomBehaviorBaseUtility):
                 score_definition=ScoreStaticDefinition(89),
                 mana_required_to_cast=15,
             )
-        )
-        self.you_move_like_a_dwarf_utility: CustomSkillUtilityBase = RawSimpleAttackUtility(
-            event_bus=self.event_bus,
-            skill=CustomSkill("You_Move_Like_a_Dwarf"),
-            current_build=in_game_build,
-            score_definition=ScoreStaticDefinition(84),
-            mana_required_to_cast=5,
         )
         self.pain_inverter_utility: CustomSkillUtilityBase = RawSimpleAttackUtility(
             event_bus=self.event_bus,
@@ -99,6 +109,10 @@ class NecromancerPromiseSpiker_UtilitySkillBar(CustomBehaviorBaseUtility):
             score_definition=ScoreStaticDefinition(69),
             mana_required_to_cast=5,
         )
+        self.signet_of_lost_souls_utility: CustomSkillUtilityBase = SignetOfLostSoulsUtility(
+            event_bus=self.event_bus,
+            current_build=in_game_build,
+        )
 
     @property
     @override
@@ -106,13 +120,20 @@ class NecromancerPromiseSpiker_UtilitySkillBar(CustomBehaviorBaseUtility):
         return [
             self.masochism_utility,
             self.assassins_promise_utility,
-            self.you_move_like_a_dwarf_utility,
             self.ebon_vanguard_assassin_support,
             self.putrid_bile_utility,
             self.finish_him_utility,
             self.putrid_explosion_utility,
             self.pain_inverter_utility,
             self.angorodons_gaze_utility,
+            self.signet_of_lost_souls_utility,
+
+            self.twin_moon_sweep_utility,
+            self.eremites_attack_utility,
+
+            self.jagged_strike_utility,
+            self.fox_fangs_utility,
+            self.death_blossom_utility,
         ]
 
     @property

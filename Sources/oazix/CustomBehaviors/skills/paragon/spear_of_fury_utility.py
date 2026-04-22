@@ -18,7 +18,7 @@ class AttackNearestEnemyHasConditionUtility(CustomSkillUtilityBase):
                  event_bus: EventBus,
                  current_build: list[CustomSkill],
                  skill: CustomSkill, # pass the luxon or kurzick skill here
-                 score_definition: ScoreStaticDefinition = ScoreStaticDefinition(70),
+                 score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 45 if enemy_qte >= 3 else 30 if enemy_qte >= 2 else 11),
                  ) -> None:
 
         super().__init__(
@@ -53,3 +53,29 @@ class AttackNearestEnemyHasConditionUtility(CustomSkillUtilityBase):
         target = enemies[0]
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
         return result
+
+class KurzAttackNearestEnemyHasConditionUtility(AttackNearestEnemyHasConditionUtility):
+
+    def __init__(self,
+                 event_bus: EventBus,
+                 current_build: list[CustomSkill],
+                 ) -> None:
+
+        super().__init__(
+            event_bus=event_bus,
+            skill=CustomSkill("Spear_of_Fury_kurzick"),
+            current_build=current_build
+        )
+
+class LuxAttackNearestEnemyHasConditionUtility(AttackNearestEnemyHasConditionUtility):
+
+    def __init__(self,
+                 event_bus: EventBus,
+                 current_build: list[CustomSkill],
+                 ) -> None:
+
+        super().__init__(
+            event_bus=event_bus,
+            skill=CustomSkill("Spear_of_Fury_luxon"),
+            current_build=current_build
+        )

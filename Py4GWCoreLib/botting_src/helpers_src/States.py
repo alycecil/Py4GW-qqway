@@ -13,14 +13,15 @@ class _States:
         self.parent = parent.parent
         self._config = parent._config
         
-    def insert_header_step(self, step_name: str) -> None:
+    def insert_header_step(self, step_name: str) -> str:
         from ...Routines import Routines
         header_name = f"[H]{step_name}_{self._config.get_counter("HEADER_COUNTER")}"
         self._config.FSM.AddYieldRoutineStep(
             name=header_name,
             coroutine_fn=lambda: Routines.Yield.wait(100)
         )
-        
+        return header_name
+
     @_yield_step(label="JumpToStepName", counter_key="JUMP_TO_STEP_NAME")
     def jump_to_step_name(self, step_name: str) -> Generator[Any, Any, None]:
         self._config.FSM.pause()

@@ -1,11 +1,13 @@
 from typing import cast, override
 
+from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_health_gravity_definition import ScorePerHealthGravityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_utility import CustomBehaviorBaseUtility
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
+from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_lost_souls_utility import SignetOfLostSoulsUtility
 from Sources.oazix.CustomBehaviors.skills.plugins.preconditions.should_wait_for_effect import ShouldWaitForEffect
 from Sources.oazix.CustomBehaviors.skills.plugins.preconditions.should_wait_for_heroic_refrain import ShouldWaitForHeroicRefrain
 from Sources.oazix.CustomBehaviors.skills.plugins.preconditions.should_wait_for_serpents_quickness import ShouldWaitForSerpentsQuickness
@@ -42,9 +44,12 @@ class MonkHealingBurst_UtilitySkillBar(CustomBehaviorBaseUtility):
         # core skills
 
         self.patient_spirit_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Patient_Spirit"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(8))
-        self.healing_burst_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Healing_Burst"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(7))
+        self.Jameis_Gaze_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Jameis_Gaze"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(6))
+        self.healing_burst_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Healing_Burst"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(8))
+        self.Signet_of_Rejuvenation_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Signet_of_Rejuvenation"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(6))
+        self.Signet_of_Devotion_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Signet_of_Devotion"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(5))
 
-        self.seed_of_life_utility: CustomSkillUtilityBase = (SeedOfLifeUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(1)) 
+        self.seed_of_life_utility: CustomSkillUtilityBase = (SeedOfLifeUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(1))
                                                                         .add_plugin_precondition(lambda x: ShouldWaitForSerpentsQuickness(x.custom_skill, True)))
        
         self.protective_spirit_utility: CustomSkillUtilityBase = ProtectiveSpiritUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(8))
@@ -55,6 +60,15 @@ class MonkHealingBurst_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.cure_hex_utility: CustomSkillUtilityBase = CureHexUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(50))
         self.dismiss_condition_utility: CustomSkillUtilityBase = DismissConditionUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(50))
         self.draw_conditions_utility: CustomSkillUtilityBase = DrawConditionsUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(51))
+
+        self.selfless_spirit_luxon_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, current_build=in_game_build, skill=CustomSkill("Selfless_Spirit_luxon"), score_definition=ScoreStaticDefinition(88))
+        self.selfless_spirit_kurzick_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, current_build=in_game_build, skill=CustomSkill("Selfless_Spirit_kurzick"), score_definition=ScoreStaticDefinition(88))
+
+        self.serpents_quickness_prep_utility: CustomSkillUtilityBase = PreparationUtility(event_bus=self.event_bus,
+                                                             prep_skill=CustomSkill("Serpents_Quickness"),
+                                                             target_utilities=[self.seed_of_life_utility, self.selfless_spirit_luxon_utility, self.selfless_spirit_kurzick_utility], current_build=in_game_build, score_definition=ScoreStaticDefinition(94))
+        self.dwarven_stability_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, current_build=in_game_build, skill=CustomSkill("Dwarven_Stability"), score_definition=ScoreStaticDefinition(95))
+        self.rebirth_utility: CustomSkillUtilityBase = GenericResurrectionUtility(event_bus=self.event_bus, skill=CustomSkill("Rebirth"), current_build=in_game_build, score_definition=ScoreStaticDefinition(94))
         self.breath_of_the_great_dwarf_utility: CustomSkillUtilityBase = BreathOfTheGreatDwarfUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(9))
         self.vigorous_spirit_utility: CustomSkillUtilityBase = VigorousSpiritUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(72))
 
@@ -68,9 +82,25 @@ class MonkHealingBurst_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.dwarven_stability_utility = KeepSelfEffectUpUtility(event_bus=self.event_bus, current_build=in_game_build, skill=CustomSkill("Dwarven_Stability"), score_definition=ScoreStaticDefinition(95))
 
         self.serpents_quickness_utility = (KeepSelfEffectUpUtility(event_bus=self.event_bus, current_build=in_game_build, skill=CustomSkill("Serpents_Quickness"), score_definition=ScoreStaticDefinition(94))
-                                                                    .add_plugin_precondition(lambda x: ShouldWaitForEffect(x.custom_skill, CustomSkill("Dwarven_Stability"), True)))
+                                           .add_plugin_precondition(lambda x: ShouldWaitForEffect(x.custom_skill, CustomSkill("Dwarven_Stability"), True)))
 
-        # combo Unyielding_Aura + Arcane_Mimicryzd
+        self.Divine_Spirit_utility: CustomSkillUtilityBase = PreparationUtility(
+            event_bus=self.event_bus,
+            prep_skill=CustomSkill("Divine_Spirit"),
+            target_utilities=[self.protective_spirit_utility, self.seed_of_life_utility, self.cure_hex_utility, self.dismiss_condition_utility, self.healing_burst_utility],
+            current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(55),
+            mana_required_to_cast=15,
+            allowed_states=[BehaviorState.IN_AGGRO]
+        )
+
+        # common
+        self.i_am_unstopabble: CustomSkillUtilityBase = IAmUnstoppableUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(99))
+        self.fall_back_utility: CustomSkillUtilityBase = FallBackUtility(event_bus=self.event_bus, current_build=in_game_build)
+        self.signet_of_lost_souls_utility: CustomSkillUtilityBase = SignetOfLostSoulsUtility(event_bus=self.event_bus, current_build=in_game_build)
+        self.by_urals_hammer_utility: CustomSkillUtilityBase = ByUralsHammerUtility(event_bus=self.event_bus, current_build=in_game_build)
+        self.finish_him_utility: CustomSkillUtilityBase = FinishHimUtility(event_bus=self.event_bus, current_build=in_game_build)
+
         # we have an additionnal utility to drop the buff that we could have aquired from mimicry
         self.unyielding_aura_drop_utility: CustomSkillUtilityBase = UnyieldingAuraDropUtility(event_bus=self.event_bus, current_build=in_game_build)
 
@@ -80,8 +110,8 @@ class MonkHealingBurst_UtilitySkillBar(CustomBehaviorBaseUtility):
                                                                                    skill_to_copy_instance= lambda: UnyieldingAuraUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(93)))
                                                                         .add_plugin_precondition(lambda x: ShouldWaitForHeroicRefrain(x.custom_skill, True))
                                                                         )
-        
-        
+
+
     @property
     @override
     def additional_autonomous_skills(self) -> list[CustomSkillUtilityBase]:
@@ -94,7 +124,16 @@ class MonkHealingBurst_UtilitySkillBar(CustomBehaviorBaseUtility):
     @override
     def custom_skills_in_behavior(self) -> list[CustomSkillUtilityBase]:
         return [
+            self.i_am_unstopabble,
+            self.fall_back_utility,
+            self.signet_of_lost_souls_utility,
+            self.by_urals_hammer_utility,
             self.breath_of_the_great_dwarf_utility,
+            self.finish_him_utility,
+
+            self.Jameis_Gaze_utility,
+            self.dwaynas_kiss_utility,
+
             self.patient_spirit_utility,
             self.healing_burst_utility,
             self.seed_of_life_utility,
@@ -109,6 +148,11 @@ class MonkHealingBurst_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.vigorous_spirit_utility,
             self.arcane_mimicry_utility,
             self.dwarven_stability_utility,
+            self.rebirth_utility,
+
+            self.Divine_Spirit_utility,
+            self.Signet_of_Rejuvenation_utility,
+            self.Signet_of_Devotion_utility,
         ]
 
     @property
