@@ -182,19 +182,20 @@ def _get_current_run_header() -> str:
     return "[H]Run Preparations_1"
 
 def _on_death(bot: "Botting"):
-    yield from bot.helpers.Multibox._resignParty()
-    yield from bot.Wait._coro_until_on_outpost()
+    # yield from bot.helpers.Multibox._resignParty()
+    # yield from bot.Wait._coro_until_on_outpost()
 
-    target_header = _get_current_run_header()
-    ConsoleLog("on_death", f"Retrying run: jumping to {target_header}")
-    bot.config.FSM.jump_to_state_by_name(target_header)
-    bot.config.FSM.resume()
+    # target_header = _get_current_run_header()
+    # ConsoleLog("on_death", f"Retrying run: jumping to {target_header}")
+    # bot.config.FSM.jump_to_state_by_name(target_header)
+    # bot.config.FSM.resume()
+    pass
 
 def OnDeath(bot: "Botting"):
     ConsoleLog("on_death", "event triggered")
-    fsm = bot.config.FSM
-    fsm.pause()
-    fsm.AddManagedCoroutine("OnDeath", lambda: _on_death(bot))
+    # fsm = bot.config.FSM
+    # fsm.pause()
+    # fsm.AddManagedCoroutine("OnDeath", lambda: _on_death(bot))
 # endregion
 
 # =============================================================================
