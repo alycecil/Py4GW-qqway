@@ -40,6 +40,7 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition imp
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.helpers.eval_profiler import EvalProfiler
 from Sources.oazix.CustomBehaviors.primitives.helpers.utility_skill_metrics import UtilitySkillMetrics
+from Sources.oazix.CustomBehaviors.skills.inventory.deposit_if_needed_utility import DepositIfNeededUtility
 from Sources.oazix.CustomBehaviors.skills.inventory.id_if_needed_utility import IdIfNeededUtility
 from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import MerchantRefillIfNeededUtility
 from Sources.oazix.CustomBehaviors.skills.inventory.salvage_if_needed_utility import SalvageIfNeededUtility
@@ -102,6 +103,7 @@ class CustomBehaviorBaseUtility():
             # INVENTORY_MANAGEMENT
             MerchantRefillIfNeededUtility(event_bus=self.event_bus, current_build=self.in_game_build),
             SalvageIfNeededUtility(event_bus=self.event_bus, current_build=self.in_game_build),
+            DepositIfNeededUtility(event_bus=self.event_bus, current_build=self.in_game_build),
             IdIfNeededUtility(event_bus=self.event_bus, current_build=self.in_game_build),
         ]
         
