@@ -30,6 +30,7 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.shatter_enchantment_utility imp
 from Sources.oazix.CustomBehaviors.skills.mesmer.shatter_hex_utility import ShatterHexUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.signet_under_keystone_utility import SignetUnderKeystoneUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.unnatural_signet_utility import UnnaturalSignetUtility
+from Sources.oazix.CustomBehaviors.skills.monk.blessed_signet_utility import Blessed_Signet_EffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.monk.castigation_signet_utility import CastigationSignetUtility
 from Sources.oazix.CustomBehaviors.skills.monk.holy_veil_utility import HolyVeilUtility
 from Sources.oazix.CustomBehaviors.skills.monk.mending_utility import MendingUtility
@@ -83,9 +84,8 @@ class MesmerKeystone_UtilitySkillBar(CustomBehaviorBaseUtility):
             score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 76 if enemy_qte >= 2 else 41 if enemy_qte <= 2 else 0),
             condition=lambda agent_id: Agent.IsAttacking(agent_id),
         )
-        self.blessed_signet_utility: CustomSkillUtilityBase = AutoCombatUtility(
+        self.blessed_signet_utility: CustomSkillUtilityBase = Blessed_Signet_EffectUpUtility(
             event_bus=self.event_bus,
-            skill=CustomSkill("Blessed_Signet"),
             current_build=in_game_build,
             score_definition=ScoreStaticDefinition(73),
         )

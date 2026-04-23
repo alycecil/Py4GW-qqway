@@ -10,6 +10,7 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base i
 from Sources.oazix.CustomBehaviors.skills.generic.auto_combat_utility import AutoCombatUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.arcane_echo_utility import ArcaneEchoUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.auspicious_incantation_utility import AuspiciousIncantationUtility
+from Sources.oazix.CustomBehaviors.skills.monk.blessed_signet_utility import Blessed_Signet_EffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.monk.spell_breaker_utility import SpellBreakerUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_lost_souls_utility import SignetOfLostSoulsUtility
 from Sources.oazix.CustomBehaviors.skills.plugins.preconditions.should_wait_for_effect import ShouldWaitForEffect
@@ -47,9 +48,8 @@ class MonkSpellBreaker_UtilitySkillBar(CustomBehaviorBaseUtility):
 
         # core skills
 
-        self.blessed_signet_utility: CustomSkillUtilityBase = AutoCombatUtility(
+        self.blessed_signet_utility: CustomSkillUtilityBase = Blessed_Signet_EffectUpUtility(
             event_bus=self.event_bus,
-            skill=CustomSkill("Blessed_Signet"),
             current_build=in_game_build,
             score_definition=ScoreStaticDefinition(73),
         )

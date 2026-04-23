@@ -14,6 +14,7 @@ from Sources.oazix.CustomBehaviors.skills.generic.auto_combat_utility import Aut
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.preparation_utility import PreparationUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_heal_utility import RawSimpleHealUtility
+from Sources.oazix.CustomBehaviors.skills.monk.blessed_signet_utility import Blessed_Signet_EffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.monk.cure_hex_utility import CureHexUtility
 from Sources.oazix.CustomBehaviors.skills.monk.dismiss_condition_utility import DismissConditionUtility
 from Sources.oazix.CustomBehaviors.skills.monk.protective_spirit_utility import ProtectiveSpiritUtility
@@ -34,9 +35,8 @@ class MonkUnyieldingAura_UtilitySkillBar(CustomBehaviorBaseUtility):
         # core skills - Unyielding Aura
         self.unyielding_aura_utility: CustomSkillUtilityBase = UnyieldingAuraUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(95))
 
-        self.blessed_signet_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(
+        self.blessed_signet_utility: CustomSkillUtilityBase = Blessed_Signet_EffectUpUtility(
             event_bus=self.event_bus,
-            skill=CustomSkill("Blessed_Signet"),
             current_build=in_game_build,
             score_definition=ScoreStaticDefinition(73),
             allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]
