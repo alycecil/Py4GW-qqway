@@ -586,6 +586,8 @@ class AutoInventoryHandler():
             if not GLOBAL_CACHE.Inventory.IsStorageOpen():
                 GLOBAL_CACHE.Inventory.OpenXunlaiWindow()
                 yield from Routines.Yield.wait(150)
+            else:
+                Console.Log("DepositMaterials", f"Chest already open", Console.MessageType.Info)
 
             yield from Routines.Yield.wait(350)
             if GLOBAL_CACHE.Inventory.IsStorageOpen():
@@ -594,9 +596,13 @@ class AutoInventoryHandler():
                 frame_id = find_deposit_all_frame_id(FRAME_ALIAS_FILE, GetAllChildFrameIDs, XUNLAI_WINDOW_HASH)
 
                 if frame_id is not None:
-                    Console.Log("DepositMaterials", f"Clicked on frame {frame_id} to Deposit All Items", Console.MessageType.Info)
+                    Console.Log("DepositMaterials", f"Clicked on frame {frame_id} to DepositAllMaterials", Console.MessageType.Info)
                     print ()
                     UIManager.FrameClick(frame_id)
+                else:
+                    Console.Log("DepositMaterials", f"{frame_id} - could not deposit materials", Console.MessageType.Info)
+        else:
+            Console.Log("DepositMaterials", f"Wrong location type", Console.MessageType.Info)
         pass
 
 #endregion
