@@ -60,6 +60,15 @@ bot = Botting(BotSettings.BOT_NAME,
             upkeep_auto_loot_active=True,
             upkeep_auto_combat_active=True,
             config_draw_path=True)
+
+properties = bot.Properties
+
+properties.Enable("pause_on_danger")
+properties.Enable("auto_combat")
+properties.Enable("auto_loot")
+properties.Disable("auto_inventory_management")
+properties.Disable("halt_on_death")
+properties.Set("movement_timeout", value=-1)
 # endregion
 
 # =============================================================================
@@ -102,11 +111,6 @@ def bot_routine(bot: Botting) -> None:
 
     # Configuration
     bot.States.AddHeader("Run Preparations") # Header 1
-
-    # Load skill bar from the build
-    def _load_build_skillbar():
-        yield from bot.config.build_handler.LoadSkillBar()
-    bot.States.AddCustomState(lambda: _load_build_skillbar(), "LoadSkillBar")
 
     for run_idx, run in enumerate(_queued_runs):
         bot.UI.PrintMessageToConsole(BotSettings.BOT_NAME, f"Starting run {run_idx + 1} - {run.run_name}.")
