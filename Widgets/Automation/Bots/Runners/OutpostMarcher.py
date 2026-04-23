@@ -339,13 +339,8 @@ def _draw_settings_debug():
         PyImGui.text(f"  {i+1}. {qr.display} (outpost={qr.outpost_id}) tries={tries}{marker}")
 
 def _draw_help():
-    PyImGui.text("Equipment")
-    PyImGui.bullet_text("+5e +20% enchant duration weapon")
-    PyImGui.bullet_text("+45hp -2dmg while enchanted shield")
-    PyImGui.bullet_text("x5 Windwalker insignias")
-    PyImGui.bullet_text("+1 head +1 Mysticism Rune")
-    PyImGui.bullet_text("Major Vigor Rune")
-    PyImGui.bullet_text("x3 Atunnement Rune")
+    PyImGui.text("This just takes your team to the locations picked")
+    PyImGui.bullet_text("it just does what it does")
     PyImGui.spacing()
     PyImGui.separator()
     PyImGui.spacing()
