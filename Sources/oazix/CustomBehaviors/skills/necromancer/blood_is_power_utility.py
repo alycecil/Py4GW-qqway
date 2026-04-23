@@ -22,7 +22,7 @@ class BloodIsPowerUtility(CustomSkillUtilityBase):
         score_definition: ScoreStaticDefinition = ScoreStaticDefinition(33),
         sacrifice_life_limit_percent: float = 0.55,
         sacrifice_life_limit_absolute: int = 175,
-        required_target_mana_lower_than_percent: float = 0.40,
+        required_target_mana_lower_than_percent: float = 0.60,
         mana_required_to_cast: int = 0,
         allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]
         ) -> None:
