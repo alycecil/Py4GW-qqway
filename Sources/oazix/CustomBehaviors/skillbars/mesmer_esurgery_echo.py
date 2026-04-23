@@ -61,7 +61,7 @@ class MesmerESurgery_Echo_UtilitySkillBar(CustomBehaviorBaseUtility):
         # aoe
         self.energy_surge_utility: CustomSkillUtilityBase = RawAoeAttackUtility(
             event_bus=self.event_bus, skill=CustomSkill("Energy_Surge"), current_build=in_game_build,
-            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte:89 if enemy_qte >= 3 else 79),
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte:81 if enemy_qte >= 3 else 79),
             allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
             mana_required_to_cast=7)
         self.overload_utility: CustomSkillUtilityBase = OverloadUtility(event_bus=self.event_bus, current_build=in_game_build)
@@ -84,14 +84,14 @@ class MesmerESurgery_Echo_UtilitySkillBar(CustomBehaviorBaseUtility):
                 event_bus=self.event_bus, 
                 skill=CustomSkill("Energy_Surge"), 
                 current_build=in_game_build, 
-                score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 90 if enemy_qte >= 3 else 80),
+                score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 91 if enemy_qte >= 3 else 88),
                 mana_required_to_cast=12),
-            arcane_echo_score_definition=ScoreStaticDefinition(84))
+            arcane_echo_score_definition=ScoreStaticDefinition(88))
         self.auspicious_incantation_utility: CustomSkillUtilityBase = AuspiciousIncantationUtility(
             event_bus=self.event_bus,
             current_build=in_game_build,
             original_skill_to_cast=self.arcane_echo_utility,
-            auspicious_score_definition=ScoreStaticDefinition(85)
+            auspicious_score_definition=ScoreStaticDefinition(89)
         )
 
         #common
