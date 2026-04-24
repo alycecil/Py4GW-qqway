@@ -66,7 +66,7 @@ class Helpers:
         delay = activation_time if activation_time > aftercast else aftercast
         if constants.DEBUG: print(f"{skill_casted.skill_name} let's wait for aftercast :{delay}ms | activation_time:{activation_time} | aftercast:{aftercast}")
 
-        yield from Helpers.wait_for(delay + 50)  # 200ms more to really avoid double-cast
+        yield from Helpers.wait_for(delay + 47)  # 200ms more to really avoid double-cast
 
     @staticmethod
     def wait_for_or_until_completion(milliseconds: int, action: Callable[[], Generator[Any, Any, BehaviorResult]]) -> Generator[Any, Any, BehaviorResult]:
@@ -380,7 +380,7 @@ class Actions:
         if after_cast_delay:
             yield from Helpers.delay_aftercast(skill)
         else:
-            yield from Helpers.wait_for(223) # just fuck off for a split second
+            yield from Helpers.wait_for(142) # just fuck off for a split second
         return BehaviorResult.ACTION_PERFORMED
 
     @staticmethod

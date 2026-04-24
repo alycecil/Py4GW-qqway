@@ -119,10 +119,10 @@ class InfuseHealthUtility(CustomSkillUtilityBase):
             return None
 
         top = targets[0]
-        if top.hp < 0.40:
-            return self.score_definition.get_score(HealingScore.MEMBER_DAMAGED_EMERGENCY)
+        if top.hp < 0.54:
+            return HealingScore.MEMBER_DAMAGED_EMERGENCY.value
         if top.hp < 0.85:
-            return self.score_definition.get_score(HealingScore.MEMBER_DAMAGED)
+            return HealingScore.MEMBER_DAMAGED.value
 
         return None
 
