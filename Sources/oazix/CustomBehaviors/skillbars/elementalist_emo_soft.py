@@ -31,7 +31,7 @@ from Sources.oazix.CustomBehaviors.skills.monk.spirit_bond_utility import Spirit
 from Sources.oazix.CustomBehaviors.skills.paragon.fall_back_utility import FallBackUtility
 from Sources.oazix.CustomBehaviors.skills.paragon.heroic_refrain_utility import HeroicRefrainUtility
 
-class ElementalistEmo_UtilitySkillBar(CustomBehaviorBaseUtility):
+class ElementalistEmo_Soft_UtilitySkillBar(CustomBehaviorBaseUtility):
 
     def __init__(self):
         super().__init__()
@@ -122,4 +122,5 @@ class ElementalistEmo_UtilitySkillBar(CustomBehaviorBaseUtility):
         return [
             self.ether_renewal_utility.custom_skill,
             self.aura_of_restoration_utility.custom_skill,
+            self.life_bond_utility.custom_skill,
         ]
