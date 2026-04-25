@@ -1,7 +1,6 @@
-from tkinter.constants import N
 from typing import Any, Generator, override
 
-from Py4GWCoreLib import GLOBAL_CACHE, Agent, Range, Player
+from Py4GWCoreLib import GLOBAL_CACHE, Agent, Range, Player, Routines
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
@@ -34,13 +33,15 @@ class IAmUnstoppableUtility(CustomSkillUtilityBase):
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
-        player_agent_id = Player.GetAgentID()
-        current_heath_percent = Agent.GetHealth(player_agent_id)
+        has_buff = Routines.Checks.Effects.HasBuff(Player.GetAgentID(), self.custom_skill.skill_id)
+        if not has_buff: return self.score_definition.get_score()
 
-        if current_heath_percent < 1: return self.score_definition.get_score()
+        buff_time_remaining = GLOBAL_CACHE.Effects.GetEffectTimeRemaining(Player.GetAgentID(), self.custom_skill.skill_id)
+        if buff_time_remaining <= 200: return self.score_definition.get_score()
+
         return None
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
-        result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
+        result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=Player.GetAgentID())
         return result
