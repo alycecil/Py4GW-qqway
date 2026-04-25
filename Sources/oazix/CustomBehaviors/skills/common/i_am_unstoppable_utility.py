@@ -43,5 +43,5 @@ class IAmUnstoppableUtility(CustomSkillUtilityBase):
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
-        result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=Player.GetAgentID())
+        result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill, False)
         return result
