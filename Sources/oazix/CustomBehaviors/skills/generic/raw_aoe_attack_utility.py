@@ -1,3 +1,4 @@
+import PyImGui
 from typing import List, Any, Generator, Callable, override
 
 from Py4GWCoreLib import GLOBAL_CACHE, Routines, Range, Agent, Player
@@ -68,9 +69,7 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
                 score_min = 20.0
 
         # is short range skill?
-        short_range = False
-        if GLOBAL_CACHE.Skill.Flags.IsTouchRange(self.custom_skill.skill_id) or GLOBAL_CACHE.Skill.Flags.IsAttack(self.custom_skill.skill_id):
-            short_range = True
+        short_range = self.is_short_range()
 
         if Agent.IsDeepWounded(target_agent_id):
             score_offset += 5.0
@@ -101,21 +100,35 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
 
         # Distance factor
         if distance < Range.Touch.value:
-            score_offset += 30 if short_range else 2.2
+            score_offset += 50 if short_range else 2.2
         elif distance < Range.Adjacent.value:
-            score_offset += 20 if short_range else 2
+            score_offset += 35 if short_range else 2
         elif distance < Range.Nearby.value:
-            score_offset += 9 if short_range else 1.5
+            score_offset += 20 if short_range else 1.5
         elif distance < Range.Area.value:
-            score_offset += 4 if short_range else 1.1
+            score_offset += 10 if short_range else 1.1
         elif distance < Range.Area.value * 2:
-            score_offset += 2 if short_range else 0.5
+            score_offset += 5 if short_range else 0.5
         elif distance < Range.Earshot.value:
             score_offset += 1 if short_range else 0.1
 
-        score: int = round(self.score_definition.get_score(target.enemy_quantity_within_range) + score_offset)
+        nearby_weight = self.score_definition.get_score(target.enemy_quantity_within_range)
+        if short_range:
+            if nearby_weight is None:
+                nearby_weight = 0
+            else:
+                nearby_weight /= 10.0
+
+        score: int = round(nearby_weight + score_offset)
 
         return max(min(score_max, score), score_min)
+
+    def is_short_range(self):
+        short_range = False
+        if (GLOBAL_CACHE.Skill.Flags.IsTouchRange(self.custom_skill.skill_id) or
+                GLOBAL_CACHE.Skill.Flags.IsAttack(self.custom_skill.skill_id)):
+            short_range = True
+        return short_range
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
 
@@ -161,3 +174,8 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
         target = enemies[0]
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
         return result
+
+    def customized_debug_ui(self, current_state: BehaviorState) -> None:
+        short_range = self.is_short_range()
+        PyImGui.bullet_text(f"short_range : {short_range}")
+        pass
