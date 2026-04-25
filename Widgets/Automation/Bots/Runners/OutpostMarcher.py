@@ -59,15 +59,18 @@ bot = Botting(BotSettings.BOT_NAME,
             upkeep_auto_inventory_management_active=True,
             upkeep_auto_loot_active=True,
             upkeep_auto_combat_active=True,
-            config_draw_path=True)
+            config_draw_path=True,
+            config_pause_on_danger=True,
+          )
 
 properties = bot.Properties
 
 properties.Enable("pause_on_danger")
 properties.Enable("auto_combat")
 properties.Enable("auto_loot")
-properties.Disable("auto_inventory_management")
+properties.Enable("auto_inventory_management")
 properties.Disable("halt_on_death")
+
 properties.Set("movement_timeout", value=-1)
 # endregion
 
