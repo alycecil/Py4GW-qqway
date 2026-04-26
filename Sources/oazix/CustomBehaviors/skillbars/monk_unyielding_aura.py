@@ -43,6 +43,7 @@ class MonkUnyieldingAura_UtilitySkillBar(CustomBehaviorBaseUtility):
         )
 
         self.patient_spirit_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Patient_Spirit"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(8))
+        self.healing_ribbon_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Healing_Ribbon"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(7))
         self.healing_burst_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Healing_Burst"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(7))
         self.Signet_of_Rejuvenation_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Signet_of_Rejuvenation"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(6))
         self.Signet_of_Devotion_utility: CustomSkillUtilityBase = RawSimpleHealUtility(event_bus=self.event_bus, skill=CustomSkill("Signet_of_Devotion"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(5))
@@ -106,6 +107,7 @@ class MonkUnyieldingAura_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.Divine_Spirit_utility,
             self.Signet_of_Rejuvenation_utility,
             self.Signet_of_Devotion_utility,
+            self.healing_ribbon_utility,
         ]
 
     @property
