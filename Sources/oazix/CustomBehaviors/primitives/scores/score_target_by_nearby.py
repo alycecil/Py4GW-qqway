@@ -15,13 +15,13 @@ class ScorePerAgentWeightedBySkillDefinition(ScoreDefinition):
                  skill: CustomSkill,
                  agents_nearby_factor: ScorePerAgentQuantityDefinition,
 
-                 ):
+                 not_hexed_factor=2.0, already_hexed_factor=1.0):
         super().__init__()
         self.callable_score: ScorePerAgentQuantityDefinition = agents_nearby_factor
         self.custom_skill = skill
 
-        self.not_hexed_factor = 2.0
-        self.already_hexed_factor = 1.0
+        self.not_hexed_factor = not_hexed_factor
+        self.already_hexed_factor = already_hexed_factor
 
         self.score_max = 55.0
         self.score_min = 0.0
@@ -78,7 +78,13 @@ class ScorePerAgentWeightedBySkillDefinition(ScoreDefinition):
             score_max, score_min, score_offset,
             short_range, target)
 
-        return max(min(score_max, score_offset), score_min)
+        return min(
+            max(
+                min(score_max, score_offset),
+                score_min
+            ),
+            89
+        )
 
     def distance_factor(
             self,
@@ -134,6 +140,7 @@ class ScorePerAgentWeightedBySkillDefinition(ScoreDefinition):
             score_max += 5.0
             score_min += 15.0
             score_offset += 3
+
         return score_max, score_min, score_offset
 
     def called_target_factor(
@@ -174,7 +181,8 @@ class ScorePerAgentWeightedBySkillDefinition(ScoreDefinition):
     ):
         if Agent.IsDeepWounded(target_agent_id):
             score_offset += 5.0
-        return score_offset
+
+        return score_max, score_min, score_offset
 
     def target_type_factor(
             self,
@@ -183,7 +191,8 @@ class ScorePerAgentWeightedBySkillDefinition(ScoreDefinition):
     ):
         if Agent.IsCaster(target_agent_id):
             score_offset += 3.0
-        return score_offset
+
+        return score_max, score_min, score_offset
 
     def hex_factor(
             self,
@@ -199,7 +208,8 @@ class ScorePerAgentWeightedBySkillDefinition(ScoreDefinition):
                 score_offset -= self.not_hexed_factor
             else:
                 score_offset += self.already_hexed_factor
-        return score_offset
+
+        return score_max, score_min, score_offset
 
     @override
     def score_definition_debug_ui(self) -> str:
