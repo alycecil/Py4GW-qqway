@@ -410,7 +410,7 @@ class RangerSkills:
         skill = CustomSkill()
         skill.SkillID = GLOBAL_CACHE.Skill.GetID("Strike_as_One")
         skill.SkillType = SkillType.Shout.value
-        skill.TargetAllegiance = Skilltarget.Self.value
+        skill.TargetAllegiance = Skilltarget.Enemy.value
         skill.Nature = SkillNature.Buff.value
         skill_data[skill.SkillID] = skill
 
