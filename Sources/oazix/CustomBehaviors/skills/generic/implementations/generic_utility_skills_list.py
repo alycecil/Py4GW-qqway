@@ -182,6 +182,42 @@ class GenericUtilitySkillsList:
             custom_agent_targeting_predicate=lambda agent_id: Agent.IsKnockedDown(agent_id) and Utils.Distance(Player.GetXY(), Agent.GetXY(agent_id)) < Range.Adjacent.value
         ))
 
+        # Ranger Things
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, skill=CustomSkill("Apply_Poison"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(25), mana_required_to_cast=15, renew_before_expiration_in_milliseconds=0,
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
+            target_self=False,
+        ))
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, skill=CustomSkill("Never_Rampage_Alone"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(80), mana_required_to_cast=15, renew_before_expiration_in_milliseconds=0,
+            allowed_states=[BehaviorState.IN_AGGRO],
+            target_self=False,
+            after_cast_delay=False,
+        ))
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, skill=CustomSkill("Call_of_Protection"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(80), mana_required_to_cast=5, renew_before_expiration_in_milliseconds=130,
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO],
+            target_self=False,
+            after_cast_delay=False,
+        ))
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, skill=CustomSkill("Call_of_Haste"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(80), mana_required_to_cast=15, renew_before_expiration_in_milliseconds=130,
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO],
+            target_self=False,
+            after_cast_delay=False,
+        ))
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, skill=CustomSkill("Predatory_Bond"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(40), mana_required_to_cast=20, renew_before_expiration_in_milliseconds=0,
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
+            target_self=False,
+            after_cast_delay=False,
+        ))
+
         # naive JUNUNDU version
         skills.append(RawSimpleAttackUtility(event_bus=event_bus, skill=CustomSkill("Junundu_Strike"), current_build=in_game_build, score_definition=ScoreStaticDefinition(65)))
         skills.append(KeepSelfEffectUpUtility(event_bus=event_bus, skill=CustomSkill("Junundu_Tunnel"), current_build=in_game_build, score_definition=ScoreStaticDefinition(67), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]))
