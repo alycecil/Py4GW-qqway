@@ -113,11 +113,10 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
             score_offset += 1 if short_range else 0.1
 
         nearby_weight = self.score_definition.get_score(target.enemy_quantity_within_range)
+        if nearby_weight is None:
+            nearby_weight = 0
         if short_range:
-            if nearby_weight is None:
-                nearby_weight = 0
-            else:
-                nearby_weight /= 10.0
+            nearby_weight /= 10.0
 
         score: int = round(nearby_weight + score_offset)
 
