@@ -19,7 +19,9 @@ class KeepSelfEffectUpUtility(CustomSkillUtilityBase):
     score_definition: ScoreStaticDefinition,
     mana_required_to_cast: int = 0,
     renew_before_expiration_in_milliseconds: int = 200,
-    allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO]
+    allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
+    after_cast_delay: bool = True,
+    target_self: bool = True,
     ) -> None:
 
         super().__init__(
@@ -32,6 +34,9 @@ class KeepSelfEffectUpUtility(CustomSkillUtilityBase):
         
         self.score_definition: ScoreStaticDefinition = score_definition
         self.renew_before_expiration_in_milliseconds: int = renew_before_expiration_in_milliseconds
+
+        self.after_cast_delay = after_cast_delay
+        self.target_self = target_self
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
@@ -46,5 +51,11 @@ class KeepSelfEffectUpUtility(CustomSkillUtilityBase):
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
-        result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=Player.GetAgentID())
+        result: BehaviorResult = BehaviorResult.ACTION_SKIPPED
+
+        if self.target_self:
+            result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=Player.GetAgentID(), after_cast_delay=self.after_cast_delay)
+        else:
+            result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill, after_cast_delay=self.after_cast_delay)
+
         return result

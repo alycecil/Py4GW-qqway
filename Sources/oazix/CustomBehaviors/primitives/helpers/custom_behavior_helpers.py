@@ -384,8 +384,8 @@ class Actions:
         return BehaviorResult.ACTION_PERFORMED
 
     @staticmethod
-    def cast_skill_to_target(skill: CustomSkill, target_agent_id: int, call_target: bool = False) -> Generator[Any, Any, BehaviorResult]:
-        return (yield from Actions.cast_skill_to_lambda(skill, select_target=lambda: target_agent_id, call_target=call_target))
+    def cast_skill_to_target(skill: CustomSkill, target_agent_id: int, call_target: bool = False, after_cast_delay: bool = True) -> Generator[Any, Any, BehaviorResult]:
+        return (yield from Actions.cast_skill_to_lambda(skill, select_target=lambda: target_agent_id, call_target=call_target, after_cast_delay=after_cast_delay))
 
     @staticmethod
     def cast_skill(skill: CustomSkill, after_cast_delay: bool = True) -> Generator[Any, Any, BehaviorResult]:
