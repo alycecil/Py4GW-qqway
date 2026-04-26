@@ -1,7 +1,7 @@
 import PyImGui
 from typing import List, Any, Generator, Callable, override
 
-from Py4GWCoreLib import GLOBAL_CACHE, Routines, Range, Agent, Player
+from Py4GWCoreLib import GLOBAL_CACHE, Routines, Range, Agent, Player, traceback
 from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
@@ -11,6 +11,8 @@ from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import Beh
 from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
+from Sources.oazix.CustomBehaviors.primitives.scores.score_target_by_nearby import \
+    ScorePerAgentWeightedBySkillDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 
@@ -36,98 +38,20 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
             allowed_states=allowed_states)
         
         self.score_definition: ScorePerAgentQuantityDefinition = score_definition
+        self.target_score: ScorePerAgentWeightedBySkillDefinition = ScorePerAgentWeightedBySkillDefinition(
+            skill=skill,
+            agents_nearby_factor=score_definition,
+        )
         self.within_range = within_range
         self.ignore_spirits = ignore_spirits
         self.custom_agent_targeting_predicate: Callable[[int], bool] | None = custom_agent_targeting_predicate
 
     def _get_target_score(self, target: custom_behavior_helpers.SortableAgentData) -> float:
-        score_max = 55.0
-        score_min = 0.0
-        score_offset = 0.0
-        target_agent_id = target.agent_id
-
-        agent_xy = Agent.GetXY(target_agent_id)
-        player_xy = Player.GetXY()
-        distance = Utils.Distance(agent_xy, player_xy)
-
-        # Called target more important
-        party_target_id = Routines.Party.GetPartyTargetID()
-        if party_target_id == target_agent_id:
-            score_max = 90.0
-            score_offset += 45.0
-            score_min = 40.0
-        else:
-            called_target_xy = Agent.GetXY(party_target_id)
-            distance_called_target = Utils.Distance(agent_xy, called_target_xy)
-            target_range = GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id)
-            if target_range is None:
-                target_range = Range.Touch.value
-
-            if distance_called_target < target_range:
-                score_max = 85.0
-                score_offset += 25.0
-                score_min = 20.0
-
-        # is short range skill?
-        short_range = self.is_short_range()
-
-        if Agent.IsDeepWounded(target_agent_id):
-            score_offset += 5.0
-
-        if not Agent.IsHexed(target_agent_id):
-            score_offset = -2.0
-        else:
-            score_offset += 1.0
-
-        if Agent.IsCaster(target_agent_id):
-            score_offset += 3.0
-
-        # Health factor
-        health = Agent.GetHealth(target_agent_id)
-
-        if health < .15:
-            score_max = 75.0
-            score_min = 0.0
-            score_offset += 6
-        elif health < .5:
-            score_max = 80.0
-            score_min = 20.0
-            score_offset += 5
-        elif health < .75:
-            score_max = 75.0
-            score_min = 20.0
-            score_offset += 3
-
-        # Distance factor
-        if distance < Range.Touch.value:
-            score_offset += 50 if short_range else 2.2
-        elif distance < Range.Adjacent.value:
-            score_offset += 35 if short_range else 2
-        elif distance < Range.Nearby.value:
-            score_offset += 20 if short_range else 1.5
-        elif distance < Range.Area.value:
-            score_offset += 10 if short_range else 1.1
-        elif distance < Range.Area.value * 2:
-            score_offset += 5 if short_range else 0.5
-        elif distance < Range.Earshot.value:
-            score_offset += 1 if short_range else 0.1
-
-        nearby_weight = self.score_definition.get_score(target.enemy_quantity_within_range)
-        if nearby_weight is None:
-            nearby_weight = 0
-        if short_range:
-            nearby_weight /= 10.0
-
-        score: int = round(nearby_weight + score_offset)
-
-        return max(min(score_max, score), score_min)
-
-    def is_short_range(self):
-        short_range = False
-        if (GLOBAL_CACHE.Skill.Flags.IsTouchRange(self.custom_skill.skill_id) or
-                GLOBAL_CACHE.Skill.Flags.IsAttack(self.custom_skill.skill_id)):
-            short_range = True
-        return short_range
+        try:
+            return self.target_score.get_score(target)
+        except Exception as e:
+            print(f"failed to score for target {e}:{traceback.format_exc()}")
+            return 10
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
 
@@ -175,6 +99,5 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
         return result
 
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
-        short_range = self.is_short_range()
-        PyImGui.bullet_text(f"short_range : {short_range}")
+        PyImGui.bullet_text(f"{self.target_score.score_definition_debug_ui()}")
         pass
