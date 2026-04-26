@@ -12,7 +12,6 @@ from Sources.oazix.CustomBehaviors.skills.common.finish_him_utility import Finis
 from Sources.oazix.CustomBehaviors.skills.common.i_am_unstoppable_utility import IAmUnstoppableUtility
 from Sources.oazix.CustomBehaviors.skills.dervich.dervich_enchantment_utility import DervichEnchantmentUtility
 from Sources.oazix.CustomBehaviors.skills.dervich.eremites_attack_utility import EremitesAttack_Utility
-from Sources.oazix.CustomBehaviors.skills.dervich.scythe_requiring_enchantment_utility import ScytheRequiringEnchantmentUtility
 from Sources.oazix.CustomBehaviors.skills.dervich.twin_moon_sweep_utility import TwinMoonSweep_Utility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_combot_attack_utility import RawCombotAttackUtility

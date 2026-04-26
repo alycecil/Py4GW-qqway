@@ -15,7 +15,6 @@ from Sources.oazix.CustomBehaviors.skills.common.breath_of_the_great_dwarf_utili
 from Sources.oazix.CustomBehaviors.skills.common.by_urals_hammer_utility import ByUralsHammerUtility
 from Sources.oazix.CustomBehaviors.skills.common.finish_him_utility import FinishHimUtility
 from Sources.oazix.CustomBehaviors.skills.common.i_am_unstoppable_utility import IAmUnstoppableUtility
-from Sources.oazix.CustomBehaviors.skills.dervich.scythe_requiring_enchantment_utility import ScytheRequiringEnchantmentUtility
 from Sources.oazix.CustomBehaviors.skills.generic.generic_resurrection_utility import GenericResurrectionUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.preparation_utility import PreparationUtility
