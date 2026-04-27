@@ -47,8 +47,13 @@ class DestructiveWasGlaiveUtility(CustomSkillUtilityBase):
             within_range=Range.Earshot,
             # condition=lambda agent_id: Agent.IsHexed(agent_id) or Agent.IsConditioned(agent_id),
             sort_key=(TargetingOrder.DISTANCE_ASC, TargetingOrder.HP_ASC),
-            range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id))
+            range_to_count_enemies=self.aoe_range()
+        )
         return targets
+
+    def aoe_range(self):
+        # return GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id)
+        return Range.Area.value
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
 
@@ -56,7 +61,8 @@ class DestructiveWasGlaiveUtility(CustomSkillUtilityBase):
             within_range=Range.Nearby,
             # condition=lambda agent_id: Agent.IsHexed(agent_id) or Agent.IsConditioned(agent_id),
             sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_ASC),
-            range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id))
+            range_to_count_enemies=self.aoe_range()
+        )
         return targets
 
     @override
