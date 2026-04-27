@@ -65,7 +65,7 @@ def send_dialog():
         default_dialog_string = "0x84"
 
 @staticmethod
-def send_dialog_for_all(dialog_string: str, dialog_id: int):
+def send_dialog_for_all(dialog_string: str, dialog_id: int, include_sender: bool = True):
     print(f"Starting sending {default_dialog_string} as {dialog_id}")
     target = Player.GetTargetID()
     if target == 0:
@@ -74,6 +74,8 @@ def send_dialog_for_all(dialog_string: str, dialog_id: int):
         sender_email = Player.GetAccountEmail()
         accounts = GLOBAL_CACHE.ShMem.GetAllAccountData()
         for account in accounts:
+            if not include_sender and sender_email == account.AccountEmail:
+                continue
             print(f"Ordering {account.AccountEmail} to send dialog {dialog_id} ({dialog_string}) to target: {target}")
             GLOBAL_CACHE.ShMem.SendMessage(sender_email, account.AccountEmail, SharedCommandType.SendDialogToTarget,
                                            (target, dialog_id, 0, 0))
