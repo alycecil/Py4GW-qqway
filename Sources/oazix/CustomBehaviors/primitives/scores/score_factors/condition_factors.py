@@ -17,7 +17,7 @@ class Condition_Factors(ScoreDefinition):
         return f"""No condition factors"""
 
 
-class condition_factor_prefer_deepwound(Condition_Factors):
+class condition_factor_prefer_omni(Condition_Factors):
     def condition_factor(
             self,
             score_max, score_min, score_offset,
@@ -25,6 +25,18 @@ class condition_factor_prefer_deepwound(Condition_Factors):
     ):
         if Agent.IsDeepWounded(target_agent_id):
             score_offset += 5.0
+
+        if Agent.IsKnockedDown(target_agent_id):
+            score_offset += 1.0
+
+        if Agent.IsBleeding(target_agent_id):
+            score_offset += 1.0
+
+        if Agent.IsPoisoned(target_agent_id):
+            score_offset += 1.0
+
+        if Agent.IsCrippled(target_agent_id):
+            score_offset += 1.001
 
         return score_max, score_min, score_offset
 
