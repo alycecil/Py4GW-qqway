@@ -55,13 +55,10 @@ class AuspiciousIncantationListUtility(CustomSkillUtilityBase):
 
     def _get_auspicious_state(self, current_state: BehaviorState) -> Tuple[AuspiciousIncantationState, CustomSkillUtilityBase|None]:
 
-        # If under Auspicious buff, priority is to cast the target skill immediately
-        if Routines.Checks.Effects.HasBuff(Player.GetAgentID(), self.custom_skill.skill_id):
-            return AuspiciousIncantationState.CAST_SKILL, None
-
         # If Auspicious and the target skill are both ready and resources/prechecks ok -> cast Auspicious first
         is_auspicious_ready = Routines.Checks.Skills.IsSkillIDReady(self.custom_skill.skill_id)
         has_energy_for_auspicious = custom_behavior_helpers.Resources.has_enough_resources(self.custom_skill)
+        effects_has_buff = Routines.Checks.Effects.HasBuff(Player.GetAgentID(), self.custom_skill.skill_id)
 
         skills_to_cast = self.get_original_skills_to_cast()
         for skill_to_cast in skills_to_cast:
@@ -70,8 +67,18 @@ class AuspiciousIncantationListUtility(CustomSkillUtilityBase):
                 has_energy_for_target = custom_behavior_helpers.Resources.has_enough_resources(skill_to_cast.custom_skill)
                 is_target_prechecks_valid = skill_to_cast.are_common_pre_checks_valid(current_state)
 
-                if is_auspicious_ready and is_target_ready and has_energy_for_auspicious and has_energy_for_target and is_target_prechecks_valid:
-                    return AuspiciousIncantationState.CAST_AUSPICIOUS, skill_to_cast
+                if (is_target_ready and
+                        has_energy_for_auspicious and
+                        has_energy_for_target and
+                        is_target_prechecks_valid
+                ):
+                    if is_auspicious_ready:
+                        return AuspiciousIncantationState.CAST_AUSPICIOUS, skill_to_cast
+
+                    # If under Auspicious buff, priority is to cast the target skill immediately
+                    if effects_has_buff:
+                        return AuspiciousIncantationState.CAST_SKILL, skill_to_cast
+
             except Exception:
                 pass
 
