@@ -96,7 +96,7 @@ class ScorePerAgentWeightedBySkillDefinition(ScoreDefinition):
 
         score_max, score_min, score_offset = self.spirit_factor.spirit_factor(
             score_max, score_min, score_offset,
-            target)
+            target.agent_id)
 
         return min(
             max(
