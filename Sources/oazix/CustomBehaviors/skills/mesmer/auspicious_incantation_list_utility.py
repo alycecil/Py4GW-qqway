@@ -48,6 +48,11 @@ class AuspiciousIncantationListUtility(CustomSkillUtilityBase):
             return False
         return True
 
+    def get_original_skills_to_cast(self):
+        def condition(x : CustomSkillUtilityBase):
+            return x is not None and x.custom_skill is not None and x.custom_skill.skill_slot != 0
+        return filter(condition, self.original_skills_to_cast)
+
     def _get_auspicious_state(self, current_state: BehaviorState) -> Tuple[AuspiciousIncantationState, CustomSkillUtilityBase|None]:
 
         # If under Auspicious buff, priority is to cast the target skill immediately
@@ -58,14 +63,17 @@ class AuspiciousIncantationListUtility(CustomSkillUtilityBase):
         is_auspicious_ready = Routines.Checks.Skills.IsSkillIDReady(self.custom_skill.skill_id)
         has_energy_for_auspicious = custom_behavior_helpers.Resources.has_enough_resources(self.custom_skill)
 
-        skills_to_cast = self.original_skills_to_cast
+        skills_to_cast = self.get_original_skills_to_cast()
         for skill_to_cast in skills_to_cast:
-            is_target_ready = Routines.Checks.Skills.IsSkillIDReady(skill_to_cast.custom_skill.skill_id)
-            has_energy_for_target = custom_behavior_helpers.Resources.has_enough_resources(skill_to_cast.custom_skill)
-            is_target_prechecks_valid = skill_to_cast.are_common_pre_checks_valid(current_state)
+            try:
+                is_target_ready = Routines.Checks.Skills.IsSkillIDReady(skill_to_cast.custom_skill.skill_id)
+                has_energy_for_target = custom_behavior_helpers.Resources.has_enough_resources(skill_to_cast.custom_skill)
+                is_target_prechecks_valid = skill_to_cast.are_common_pre_checks_valid(current_state)
 
-            if is_auspicious_ready and is_target_ready and has_energy_for_auspicious and has_energy_for_target and is_target_prechecks_valid:
-                return AuspiciousIncantationState.CAST_AUSPICIOUS, skill_to_cast
+                if is_auspicious_ready and is_target_ready and has_energy_for_auspicious and has_energy_for_target and is_target_prechecks_valid:
+                    return AuspiciousIncantationState.CAST_AUSPICIOUS, skill_to_cast
+            except Exception:
+                pass
 
         return AuspiciousIncantationState.IDLE, None
 
@@ -101,5 +109,26 @@ class AuspiciousIncantationListUtility(CustomSkillUtilityBase):
         return BehaviorResult.ACTION_SKIPPED
 
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
-        state = self._get_auspicious_state(current_state)
+        state, skill = self._get_auspicious_state(current_state)
         PyImGui.bullet_text(f"internal state : {state}")
+
+        if skill is None:
+            PyImGui.bullet_text(f"No skills available")
+        else:
+            try:
+                PyImGui.bullet_text(f"skill to use :")
+                skill.customized_debug_ui(current_state)
+            except Exception:
+                if skill.custom_skill:
+                    PyImGui.bullet_text(f"skill name : {skill.custom_skill.skill_name}")
+                else:
+                    PyImGui.bullet_text(f"skill : {skill}")
+                pass
+
+        if self.get_original_skills_to_cast():
+            for setup_skill in self.get_original_skills_to_cast():
+                try:
+                    PyImGui.bullet_text(f"""configured skill : {setup_skill.custom_skill.skill_name}""")
+                    setup_skill.customized_debug_ui(current_state)
+                except Exception:
+                    PyImGui.bullet_text(f"configured skill :: {setup_skill}")

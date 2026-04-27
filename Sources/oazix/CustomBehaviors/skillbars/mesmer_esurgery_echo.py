@@ -18,6 +18,8 @@ from Sources.oazix.CustomBehaviors.skills.generic.auto_combat_utility import Aut
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.arcane_echo_utility import ArcaneEchoUtility
+from Sources.oazix.CustomBehaviors.skills.mesmer.auspicious_incantation_list_utility import \
+    AuspiciousIncantationListUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.auspicious_incantation_utility import AuspiciousIncantationUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_frustration_utility import CryOfFrustrationUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_pain_utility import CryOfPainUtility
@@ -87,12 +89,6 @@ class MesmerESurgery_Echo_UtilitySkillBar(CustomBehaviorBaseUtility):
                 score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 91 if enemy_qte >= 3 else 88),
                 mana_required_to_cast=12),
             arcane_echo_score_definition=ScoreStaticDefinition(88))
-        self.auspicious_incantation_utility: CustomSkillUtilityBase = AuspiciousIncantationUtility(
-            event_bus=self.event_bus,
-            current_build=in_game_build,
-            original_skill_to_cast=self.arcane_echo_utility,
-            auspicious_score_definition=ScoreStaticDefinition(89)
-        )
 
         #common
         self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(event_bus=self.event_bus, score_definition=ScoreStaticDefinition(90), current_build=in_game_build, mana_required_to_cast=15)
@@ -100,6 +96,20 @@ class MesmerESurgery_Echo_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.i_am_unstopabble: CustomSkillUtilityBase = IAmUnstoppableUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(99))
         self.breath_of_the_great_dwarf_utility: CustomSkillUtilityBase = BreathOfTheGreatDwarfUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(9))
         self.by_urals_hammer_utility: CustomSkillUtilityBase = ByUralsHammerUtility(event_bus=self.event_bus, current_build=in_game_build)
+
+        self.auspicious_incantation_utility: CustomSkillUtilityBase = AuspiciousIncantationListUtility(
+            event_bus=self.event_bus,
+            current_build=in_game_build,
+            original_skills_to_cast=[
+                self.arcane_echo_utility,
+                self.ether_nightmare_lux_utility,
+                self.ether_nightmare_kurz_utility,
+                self.cry_of_pain_utility,
+                self.cry_of_frustration_utility,
+                self.ebon_vanguard_assassin_support
+            ],
+            auspicious_score_definition=ScoreStaticDefinition(89)
+        )
 
     @property
     @override
