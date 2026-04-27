@@ -11,11 +11,14 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomS
 
 class ScorePerAgentWeightedBySkillDefinition(ScoreDefinition):
 
-    def __init__(self,
-                 skill: CustomSkill,
-                 agents_nearby_factor: ScorePerAgentQuantityDefinition,
+    def __init__(
+            self,
+            skill: CustomSkill,
+            agents_nearby_factor: ScorePerAgentQuantityDefinition,
 
-                 not_hexed_factor=2.0, already_hexed_factor=1.0):
+            not_hexed_factor=2.0,
+            already_hexed_factor=1.0
+            ):
         super().__init__()
         self.callable_score: ScorePerAgentQuantityDefinition = agents_nearby_factor
         self.custom_skill = skill
@@ -77,6 +80,10 @@ class ScorePerAgentWeightedBySkillDefinition(ScoreDefinition):
         score_max, score_min, score_offset = self.in_range_factor(
             score_max, score_min, score_offset,
             short_range, target)
+
+        score_max, score_min, score_offset = self.spirit_factor(
+            score_max, score_min, score_offset,
+            target)
 
         return min(
             max(
@@ -208,6 +215,17 @@ class ScorePerAgentWeightedBySkillDefinition(ScoreDefinition):
                 score_offset -= self.not_hexed_factor
             else:
                 score_offset += self.already_hexed_factor
+
+        return score_max, score_min, score_offset
+
+    def spirit_factor(
+            self,
+            score_max, score_min, score_offset,
+            target_agent_id):
+
+        if Agent.IsSpirit(target_agent_id):
+            score_offset -= 15
+            score_max -= 25
 
         return score_max, score_min, score_offset
 
