@@ -9,8 +9,14 @@ from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
 from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.condition_factors import Condition_Factors
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.distance_factors import DistanceFactors
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.range_factors import \
+    Agents_in_Range_Simple_Factors, Agents_in_Range_Factors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
+from Sources.oazix.CustomBehaviors.primitives.scores.score_target_by_nearby import \
+    ScorePerAgentWeightedBySkillDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 
@@ -24,15 +30,24 @@ class UnnaturalSignetUtility(CustomSkillUtilityBase):
         allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO]
         ) -> None:
 
+        custom_skill = CustomSkill("Unnatural_Signet")
+
         super().__init__(
             event_bus=event_bus,
-            skill=CustomSkill("Unnatural_Signet"),
+            skill=custom_skill,
             in_game_build=current_build,
             score_definition=score_definition,
             allowed_states=allowed_states)
 
         self.score_definition: ScorePerAgentQuantityDefinition = score_definition
         self.should_fallback_if_no_target_found = bool(int(PersistenceLocator().skills.read_or_default(self.custom_skill.skill_name, "should_fallback_if_no_target_found", str(int(should_fallback_if_no_target_found)))))
+
+        self.target_score: ScorePerAgentWeightedBySkillDefinition = ScorePerAgentWeightedBySkillDefinition(
+            skill=custom_skill,
+            in_range_factor=Agents_in_Range_Simple_Factors(score_definition),
+            distance_factor=DistanceFactors(),
+            condition_factor=Condition_Factors(),
+        )
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
         
@@ -46,6 +61,13 @@ class UnnaturalSignetUtility(CustomSkillUtilityBase):
                     within_range=Range.Spellcast,
                     sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_DESC),
                     range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id))
+
+        targets.sort(key=lambda target: (
+            -self.target_score.get_score(target),
+            -target.enemy_quantity_within_range,
+            target.is_caster,
+        ))
+
         return targets
 
     @override
@@ -64,6 +86,8 @@ class UnnaturalSignetUtility(CustomSkillUtilityBase):
 
     @override
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
+        PyImGui.bullet_text(f"{self.target_score.score_definition_debug_ui()}")
+
         self.should_fallback_if_no_target_found = PyImGui.checkbox("should_fallback_if_no_target_found##should_fallback_if_no_target_found", self.should_fallback_if_no_target_found)
 
     @override

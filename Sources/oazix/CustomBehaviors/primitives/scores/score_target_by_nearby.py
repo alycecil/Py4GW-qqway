@@ -5,9 +5,18 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_definition import Sco
 from Py4GWCoreLib import GLOBAL_CACHE, Routines, Range, Agent, Player
 from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.default_score_factors import \
-    condition_factor_DefaultScoreFactors, target_type_factor_DefaultScoreFactors, \
-    called_target_factor_DefaultScoreFactors, hex_factor_DefaultScoreFactors, distance_factor_DefaultScoreFactors, \
-    in_range_factor_DefaultScoreFactors, spirit_factor_DefaultScoreFactors, health_factor_DefaultScoreFactors
+    called_target_factor_DefaultScoreFactors, spirit_factor_DefaultScoreFactors
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.distance_factors import \
+    DistanceFactors, DistanceFactors_Simple
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.hex_factors import Hex_Factors
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.health_factors import \
+    Health_Factors
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.target_type_factors import \
+    target_type_factor_DefaultScoreFactors
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.condition_factors import \
+    condition_factor_prefer_deepwound, Condition_Factors
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.range_factors import \
+    Agents_in_Range_Factors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import \
     ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
@@ -18,14 +27,14 @@ class ScorePerAgentWeightedBySkillDefinition(ScoreDefinition):
     def __init__(
             self,
             skill: CustomSkill,
-            in_range_factor: in_range_factor_DefaultScoreFactors,
-            condition_factor: condition_factor_DefaultScoreFactors = condition_factor_DefaultScoreFactors(),
+            in_range_factor: Agents_in_Range_Factors,
+            condition_factor: Condition_Factors = condition_factor_prefer_deepwound(),
             target_type_factor: target_type_factor_DefaultScoreFactors = target_type_factor_DefaultScoreFactors(),
             called_target_factor: called_target_factor_DefaultScoreFactors = called_target_factor_DefaultScoreFactors(),
-            hex_factor: hex_factor_DefaultScoreFactors = hex_factor_DefaultScoreFactors(),
+            hex_factor: Hex_Factors = Hex_Factors(),
             spirit_factor: spirit_factor_DefaultScoreFactors = spirit_factor_DefaultScoreFactors(),
-            distance_factor: distance_factor_DefaultScoreFactors = distance_factor_DefaultScoreFactors(),
-            health_factor: health_factor_DefaultScoreFactors = health_factor_DefaultScoreFactors(),
+            distance_factor: DistanceFactors = DistanceFactors_Simple(),
+            health_factor: Health_Factors = Health_Factors(),
             ):
         super().__init__()
         self.in_range_factor = in_range_factor

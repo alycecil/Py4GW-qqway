@@ -10,9 +10,18 @@ from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_hel
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
 from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.default_score_factors import \
-    in_range_factor_DefaultScoreFactors, condition_factor_DefaultScoreFactors, target_type_factor_DefaultScoreFactors, \
-    called_target_factor_DefaultScoreFactors, hex_factor_DefaultScoreFactors, spirit_factor_DefaultScoreFactors, \
-    distance_factor_DefaultScoreFactors, health_factor_DefaultScoreFactors
+    called_target_factor_DefaultScoreFactors, spirit_factor_DefaultScoreFactors
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.distance_factors import \
+    DistanceFactors
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.hex_factors import Hex_Factors
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.health_factors import \
+    Health_Factors
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.target_type_factors import \
+    target_type_factor_DefaultScoreFactors
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.condition_factors import \
+    condition_factor_prefer_deepwound
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.range_factors import \
+    Agents_in_Range_Factors, Agents_in_Range_Skill_Aware_Factors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_target_by_nearby import \
@@ -22,24 +31,24 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base i
 
 class RawAoeAttackUtility(CustomSkillUtilityBase):
     def __init__(self,
-    event_bus: EventBus,
-    skill: CustomSkill,
-    current_build: list[CustomSkill],
-    score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 66 if enemy_qte >= 3 else 51 if enemy_qte <= 2 else 26),
-    mana_required_to_cast: int = 12,
-    allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
-    within_range: Range = Range.Spellcast,
-    ignore_spirits: bool = False,
-    custom_agent_targeting_predicate: Callable[[int], bool] | None = None,
+                 event_bus: EventBus,
+                 skill: CustomSkill,
+                 current_build: list[CustomSkill],
+                 score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 66 if enemy_qte >= 3 else 51 if enemy_qte <= 2 else 26),
+                 mana_required_to_cast: int = 12,
+                 allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
+                 within_range: Range = Range.Spellcast,
+                 ignore_spirits: bool = False,
+                 custom_agent_targeting_predicate: Callable[[int], bool] | None = None,
 
-    condition_factor: condition_factor_DefaultScoreFactors = condition_factor_DefaultScoreFactors(),
-    target_type_factor: target_type_factor_DefaultScoreFactors = target_type_factor_DefaultScoreFactors(),
-    called_target_factor: called_target_factor_DefaultScoreFactors = called_target_factor_DefaultScoreFactors(),
-    hex_factor: hex_factor_DefaultScoreFactors = hex_factor_DefaultScoreFactors(),
-    spirit_factor: spirit_factor_DefaultScoreFactors = spirit_factor_DefaultScoreFactors(),
-    distance_factor: distance_factor_DefaultScoreFactors = distance_factor_DefaultScoreFactors(),
-    health_factor: health_factor_DefaultScoreFactors = health_factor_DefaultScoreFactors(),
-    ) -> None:
+                 condition_factor: condition_factor_prefer_deepwound = condition_factor_prefer_deepwound(),
+                 target_type_factor: target_type_factor_DefaultScoreFactors = target_type_factor_DefaultScoreFactors(),
+                 called_target_factor: called_target_factor_DefaultScoreFactors = called_target_factor_DefaultScoreFactors(),
+                 hex_factor: Hex_Factors = Hex_Factors(),
+                 spirit_factor: spirit_factor_DefaultScoreFactors = spirit_factor_DefaultScoreFactors(),
+                 distance_factor: DistanceFactors = DistanceFactors(),
+                 health_factor: Health_Factors = Health_Factors(),
+                 ) -> None:
 
         super().__init__(
             event_bus=event_bus,
@@ -52,7 +61,7 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
         self.score_definition: ScorePerAgentQuantityDefinition = score_definition
         self.target_score: ScorePerAgentWeightedBySkillDefinition = ScorePerAgentWeightedBySkillDefinition(
             skill=skill,
-            in_range_factor=in_range_factor_DefaultScoreFactors(score_definition),
+            in_range_factor=Agents_in_Range_Skill_Aware_Factors(score_definition),
             condition_factor=condition_factor,
             target_type_factor=target_type_factor,
             called_target_factor=called_target_factor,
