@@ -54,15 +54,15 @@ class health_factor_DefaultScoreFactors(ScoreDefinition):
         return score_max, score_min, score_offset
 
     def _health_factors(self, health, score_max, score_min, score_offset):
-        if health < .15:
+        if health <= .15:
             score_max += 7.5
             score_min += 15.0
             score_offset += 6
-        elif health < .5:
+        elif health <= .5:
             score_max += 10.0
             score_min += 17.0
             score_offset += 5
-        elif health < .75:
+        elif health <= .75:
             score_max += 5.0
             score_min += 15.0
             score_offset += 3
@@ -70,12 +70,12 @@ class health_factor_DefaultScoreFactors(ScoreDefinition):
 
     @override
     def score_definition_debug_ui(self) -> str:
-        string = ""
+        string = "Health => (max, min, score)"
 
-        for _range in [0,0.20,0.55,0.8,1]:
+        for _range in [0,0.25,0.50,0.75,1]:
             nearby = self._health_factors(_range, 0, 0, 0)
             string += f"""
-{round(_range*100)}% => {nearby} """
+    {round(_range*100)}% => {nearby} """
 
         return string
 
@@ -122,7 +122,6 @@ class called_target_factor_DefaultScoreFactors(ScoreDefinition):
 add offset for current player target and even more so if its the party target"""
 
 
-
 class hex_factor_DefaultScoreFactors(ScoreDefinition):
 
     def __init__(
@@ -154,8 +153,7 @@ class hex_factor_DefaultScoreFactors(ScoreDefinition):
 
     @override
     def score_definition_debug_ui(self) -> str:
-        return f"""
-not_hexed_factor => {self.not_hexed_factor}
+        return f"""not_hexed_factor => {self.not_hexed_factor}
 already_hexed_factor => {self.already_hexed_factor}"""
 
 
@@ -216,13 +214,13 @@ class in_range_factor_DefaultScoreFactors(ScoreDefinition):
 
     @override
     def score_definition_debug_ui(self) -> str:
-        string = ""
+        string = "Agent Count => (max, min, score) (not short range)"
 
         for _range in [0,1,2,3,5]:
             nearby = self.in_range_factor(0, 0, 0, True, _range)
             longer = self.in_range_factor(0, 0, 0, False, _range)
             string += f"""
-{_range} => {nearby} ({longer})"""
+     {_range} => {nearby} ({longer})"""
 
         return string
 
@@ -251,13 +249,13 @@ class distance_factor_DefaultScoreFactors(ScoreDefinition):
 
     @override
     def score_definition_debug_ui(self) -> str:
-        string = ""
+        string = "distance => (max, min, score) (not short range)"
 
         for _range in [Range.Touch, Range.Adjacent, Range.Nearby, Range.Area, Range.Earshot]:
             nearby = self.distance_factor(0, 0, 0, _range.value - 1, True)
             longer = self.distance_factor(0, 0, 0, _range.value - 1, False)
-            string += f"""{_range.name} => {nearby} ({longer})
-            """
+            string += f"""
+    {_range.name} => {nearby} ({longer})"""
 
         return string
 
