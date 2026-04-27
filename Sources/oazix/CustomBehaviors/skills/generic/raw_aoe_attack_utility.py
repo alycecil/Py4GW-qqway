@@ -9,6 +9,8 @@ from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
 from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.default_score_factors import \
+    in_range_factor_DefaultScoreFactors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_target_by_nearby import \
@@ -40,7 +42,7 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
         self.score_definition: ScorePerAgentQuantityDefinition = score_definition
         self.target_score: ScorePerAgentWeightedBySkillDefinition = ScorePerAgentWeightedBySkillDefinition(
             skill=skill,
-            agents_nearby_factor=score_definition,
+            in_range_factor=in_range_factor_DefaultScoreFactors(score_definition),
         )
         self.within_range = within_range
         self.ignore_spirits = ignore_spirits
