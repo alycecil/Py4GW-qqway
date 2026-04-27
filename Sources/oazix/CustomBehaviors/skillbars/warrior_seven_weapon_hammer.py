@@ -46,22 +46,6 @@ class WarriorSevenWeaponsAxe_UtilitySkillBar(CustomBehaviorBaseUtility):
             allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
         )
 
-        # AOE
-        self.whirlwind_attack_utility: CustomSkillUtilityBase = RawAoeAttackUtility(
-            event_bus=self.event_bus,
-            skill=CustomSkill("Whirlwind_Attack"),
-            current_build=in_game_build,
-            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 69 if enemy_qte >= 3 else 63 if enemy_qte == 2 else 10),
-            mana_required_to_cast=0,
-        )
-        self.crude_swing_utility: CustomSkillUtilityBase = RawAoeAttackUtility(
-            event_bus=self.event_bus,
-            skill=CustomSkill("Crude_Swing"),
-            current_build=in_game_build,
-            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 68 if enemy_qte >= 3 else 62 if enemy_qte == 2 else 10),
-            mana_required_to_cast=0,
-        )
-
         # Optional skills
         self.endure_pain_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(
             event_bus=self.event_bus,
@@ -113,8 +97,6 @@ class WarriorSevenWeaponsAxe_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.seven_weapons_stance_utility,
             self.for_great_justice_utility,
             self.endure_pain_utility,
-            self.whirlwind_attack_utility,
-            self.crude_swing_utility,
             self.yeti_smash_utility,
             self.comfort_animal_utility,
             self.call_of_protection_utility,

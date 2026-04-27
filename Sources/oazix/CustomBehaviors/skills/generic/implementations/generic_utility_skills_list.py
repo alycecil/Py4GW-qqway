@@ -181,6 +181,31 @@ class GenericUtilitySkillsList:
             score_definition=ScoreStaticDefinition(75),
             custom_agent_targeting_predicate=lambda agent_id: Agent.IsKnockedDown(agent_id) and Utils.Distance(Player.GetXY(), Agent.GetXY(agent_id)) < Range.Adjacent.value
         ))
+        # Warrior # AOE
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Whirlwind_Attack"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 69 if enemy_qte >= 3 else 63 if enemy_qte == 2 else 10),
+            mana_required_to_cast=0,
+        ))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Crude_Swing"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 68 if enemy_qte >= 3 else 62 if enemy_qte == 2 else 10),
+            mana_required_to_cast=0,
+        ))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Distracting_Blow"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 70.1 if enemy_qte >= 3 else 63.1 if enemy_qte == 2 else 50),
+            mana_required_to_cast=0,
+            custom_agent_targeting_predicate=lambda agent_id: Agent.IsCasting(agent_id),
+            within_range=Range.Nearby
+        ))
+
 
         # Ranger Things
         skills.append(KeepSelfEffectUpUtility(
