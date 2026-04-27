@@ -14,7 +14,7 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.health_factor
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.target_type_factors import \
     target_type_factor_DefaultScoreFactors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.condition_factors import \
-    condition_factor_prefer_deepwound, Condition_Factors
+    condition_factor_prefer_omni, Condition_Factors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.range_factors import \
     Agents_in_Range_Factors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import \
@@ -28,7 +28,7 @@ class ScorePerAgentWeightedBySkillDefinition(ScoreDefinition):
             self,
             skill: CustomSkill,
             in_range_factor: Agents_in_Range_Factors,
-            condition_factor: Condition_Factors = condition_factor_prefer_deepwound(),
+            condition_factor: Condition_Factors = condition_factor_prefer_omni(),
             target_type_factor: target_type_factor_DefaultScoreFactors = target_type_factor_DefaultScoreFactors(),
             called_target_factor: called_target_factor_DefaultScoreFactors = called_target_factor_DefaultScoreFactors(),
             hex_factor: Hex_Factors = Hex_Factors(),

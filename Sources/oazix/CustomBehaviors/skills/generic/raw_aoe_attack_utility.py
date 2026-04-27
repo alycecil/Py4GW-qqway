@@ -19,7 +19,7 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.health_factor
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.target_type_factors import \
     target_type_factor_DefaultScoreFactors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.condition_factors import \
-    condition_factor_prefer_deepwound
+    condition_factor_prefer_omni
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.range_factors import \
     Agents_in_Range_Factors, Agents_in_Range_Skill_Aware_Factors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
@@ -41,7 +41,7 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
                  ignore_spirits: bool = False,
                  custom_agent_targeting_predicate: Callable[[int], bool] | None = None,
 
-                 condition_factor: condition_factor_prefer_deepwound = condition_factor_prefer_deepwound(),
+                 condition_factor: condition_factor_prefer_omni = condition_factor_prefer_omni(),
                  target_type_factor: target_type_factor_DefaultScoreFactors = target_type_factor_DefaultScoreFactors(),
                  called_target_factor: called_target_factor_DefaultScoreFactors = called_target_factor_DefaultScoreFactors(),
                  hex_factor: Hex_Factors = Hex_Factors(),
