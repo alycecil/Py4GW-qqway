@@ -16,15 +16,10 @@ class ScorePerAgentWeightedBySkillDefinition(ScoreDefinition):
             skill: CustomSkill,
             agents_nearby_factor: ScorePerAgentQuantityDefinition,
 
-            not_hexed_factor=2.0,
-            already_hexed_factor=1.0
             ):
         super().__init__()
         self.callable_score: ScorePerAgentQuantityDefinition = agents_nearby_factor
         self.custom_skill = skill
-
-        self.not_hexed_factor = not_hexed_factor
-        self.already_hexed_factor = already_hexed_factor
 
         self.score_max = 55.0
         self.score_min = 0.0
@@ -205,16 +200,20 @@ class ScorePerAgentWeightedBySkillDefinition(ScoreDefinition):
             self,
             score_max, score_min, score_offset,
             custom_skill_skill_id, target_agent_id):
+
+        not_hexed_factor=2.0
+        already_hexed_factor=1.0
+
         if GLOBAL_CACHE.Skill.Flags.IsHex(custom_skill_skill_id):
             if not Agent.IsHexed(target_agent_id):
-                score_offset += self.not_hexed_factor
+                score_offset += not_hexed_factor
             else:
-                score_offset -= self.already_hexed_factor
+                score_offset -= already_hexed_factor
         else:
             if not Agent.IsHexed(target_agent_id):
-                score_offset -= self.not_hexed_factor
+                score_offset -= not_hexed_factor
             else:
-                score_offset += self.already_hexed_factor
+                score_offset += already_hexed_factor
 
         return score_max, score_min, score_offset
 
