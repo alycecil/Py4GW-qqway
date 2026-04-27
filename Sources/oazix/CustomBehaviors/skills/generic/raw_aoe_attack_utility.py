@@ -10,7 +10,9 @@ from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_hel
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
 from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.default_score_factors import \
-    in_range_factor_DefaultScoreFactors
+    in_range_factor_DefaultScoreFactors, condition_factor_DefaultScoreFactors, target_type_factor_DefaultScoreFactors, \
+    called_target_factor_DefaultScoreFactors, hex_factor_DefaultScoreFactors, spirit_factor_DefaultScoreFactors, \
+    distance_factor_DefaultScoreFactors, health_factor_DefaultScoreFactors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_target_by_nearby import \
@@ -28,7 +30,15 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
     allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
     within_range: Range = Range.Spellcast,
     ignore_spirits: bool = False,
-    custom_agent_targeting_predicate: Callable[[int], bool] | None = None
+    custom_agent_targeting_predicate: Callable[[int], bool] | None = None,
+
+    condition_factor: condition_factor_DefaultScoreFactors = condition_factor_DefaultScoreFactors(),
+    target_type_factor: target_type_factor_DefaultScoreFactors = target_type_factor_DefaultScoreFactors(),
+    called_target_factor: called_target_factor_DefaultScoreFactors = called_target_factor_DefaultScoreFactors(),
+    hex_factor: hex_factor_DefaultScoreFactors = hex_factor_DefaultScoreFactors(),
+    spirit_factor: spirit_factor_DefaultScoreFactors = spirit_factor_DefaultScoreFactors(),
+    distance_factor: distance_factor_DefaultScoreFactors = distance_factor_DefaultScoreFactors(),
+    health_factor: health_factor_DefaultScoreFactors = health_factor_DefaultScoreFactors(),
     ) -> None:
 
         super().__init__(
@@ -43,6 +53,13 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
         self.target_score: ScorePerAgentWeightedBySkillDefinition = ScorePerAgentWeightedBySkillDefinition(
             skill=skill,
             in_range_factor=in_range_factor_DefaultScoreFactors(score_definition),
+            condition_factor=condition_factor,
+            target_type_factor=target_type_factor,
+            called_target_factor=called_target_factor,
+            hex_factor=hex_factor,
+            spirit_factor=spirit_factor,
+            distance_factor=distance_factor,
+            health_factor=health_factor,
         )
         self.within_range = within_range
         self.ignore_spirits = ignore_spirits
