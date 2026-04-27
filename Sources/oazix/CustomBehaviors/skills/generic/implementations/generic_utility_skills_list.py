@@ -188,6 +188,7 @@ class GenericUtilitySkillsList:
             current_build=in_game_build,
             score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 69 if enemy_qte >= 3 else 63 if enemy_qte == 2 else 10),
             mana_required_to_cast=0,
+            ignore_spirits=True,
         ))
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
@@ -195,6 +196,7 @@ class GenericUtilitySkillsList:
             current_build=in_game_build,
             score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 68 if enemy_qte >= 3 else 62 if enemy_qte == 2 else 10),
             mana_required_to_cast=0,
+            ignore_spirits=True,
         ))
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
@@ -202,6 +204,7 @@ class GenericUtilitySkillsList:
             current_build=in_game_build,
             score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 70.1 if enemy_qte >= 3 else 63.1 if enemy_qte == 2 else 50),
             mana_required_to_cast=0,
+            ignore_spirits=True,
             custom_agent_targeting_predicate=lambda agent_id: Agent.IsCasting(agent_id),
             within_range=Range.Nearby
         ))
