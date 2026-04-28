@@ -59,10 +59,6 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
         self.inventory_utils: InventoryUtils = InventoryUtils()
 
     def map_changed(self, message: EventMessage) -> Generator[Any, Any, Any]:
-        # give us some eepy time
-        lock_key = self.generic_player_lock_key()
-        timeout_seconds: int = random.randint(5, 26)
-        CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=timeout_seconds)
 
         data: str | None = PersistenceLocator().skills.read("my_inventory_utils_config", "inventory_utils_config")
         if data is not None:

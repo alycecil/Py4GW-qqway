@@ -60,7 +60,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
             event_bus=event_bus,
             skill=CustomSkill("merchant_refill_if_needed_utility"),
             in_game_build=current_build,
-            score_definition=ScoreStaticDefinition(CommonScore.INVENTORY.value),
+            score_definition=ScoreStaticDefinition(CommonScore.INVENTORY.value - 0.0001),
             allowed_states=[BehaviorState.IDLE],
             utility_skill_typology=UtilitySkillTypology.INVENTORY,
             execution_strategy=UtilitySkillExecutionStrategy.EXECUTE_THROUGH_THE_END) # or stuck detection will make us reset each 5s...
@@ -139,7 +139,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
     def map_changed(self, message: EventMessage) -> Generator[Any, Any, Any]:
         # give us some eepy time
         lock_key = self.generic_player_lock_key()
-        timeout_seconds: int = random.randint(5, 26)
+        timeout_seconds: int = random.randint(2, 5)
         CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=timeout_seconds)
 
         data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")
@@ -351,6 +351,11 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         if constants.DEBUG: Player.ChangeTarget(target_agent_id)
         target_position : tuple[float, float] = Agent.GetXY(target_agent_id)
         if Utils.Distance(target_position, Player.GetXY()) > 150:
+            yield from Routines.Yield.Agents.ChangeTarget(target_agent_id)
+            milliseconds = random.randint(400, 1600)
+            yield from custom_behavior_helpers.Helpers.wait_for(milliseconds)
+            yield from Routines.Yield.Agents.InteractAgent(target_agent_id)
+
             milliseconds = random.randint(800, 4600)
             yield from custom_behavior_helpers.Helpers.wait_for(milliseconds)
 
@@ -366,6 +371,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
                     progress_callback=lambda progress: ConsoleLog("MerchantRefillIfNeededUtility", f"FollowPath merchant_refill_if_needed_utility: progress: {progress}", Console.MessageType.Info) if constants.DEBUG else None,
                     custom_pause_fn=lambda: False)
 
+        target_position : tuple[float, float] = Agent.GetXY(target_agent_id)
         if Utils.Distance(target_position, Player.GetXY()) <= 150:
             ConsoleLog("MerchantRefillIfNeededUtility", f"Merchant {merchant_type.name} reached.", Console.MessageType.Info)
             yield from self.interact_with_merchant(merchant_type, target_agent_id)

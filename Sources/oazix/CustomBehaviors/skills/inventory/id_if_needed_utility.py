@@ -58,11 +58,9 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
 
         self.inventory_utils: InventoryUtils = InventoryUtils()
 
+        self.clicked_recently = False
+
     def map_changed(self, message: EventMessage) -> Generator[Any, Any, Any]:
-        # give us some eepy time
-        lock_key = self.generic_player_lock_key()
-        timeout_seconds: int = random.randint(5, 26)
-        CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=timeout_seconds)
 
         data: str | None = PersistenceLocator().skills.read("my_inventory_utils_config", "inventory_utils_config")
         if data is not None:
@@ -71,6 +69,7 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
         else:
             self.inventory_utils_config: InventoryUtilsConfig = InventoryUtilsConfig()
 
+        self.clicked_recently = False
         yield
 
     def get_identifiable_items(
@@ -86,13 +85,10 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
             if Item.Rarity.IsGreen(item_id):
                 continue
 
-            is_white = Item.Rarity.IsWhite(item_id)
-
-            if is_white or Item.Usage.IsIdentified(item_id):
-                if not Item.Usage.IsIdentified(item_id):
-                    action_for_item: InventoryMode = self.get_action_for_item(item_id)
-                    if action_for_item != InventoryMode.SELL_DONT_IDENTIFY and action_for_item != InventoryMode.KEEP_DONT_IDENTIFY:
-                        my_items.append(item_id)
+            if not Item.Usage.IsIdentified(item_id):
+                action_for_item: InventoryMode = self.get_action_for_item(item_id)
+                if action_for_item != InventoryMode.SELL_DONT_IDENTIFY and action_for_item != InventoryMode.KEEP_DONT_IDENTIFY:
+                    my_items.append(item_id)
 
         return my_items
 
@@ -157,49 +153,48 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
             return BehaviorResult.ACTION_SKIPPED
 
         if constants.DEBUG: ConsoleLog("IdIfNeededUtility", "Got lock")
-        inventory_item_ids = self.get_identifiable_items()
 
-        if inventory_item_ids is None or len(inventory_item_ids) == 0:
-            if constants.DEBUG: ConsoleLog("IdIfNeededUtility", "Nothing to salvage")
+        if not self.clicked_recently:
+            yield from self.IdentifyAll()
+            self.clicked_recently = True
             yield
-            return BehaviorResult.ACTION_SKIPPED
+            return BehaviorResult.ACTION_PERFORMED
 
-        random.shuffle(inventory_item_ids)
+        elif Map.IsOutpost() or Map.IsGuildHall():
+            inventory_item_ids = self.get_identifiable_items()
 
-        if constants.DEBUG: ConsoleLog("IdIfNeededUtility",f"Salvagables: {inventory_item_ids}")
+            if inventory_item_ids is None or len(inventory_item_ids) == 0:
+                if constants.DEBUG: ConsoleLog("IdIfNeededUtility", "Nothing to salvage")
+                yield
+                return BehaviorResult.ACTION_SKIPPED
 
-        salvaged_something = False
-        id_me = []
+            random.shuffle(inventory_item_ids)
 
-        for item_id in inventory_item_ids:
+            if constants.DEBUG: ConsoleLog("IdIfNeededUtility",f"Salvagables: {inventory_item_ids}")
 
-            require_materials_confirmation = Item.Rarity.IsPurple(item_id) or Item.Rarity.IsGold(item_id)
+            identify_something = False
+            id_me = []
 
-            if require_materials_confirmation:
-                if constants.DEBUG: ConsoleLog("IdIfNeededUtility",f"I want to salvage {self.describe_item(item_id)} but it requires confirmation and I am a scaredy bot.")
-                continue
-            else:
-                salvage_kit = Inventory.GetFirstSalvageKit(use_lesser=True, model_id=ModelID.Salvage_Kit.value)
-                if salvage_kit == 0:
-                    if constants.DEBUG: ConsoleLog("IdIfNeededUtility", "No Salvage Kit found in inventory.",)
-                    break
-
-                # ActionQueueManager().AddAction("ACTION", Inventory.SalvageItem, item_id, salvage_kit)
-
-                if constants.DEBUG: ConsoleLog("IdIfNeededUtility",f"I want to salvage {self.describe_item(item_id)}")
+            for item_id in inventory_item_ids:
+                if constants.DEBUG: ConsoleLog("IdIfNeededUtility",f"I want to id {self.describe_item(item_id)}")
 
                 id_me.append(item_id)
 
-                salvaged_something = True
+                identify_something = True
                 break
 
-        if salvaged_something:
-            ConsoleLog("IdIfNeededUtility",f"Salvaging {len(inventory_item_ids)} items")
-            yield from Routines.Yield.Items.IdentifyItems(id_me, log=constants.DEBUG)
-            yield
-            return BehaviorResult.ACTION_PERFORMED
+            if identify_something:
+                ConsoleLog("IdIfNeededUtility",f"Identifying {len(inventory_item_ids)} items")
+                yield from Routines.Yield.Items.IdentifyItems(id_me, log=constants.DEBUG)
+                yield
+                return BehaviorResult.ACTION_PERFORMED
+            else:
+                ConsoleLog("IdIfNeededUtility", "Nothing we can id")
+                yield
+                return BehaviorResult.ACTION_SKIPPED
+
         else:
-            ConsoleLog("IdIfNeededUtility", "Nothing we can salvage")
+            ConsoleLog("IdIfNeededUtility", "Nothing we can id")
             yield
             return BehaviorResult.ACTION_SKIPPED
 
@@ -254,5 +249,56 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
         name_parts.append(parsed_modifiers.summary())
 
         return "\r\n".join(name_parts)
+
+    def IdentifyAll(self):
+        from Py4GWCoreLib import Map, Console, UIManager
+        FRAME_ALIAS_FILE = ".\\Py4GWCoreLib\\frame_aliases.json"  # JSON file mapping human-readable frame labels
+
+        def GetIdentifyAllFrameId() -> int | None:
+            _frame_id = 0
+
+            try:
+                _frame_id = UIManager.GetFrameIDByCustomLabel(FRAME_ALIAS_FILE, "IntentifyAllItems")
+            except Exception:
+                return None
+
+            return None
+
+        def IsWindowOpen() -> bool:
+            from Py4GWCoreLib.enums_src.UI_enums import WindowID
+            return UIManager.IsWindowVisible(WindowID.WindowID_InventoryBags)
+
+        def OpenWindow() -> None:
+            """Open the mini map window."""
+            from Py4GWCoreLib.enums_src.UI_enums import WindowID
+            if IsWindowOpen():
+                return
+            UIManager.SetWindowVisible(WindowID.WindowID_Inventory, True)
+
+        if Map.IsOutpost():
+            from Py4GWCoreLib import Routines
+            from Py4GWCoreLib import GLOBAL_CACHE
+
+            if not IsWindowOpen():
+                OpenWindow()
+                yield from Routines.Yield.wait(150)
+            else:
+                Console.Log("IdentifyAll", f"Chest already open", Console.MessageType.Info)
+
+            yield from Routines.Yield.wait(350)
+            if  IsWindowOpen():
+                yield from Routines.Yield.wait(150)
+
+                frame_id = GetIdentifyAllFrameId()
+
+                if frame_id is not None:
+                    Console.Log("IdentifyAll", f"Clicked on frame {frame_id} to Identify All items", Console.MessageType.Info)
+                    print ()
+                    UIManager.FrameClick(frame_id)
+                else:
+                    Console.Log("IdentifyAll", f"{frame_id} - could not Identify All", Console.MessageType.Info)
+        else:
+            Console.Log("IdentifyAll", f"Wrong location type", Console.MessageType.Info)
+        pass
 
 

@@ -72,25 +72,10 @@ class DepositIfNeededUtility(CustomSkillUtilityBase):
         self.inventory_utils: InventoryUtils = InventoryUtils()
 
     def map_changed(self, message: EventMessage) -> Generator[Any, Any, Any]:
-        # give us some eepy time
-        lock_key = self.generic_player_lock_key()
-        timeout_seconds: int = random.randint(5, 26)
-
         if Map.IsGuildHall():
             self.npc_visited[MerchantType.XUNLAI_CHEST] = False
         elif Map.IsOutpost():
             self.npc_visited[MerchantType.XUNLAI_CHEST] = False
-            pass
-
-
-
-        from Py4GWCoreLib.py4gwcorelib_src.AutoInventoryHandler import AutoInventoryHandler
-        inventory_handler = AutoInventoryHandler()
-        current_state =  inventory_handler.module_active
-        inventory_handler.module_active = False
-
-        yield from inventory_handler.DepositMaterials()
-        inventory_handler.module_active = current_state
 
         yield
 
@@ -139,7 +124,7 @@ class DepositIfNeededUtility(CustomSkillUtilityBase):
             yield from inventory_handler.DepositItemsAuto()
             yield from Routines.Yield.Items.DepositGold(inventory_handler.keep_gold, log =False)
             inventory_handler.module_active = current_state
-
+            self.npc_visited[MerchantType.XUNLAI_CHEST] = True
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
