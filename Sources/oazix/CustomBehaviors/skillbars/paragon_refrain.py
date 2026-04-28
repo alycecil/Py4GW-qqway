@@ -31,9 +31,23 @@ class ParagonRefrain_UtilitySkillBar(CustomBehaviorBaseUtility):
         in_game_build = list(self.skillbar_management.get_in_game_build().values())
 
         #core
-        self.heroic_refrain_utility: CustomSkillUtilityBase = HeroicRefrainUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(50))
-        self.theyre_on_fire_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Theyre_on_Fire"), current_build=in_game_build, score_definition=ScoreStaticDefinition(80), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO])
-        self.theres_nothing_to_fear: CustomSkillUtilityBase = ProtectiveShoutUtility(event_bus=self.event_bus, skill=CustomSkill("Theres_Nothing_to_Fear"), current_build=in_game_build, allies_health_less_than_percent=0.9, allies_quantity_required=1,score_definition= ScoreStaticDefinition(90), allowed_states=[BehaviorState.IN_AGGRO])
+        self.heroic_refrain_utility: CustomSkillUtilityBase = HeroicRefrainUtility(
+            event_bus=self.event_bus, current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(20),
+        )
+        self.theyre_on_fire_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(
+            event_bus=self.event_bus, skill=CustomSkill("Theyre_on_Fire"),
+            current_build=in_game_build, score_definition=ScoreStaticDefinition(80),
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO],
+            renew_before_expiration_in_milliseconds=0,
+            after_cast_delay=False
+        )
+        self.theres_nothing_to_fear: CustomSkillUtilityBase = ProtectiveShoutUtility(
+            event_bus=self.event_bus, skill=CustomSkill("Theres_Nothing_to_Fear"),
+            current_build=in_game_build, allies_health_less_than_percent=0.9, allies_quantity_required=1,
+            score_definition= ScoreStaticDefinition(90),
+            allowed_states=[BehaviorState.IN_AGGRO]
+        )
 
         # adrenaline consumers
         self.save_yourselves_luxon: CustomSkillUtilityBase = SaveYourselvesUtility(event_bus=self.event_bus, skill=CustomSkill("Save_Yourselves_luxon"), current_build=in_game_build,score_definition=ScoreStaticDefinition(89))

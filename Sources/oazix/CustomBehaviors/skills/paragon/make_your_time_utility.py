@@ -48,6 +48,6 @@ class MakeYourTimeUtility(CustomSkillUtilityBase):
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
-        result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
+        result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill, after_cast_delay=False)
         return result
 
