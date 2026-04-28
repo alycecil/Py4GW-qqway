@@ -58,7 +58,7 @@ bot = Botting(BotSettings.BOT_NAME,
             upkeep_honeycomb_active=False,
             upkeep_auto_inventory_management_active=True,
             upkeep_auto_loot_active=True,
-            upkeep_auto_combat_active=True,
+            upkeep_hero_ai_active=True,
             config_draw_path=True,
             config_pause_on_danger=True,
           )
@@ -135,7 +135,7 @@ def bot_routine(bot: Botting) -> None:
         # bot.Multibox.KickAllAccounts()
         bot.Map.Travel(target_map_id=run.outpost_id)
         # bot.Multibox.SummonAllAccounts()
-        bot.Wait.ForTime(14000)
+        bot.Wait.ForTime(4321)
         bot.Multibox.InviteAllAccounts()
         bot.Party.SetHardMode(False)
         bot.Items.Restock.WarSupplies()
