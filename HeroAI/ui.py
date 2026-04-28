@@ -2699,6 +2699,29 @@ def draw_configure_window(module_name : str, configure_window : WindowModule):
                         settings.ShowFloatingTargets = show_floating_targets
                         settings.save_settings()
 
+                    auto_call_targets = ImGui.checkbox("Auto Call Combat Targets", settings.AutoCallTargets)
+                    if auto_call_targets != settings.AutoCallTargets:
+                        settings.AutoCallTargets = auto_call_targets
+                        settings.save_settings()
+
+                    combat_range_modes = [
+                        Settings.COMBAT_RANGE_MODE_PARTY_AGGRO,
+                        Settings.COMBAT_RANGE_MODE_LEGACY,
+                    ]
+                    combat_range_labels = [Settings.COMBAT_RANGE_MODE_LABELS[mode] for mode in combat_range_modes]
+                    current_combat_range_index = combat_range_modes.index(
+                        Settings.normalize_combat_range_mode(settings.CombatRangeMode)
+                    )
+                    selected_combat_range_index = ImGui.combo(
+                        "Combat range mode",
+                        current_combat_range_index,
+                        combat_range_labels,
+                    )
+                    if selected_combat_range_index != current_combat_range_index:
+                        settings.CombatRangeMode = combat_range_modes[selected_combat_range_index]
+                        settings.save_settings()
+                    ImGui.show_tooltip("Party aggro uses leader/party-aware scan ranges. Legacy uses the old Earshot out-of-combat and Spellcast stay-alert behavior.")
+
                     show_command_panel = ImGui.checkbox("Show Global Config Panel", settings.ShowCommandPanel)
                     if show_command_panel != settings.ShowCommandPanel:
                         settings.ShowCommandPanel = show_command_panel

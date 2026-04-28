@@ -19,22 +19,25 @@ class _Upkeepers:
         self.cancel_movement_triggered = False
         self._hero_ai_pause_applied = False
         self._hero_ai_pause_snapshot = None
+        self._hero_ai_legacy_range_override_applied = False
         
     
-    def upkeep_auto_combat(self):
-        from ...Routines import Routines
-        while True:
-            #print (f"autocombat is: {self._config.upkeep.auto_combat.is_active()}")
-            if self._config.upkeep.auto_combat.is_active():
-                yield from self._config.build_handler.ProcessSkillCasting()
-            else:
-                yield from Routines.Yield.wait(250)       
-           
     def upkeep_hero_ai(self):
         from ...Routines import Routines
         from ...GlobalCache import GLOBAL_CACHE
+        from HeroAI.settings import Settings
         from Py4GW_widget_manager import get_widget_handler
         handler = get_widget_handler()
+
+        def set_botting_range_mode(active: bool) -> None:
+            if active:
+                if not self._hero_ai_legacy_range_override_applied:
+                    Settings().set_runtime_combat_range_mode_override(Settings.COMBAT_RANGE_MODE_LEGACY)
+                    self._hero_ai_legacy_range_override_applied = True
+            elif self._hero_ai_legacy_range_override_applied:
+                Settings().set_runtime_combat_range_mode_override(None)
+                self._hero_ai_legacy_range_override_applied = False
+
         while True:   
             pause_requested = bool(getattr(self._config.upkeep, "hero_ai_paused", None) and self._config.upkeep.hero_ai_paused.is_active())
 
@@ -73,11 +76,14 @@ class _Upkeepers:
                 self.cancel_movement_triggered = False
 
             if not self._config.upkeep.hero_ai.is_active():
+                set_botting_range_mode(False)
                 if handler.is_widget_enabled("HeroAI"):
                     handler.disable_widget("HeroAI")
                 yield from Routines.Yield.wait(500)
                 continue
-            
+
+            set_botting_range_mode(True)
+              
             if not (self.parent.config.pause_on_danger_fn()):
                 self.cancel_movement_triggered = False
             
@@ -92,6 +98,25 @@ class _Upkeepers:
             elif not self._config.upkeep.hero_ai.is_active() and handler.is_widget_enabled("HeroAI"):
                 handler.disable_widget("HeroAI")
             yield from Routines.Yield.wait(500)
+
+    def upkeep_build_ticker(self):
+        from ...BuildMgr import BuildMgr
+        from ...Routines import Routines
+
+        while True:
+            if not self._config.upkeep.build_ticker.is_active():
+                yield from Routines.Yield.wait(250)
+                continue
+
+            build = self._config.build_handler
+            if build is None or type(build) is BuildMgr:
+                yield from Routines.Yield.wait(250)
+                continue
+
+            try:
+                yield from build.ProcessSkillCasting()
+            except NotImplementedError:
+                yield from Routines.Yield.wait(250)
         
     def upkeep_auto_inventory_management(self):
         from ...py4gwcorelib_src.AutoInventoryHandler import AutoInventoryHandler
