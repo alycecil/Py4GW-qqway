@@ -29,6 +29,9 @@ from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_typology impo
 from Sources.oazix.CustomBehaviors.primitives.parties.party_command_contants import PartyCommandConstants
 from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_shared_memory import CustomBehaviorWidgetData, CustomBehaviorWidgetMemoryManager
 
+import traceback
+
+
 @dataclass
 class PartyData:
     account_email: str
@@ -101,8 +104,8 @@ class CustomBehaviorParty:
 
         try:
             next(self._generator_handle)
-        except StopIteration:
-            print(f"CustomBehaviorParty.act is not expected to StopIteration.")
+        except StopIteration as e2:
+            print(f"CustomBehaviorParty.act is not expected to StopIteration. : {e2} {traceback.format_exc()}")
         except Exception as e:
             print(f"CustomBehaviorParty.act is not expected to exit : {e}")
 

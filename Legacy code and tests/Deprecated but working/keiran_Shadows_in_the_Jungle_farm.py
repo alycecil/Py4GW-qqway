@@ -19,7 +19,7 @@ def _on_death(bot: "Botting"):
     bot.Properties.ApplyNow("pause_on_danger", "active", False)
     bot.Properties.ApplyNow("halt_on_death","active", True)
     bot.Properties.ApplyNow("movement_timeout","value", 15000)
-    bot.Properties.ApplyNow("auto_combat","active", False)
+    bot.Properties.ApplyNow("hero_ai","active", False)
     yield from Routines.Yield.wait(8000)
     fsm = bot.config.FSM
     fsm.jump_to_state_by_name("[H]Acquire Kieran's Bow_4") 
@@ -82,13 +82,13 @@ def AuspiciousBeginnings(bot: Botting) -> None:
         bot.Properties.Enable("pause_on_danger")
         bot.Properties.Disable("halt_on_death")
         bot.Properties.Set("movement_timeout",value=-1)
-        bot.Properties.Enable("auto_combat")
+        bot.Properties.Enable("hero_ai")
         
     def _DisableCombat(bot: Botting) -> None:
         bot.Properties.Disable("pause_on_danger")
         bot.Properties.Enable("halt_on_death")
         bot.Properties.Set("movement_timeout",value=15000)
-        bot.Properties.Disable("auto_combat")
+        bot.Properties.Disable("hero_ai")
         
         
     bot.States.AddHeader("Rise")

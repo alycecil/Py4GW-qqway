@@ -66,7 +66,7 @@ bot = Botting(BotSettings.BOT_NAME,
 properties = bot.Properties
 
 properties.Enable("pause_on_danger")
-properties.Enable("auto_combat")
+properties.Enable("hero_ai")
 properties.Enable("auto_loot")
 properties.Enable("auto_inventory_management")
 properties.Disable("halt_on_death")

@@ -7,7 +7,7 @@ def Routine(bot: Botting) -> None:
     bot.Properties.Enable("pause_on_danger")
     bot.Properties.Disable("halt_on_death")
     bot.Properties.Set("movement_timeout",value=-1)
-    #bot.Properties.Enable("auto_combat")
+    #bot.Properties.Enable("hero_ai")
     
     bot.States.AddHeader("Travel to Ratasum")
     bot.Map.Travel(target_map_id=640) #Ratasum outpost

@@ -27,14 +27,14 @@ def ConfigurePacifistEnv(bot: Botting) -> None:
     bot.Properties.Disable("pause_on_danger")
     bot.Properties.Enable("halt_on_death")
     bot.Properties.Set("movement_timeout",value=15000)
-    bot.Properties.Disable("auto_combat")
+    bot.Properties.Disable("hero_ai")
     bot.Properties.Disable("imp")
     
 def ConfigureAggressiveEnv(bot: Botting) -> None:
     bot.Properties.Enable("pause_on_danger")
     bot.Properties.Disable("halt_on_death")
     bot.Properties.Set("movement_timeout",value=-1)
-    bot.Properties.Enable("auto_combat")
+    bot.Properties.Enable("hero_ai")
     bot.Properties.Enable("imp")
     bot.Items.SpawnBonusItems()
     bot.Items.DestroyBonusItems(exclude_list = [ModelID.Igneous_Summoning_Stone.value])

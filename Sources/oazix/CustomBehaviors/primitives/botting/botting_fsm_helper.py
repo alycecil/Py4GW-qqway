@@ -95,7 +95,7 @@ class BottingFsmHelpers:
         properties.Disable("pause_on_danger") #engage in combat
         properties.Disable("halt_on_death") 
         properties.Set("movement_timeout", value=-1)
-        properties.Disable("auto_combat") #engage in combat
+        properties.Disable("hero_ai") #engage in combat
         properties.Disable("hero_ai") #hero combat     
         properties.Disable("auto_loot") #wait for loot
         properties.Disable("auto_inventory_management") #manage inventory

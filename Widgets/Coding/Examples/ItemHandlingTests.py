@@ -7,7 +7,7 @@ import Py4GW
 import PyImGui
 from PyItem import PyItem
 
-from Py4GWCoreLib import Item
+from Py4GWCoreLib import Item, ItemMod
 from Py4GWCoreLib.ImGui_src.ImGuisrc import ImGui
 from Py4GWCoreLib.ImGui_src.types import Alignment
 from Py4GWCoreLib.IniManager import IniManager
@@ -26,7 +26,6 @@ from Sources.frenkeyLib.ItemHandling.Items.item_snapshot import ItemSnapshot
 Utils.ClearSubModules("ItemHandling")
 Utils.ClearSubModules("frenkeyLib.Core")
 from Sources.frenkeyLib.Core.encoded_names import ItemName
-from Py4GWCoreLib.ItemMods import ItemMod 
 from Sources.frenkeyLib.ItemHandling.BTNodes import STORAGE_BAGS, BTNodes
 from Sources.frenkeyLib.ItemHandling.Rules.types import SalvageMode
 from Sources.frenkeyLib.ItemHandling.Items.item_collecting import ItemCollector

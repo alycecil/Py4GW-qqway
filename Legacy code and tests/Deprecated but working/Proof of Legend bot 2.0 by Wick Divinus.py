@@ -26,7 +26,7 @@ bot = Botting("Proof of Legend Bot 2.0 by Wick Divinus", MODULE_NAME, MODULE_ICO
 def _on_party_defeated(bot: Botting, step_name: str):
     """Party wiped: wait for 'Return to Outpost' widget to bring us back, then restart from the same step."""
     bot.Properties.ApplyNow("pause_on_danger", "active", False)
-    bot.Properties.ApplyNow("auto_combat", "active", False)
+    bot.Properties.ApplyNow("hero_ai", "active", False)
     while True:
         yield from Routines.Yield.wait(500)
         if not Routines.Checks.Map.MapValid():
@@ -42,7 +42,7 @@ def _on_party_defeated(bot: Botting, step_name: str):
         yield
         return
     fsm.ResetAndStartAtStep(step_name)
-    bot.Properties.ApplyNow("auto_combat", "active", True)
+    bot.Properties.ApplyNow("hero_ai", "active", True)
     bot.Templates.Aggressive()
     yield
 
