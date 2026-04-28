@@ -21,7 +21,7 @@ class HeroicRefrainUtility(CustomSkillUtilityBase):
         self,
         event_bus: EventBus,
         current_build: list[CustomSkill],
-        score_definition: ScoreStaticDefinition = ScoreStaticDefinition(50)
+        score_definition: ScoreStaticDefinition = ScoreStaticDefinition(21)
         ) -> None:
 
         super().__init__(
@@ -56,7 +56,7 @@ class HeroicRefrainUtility(CustomSkillUtilityBase):
                 within_range=Range.Spellcast.value * 1.2,
                 condition=lambda agent_id:
                     self.get_plugin_targeting_modifiers_filtering_predicate()(agent_id) 
-                    # and not custom_behavior_helpers.Resources.is_ally_under_specific_effect(agent_id, self.custom_skill.skill_id)
+                    and not custom_behavior_helpers.Resources.is_ally_under_specific_effect(agent_id, self.custom_skill.skill_id)
                     ,
                 sort_key=(TargetingOrder.DISTANCE_ASC, TargetingOrder.CASTER_THEN_MELEE),
                 range_to_count_enemies=None,

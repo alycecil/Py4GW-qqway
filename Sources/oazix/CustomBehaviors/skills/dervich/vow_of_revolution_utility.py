@@ -28,16 +28,16 @@ class Vow_of_Revolution_KeepSelfEffectUpUtility(CustomSkillUtilityBase):
             allowed_states=allowed_states)
         
         self.score_definition: ScoreStaticDefinition = score_definition
-        self.renew_before_expiration_in_milliseconds: int = 1387
+        self.renew_before_expiration_in_milliseconds: int = 2222
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
+        buff_time_remaining = GLOBAL_CACHE.Effects.GetEffectTimeRemaining(Player.GetAgentID(), self.custom_skill.skill_id)
+        if buff_time_remaining <= self.renew_before_expiration_in_milliseconds: return 10
+
         has_buff = Routines.Checks.Effects.HasBuff(Player.GetAgentID(), self.custom_skill.skill_id)
         if not has_buff: return self.score_definition.get_score()
-
-        buff_time_remaining = GLOBAL_CACHE.Effects.GetEffectTimeRemaining(Player.GetAgentID(), self.custom_skill.skill_id)
-        if buff_time_remaining <= self.renew_before_expiration_in_milliseconds: return self.score_definition.get_score()
 
         return None
 
