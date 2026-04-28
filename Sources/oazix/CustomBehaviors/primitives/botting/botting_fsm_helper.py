@@ -4,11 +4,8 @@ from typing import Any, List
 from Py4GWCoreLib import Botting, Routines
 
 from Py4GWCoreLib.enums_src.IO_enums import Key
-from Py4GWCoreLib.py4gwcorelib_src.ActionQueue import ActionQueueManager
 from Py4GWCoreLib.py4gwcorelib_src.FSM import FSM
-from Py4GWCoreLib.py4gwcorelib_src.Keystroke import Keystroke
 from Sources.oazix.CustomBehaviors.primitives.botting.botting_helpers import BottingHelpers
-from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.bus.event_message import EventMessage
 from Sources.oazix.CustomBehaviors.primitives.bus.event_type import EventType
 from Sources.oazix.CustomBehaviors.primitives.custom_behavior_loader import CustomBehaviorLoader
@@ -95,7 +92,7 @@ class BottingFsmHelpers:
         properties.Disable("pause_on_danger") #engage in combat
         properties.Disable("halt_on_death") 
         properties.Set("movement_timeout", value=-1)
-        properties.Disable("hero_ai") #engage in combat
+        properties.Disable("auto_combat") #engage in combat
         properties.Disable("hero_ai") #hero combat     
         properties.Disable("auto_loot") #wait for loot
         properties.Disable("auto_inventory_management") #manage inventory
@@ -132,15 +129,6 @@ class BottingFsmHelpers:
         event_bus.subscribe(EventType.PLAYER_CRITICAL_STUCK, BottingFsmHelpers.__wrapper_event_bus(on_player_critical_stuck) , subscriber_name=subscriber_name)
         event_bus.subscribe(EventType.PLAYER_CRITICAL_DEATH, BottingFsmHelpers.__wrapper_event_bus(on_player_critical_death), subscriber_name=subscriber_name)
         event_bus.subscribe(EventType.PARTY_DEATH, BottingFsmHelpers.__wrapper_event_bus(on_party_death), subscriber_name=subscriber_name)
-    
-    @staticmethod
-    def PauseCustomBehavior(bot: Botting):
-        instance = CustomBehaviorLoader().custom_combat_behavior
-        if instance is None: raise Exception("CustomBehavior widget is required.")
-        instance.clear_additionnal_utility_skills()
-        CustomBehaviorParty().set_party_is_combat_enabled(True)
-        CustomBehaviorParty().set_party_is_looting_enabled(True)
-        BottingFsmHelpers.__reset_botting_behavior(bot)
 
     @staticmethod
     def SetBottingBehaviorAsAggressive(bot: Botting):

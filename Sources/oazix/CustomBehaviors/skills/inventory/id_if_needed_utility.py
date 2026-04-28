@@ -15,7 +15,7 @@ from Py4GWCoreLib.enums_src.Model_enums import ModelID
 from Py4GWCoreLib.py4gwcorelib_src.ActionQueue import ActionQueueManager
 from Py4GWCoreLib.py4gwcorelib_src.Console import ConsoleLog
 from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryUtilsConfig, InventoryUtils, InventoryMode
-from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
+from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_message import EventMessage

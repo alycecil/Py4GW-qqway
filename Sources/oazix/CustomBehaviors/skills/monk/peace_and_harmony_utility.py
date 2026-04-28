@@ -13,8 +13,11 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition imp
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 
-
-class Peace_and_HarmonyUtility(CustomSkillUtilityBase):
+class PeaceAndHarmonyUtility(CustomSkillUtilityBase):
+    """
+    Peace and Harmony utility that heals and removes both a hex and a condition from an ally.
+    Targets allies that have hexes or conditions, ordered by lowest health first.
+    """
     def __init__(self,
         event_bus: EventBus,
         current_build: list[CustomSkill],
@@ -66,11 +69,13 @@ class Peace_and_HarmonyUtility(CustomSkillUtilityBase):
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
         """Get allies that are hexed, ordered by lowest health first."""
         by_priority_raw: list[custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
-            within_range=Range.Spellcast.value,
-            condition=lambda agent_id: Agent.IsHexed(agent_id) or Agent.IsConditioned(agent_id)
+            within_range=Range.Spellcast.value * 1.2,
+            condition=lambda agent_id: Agent.IsHexed(agent_id) or Agent.IsConditioned(agent_id),
+            sort_key=(TargetingOrder.HEX_PRIORITY_LEVEL_DESC, TargetingOrder.CONDITION_PRIORITY_LEVEL_DESC, )
         )
 
         by_priority_raw.sort(key=lambda target: (
+            # target.HEX_PRIORITY_LEVEL_DESC
             -self._get_target_score(target),
             -target.enemy_quantity_within_range,
             target.is_caster,
@@ -107,6 +112,7 @@ class Peace_and_HarmonyUtility(CustomSkillUtilityBase):
         lock_key = self._get_lock_key(target.agent_id)
         CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, 3) # drop
 
+        result = BehaviorResult.ACTION_SKIPPED
         try:
             result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
         finally:

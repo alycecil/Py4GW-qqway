@@ -1,5 +1,4 @@
 import math
-from tkinter.constants import N
 from typing import Any, Generator, override
 
 import PyImGui
@@ -144,7 +143,7 @@ class LootUtility(CustomSkillUtilityBase):
             yield from custom_behavior_helpers.Helpers.wait_for(100)
 
             # 2) check if loot has been looted
-            pickup_timer = ThrottledTimer(10_000)
+            pickup_timer = ThrottledTimer(7_000)
             while not pickup_timer.IsExpired():
                 loot_array = LootConfig().GetfilteredLootArray(Range.Longbow.value, multibox_loot=True)
                 if item_id not in loot_array or len(loot_array) == 0:

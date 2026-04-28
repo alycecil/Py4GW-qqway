@@ -13,7 +13,7 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition imp
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 
-class AuspiciousIncantationState(Enum):
+class AuspiciousListIncantationState(Enum):
     CAST_AUSPICIOUS = 1
     CAST_SKILL = 2
     IDLE = 3
@@ -24,7 +24,7 @@ class AuspiciousIncantationListUtility(CustomSkillUtilityBase):
                  event_bus: EventBus,
                  current_build: list[CustomSkill],
                  original_skills_to_cast: list[CustomSkillUtilityBase],
-                 auspicious_score_definition: ScoreStaticDefinition = ScoreStaticDefinition(85),
+                 score_definition: ScoreStaticDefinition = ScoreStaticDefinition(85),
                  allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]
                  ) -> None:
 
@@ -32,11 +32,11 @@ class AuspiciousIncantationListUtility(CustomSkillUtilityBase):
             event_bus=event_bus,
             skill=CustomSkill("Auspicious_Incantation"),
             in_game_build=current_build,
-            score_definition=auspicious_score_definition,
+            score_definition=score_definition,
             allowed_states=allowed_states
         )
 
-        self.auspicious_score_definition: ScoreStaticDefinition = auspicious_score_definition
+        self.auspicious_score_definition: ScoreStaticDefinition = score_definition
         self.original_skills_to_cast: list[CustomSkillUtilityBase] = original_skills_to_cast
 
     def are_common_pre_checks_valid(self, current_state: BehaviorState) -> bool:
@@ -53,7 +53,7 @@ class AuspiciousIncantationListUtility(CustomSkillUtilityBase):
             return x is not None and x.custom_skill is not None and x.custom_skill.skill_slot != 0
         return filter(condition, self.original_skills_to_cast)
 
-    def _get_auspicious_state(self, current_state: BehaviorState) -> Tuple[AuspiciousIncantationState, CustomSkillUtilityBase|None]:
+    def _get_auspicious_state(self, current_state: BehaviorState) -> Tuple[AuspiciousListIncantationState, CustomSkillUtilityBase|None]:
 
         # If Auspicious and the target skill are both ready and resources/prechecks ok -> cast Auspicious first
         is_auspicious_ready = Routines.Checks.Skills.IsSkillIDReady(self.custom_skill.skill_id)
@@ -73,27 +73,27 @@ class AuspiciousIncantationListUtility(CustomSkillUtilityBase):
                         is_target_prechecks_valid
                 ):
                     if is_auspicious_ready:
-                        return AuspiciousIncantationState.CAST_AUSPICIOUS, skill_to_cast
+                        return AuspiciousListIncantationState.CAST_AUSPICIOUS, skill_to_cast
 
                     # If under Auspicious buff, priority is to cast the target skill immediately
                     if effects_has_buff:
-                        return AuspiciousIncantationState.CAST_SKILL, skill_to_cast
+                        return AuspiciousListIncantationState.CAST_SKILL, skill_to_cast
 
             except Exception:
                 pass
 
-        return AuspiciousIncantationState.IDLE, None
+        return AuspiciousListIncantationState.IDLE, None
 
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
         state, skill = self._get_auspicious_state(current_state)
 
         match state:
-            case AuspiciousIncantationState.CAST_AUSPICIOUS:
+            case AuspiciousListIncantationState.CAST_AUSPICIOUS:
                 return self.auspicious_score_definition.get_score()
-            case AuspiciousIncantationState.CAST_SKILL:
+            case AuspiciousListIncantationState.CAST_SKILL:
                 return 95  # force immediate cast of the target skill while buff is active
-            case AuspiciousIncantationState.IDLE:
+            case AuspiciousListIncantationState.IDLE:
                 return None
         return None
 
@@ -102,16 +102,16 @@ class AuspiciousIncantationListUtility(CustomSkillUtilityBase):
         auspicious_state, original_skill_to_cast = self._get_auspicious_state(state)
 
         match auspicious_state:
-            case AuspiciousIncantationState.CAST_AUSPICIOUS:
+            case AuspiciousListIncantationState.CAST_AUSPICIOUS:
                 result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
                 return result
-            case AuspiciousIncantationState.CAST_SKILL:
+            case AuspiciousListIncantationState.CAST_SKILL:
                 if original_skill_to_cast is not None:
                     result = yield from original_skill_to_cast.execute(state)
                     return result
                 else:
                     return BehaviorResult.ACTION_SKIPPED
-            case AuspiciousIncantationState.IDLE:
+            case AuspiciousListIncantationState.IDLE:
                 return BehaviorResult.ACTION_SKIPPED
         return BehaviorResult.ACTION_SKIPPED
 

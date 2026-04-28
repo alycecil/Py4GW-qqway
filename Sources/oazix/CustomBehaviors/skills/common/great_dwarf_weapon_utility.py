@@ -1,22 +1,22 @@
-from typing import Any, Generator, override
+from typing import Any, Generator, cast, override
 import PyImGui
+from Py4GWCoreLib.AgentArray import AgentArray
 from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
 from Py4GWCoreLib.enums import Profession, Range
-from Py4GWCoreLib import Agent, Player, Routines, traceback
-from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
+from Py4GWCoreLib import Agent, Player, Routines
+from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
-from Sources.oazix.CustomBehaviors.primitives.helpers.lock_key_helper import LockKeyHelper
 from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
-from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
-from Sources.oazix.CustomBehaviors.primitives.skills.bonds.custom_buff_multiple_target import CustomBuffMultipleTarget
 from Sources.oazix.CustomBehaviors.primitives.skills.bonds.custom_buff_target_per_profession import BuffConfigurationPerProfession
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
+from Sources.oazix.CustomBehaviors.skills.plugins.options.raw_boolean_option import RawBooleanOption
 from Sources.oazix.CustomBehaviors.skills.plugins.targeting_modifiers.buff_configurator import BuffConfigurator
+from Sources.oazix.CustomBehaviors.skills.plugins.targeting_modifiers.should_target_pets_with_weapon_spell import ShouldTargetPetsWithWeaponSpell
 
 class GreatDwarfWeaponUtility(CustomSkillUtilityBase):
 
@@ -39,40 +39,32 @@ class GreatDwarfWeaponUtility(CustomSkillUtilityBase):
         self.score_definition: ScoreStaticDefinition = score_definition
 
         self.add_plugin_targetting_modifier(lambda x: BuffConfigurator(event_bus, self.custom_skill, buff_configuration_per_profession= BuffConfigurationPerProfession.BUFF_CONFIGURATION_MARTIAL))
-        self.should_target_ebon_vanguard_assassin = bool(PersistenceLocator().skills.read_or_default(self.custom_skill.skill_name, "should_target_ebon_vanguard_assassin", "0") == "1")
+        self.add_plugin_targetting_modifier(lambda x: ShouldTargetPetsWithWeaponSpell(self.custom_skill, True))
+        self.add_plugin_option(lambda x: RawBooleanOption(x.custom_skill, "should_target_ebon_vanguard_assassin", True))
+        
         self.ebon_vanguard_assassin_model_id = 5903
 
-    def _get_lock_key(self, agent_id: int) -> str:
-        return LockKeyHelper.weapon_spell(agent_id)
-
     def _get_target(self) -> int | None:
+ 
+        should_target_ebon_vanguard_assassin_option: RawBooleanOption | None = cast(RawBooleanOption | None, self.get_plugin_option("should_target_ebon_vanguard_assassin"))
 
-        if self.should_target_ebon_vanguard_assassin:
+        if should_target_ebon_vanguard_assassin_option is not None and should_target_ebon_vanguard_assassin_option.option_value:
             npc_agent_id : int = Routines.Agents.GetNearestAliveAgentByModelID(self.ebon_vanguard_assassin_model_id, Range.Spellcast.value)
             if npc_agent_id != None and npc_agent_id != 0 and not Agent.IsWeaponSpelled(npc_agent_id):
                 return npc_agent_id
         
         # Check if we have a valid target
-        target = custom_behavior_helpers.Targets.get_first_or_default_from_allies_ordered_by_priority(
+        target = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
                 within_range=Range.Spellcast.value * 1.2,
                 condition=lambda agent_id: 
-                    agent_id != Player.GetAgentID() and 
+                    agent_id != Player.GetAgentID() and
                     not Agent.IsWeaponSpelled(agent_id) and
-                    self.get_plugin_targeting_modifiers_filtering_predicate()(agent_id) and
-                    not CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(self._get_lock_key(agent_id)),
+                    self.get_plugin_targeting_modifiers_filtering_predicate_any()(agent_id),
                 sort_key=(TargetingOrder.DISTANCE_DESC, TargetingOrder.CASTER_THEN_MELEE),
                 range_to_count_enemies=None,
                 range_to_count_allies=None)
 
-        if target is not None and target > 0:
-            return target
-
-        # Fallback if no other target
-        npc_agent_id : int = Routines.Agents.GetNearestAliveAgentByModelID(self.ebon_vanguard_assassin_model_id, Range.Spellcast.value)
-        if npc_agent_id != None and npc_agent_id != 0 and not Agent.IsWeaponSpelled(npc_agent_id):
-            return npc_agent_id
-
-        return target
+        return target[0].agent_id if target else None
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
@@ -84,48 +76,5 @@ class GreatDwarfWeaponUtility(CustomSkillUtilityBase):
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
         target = self._get_target()
         if target is None: return BehaviorResult.ACTION_SKIPPED
-
-        if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(self._get_lock_key(target), 3):
-            yield
-            return BehaviorResult.ACTION_SKIPPED
-
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target)
         return result 
-
-    @override
-    def customized_debug_ui(self, current_state: BehaviorState) -> None:
-        super().customized_debug_ui(current_state)
-        ebon_vanguard_assassin_targeting = False
-        try:
-            if self.should_target_ebon_vanguard_assassin:
-                ebon_vanguard_assassin_targeting = True
-
-            from Py4GWCoreLib import PyImGui, ImGui, Color
-
-            self.should_target_ebon_vanguard_assassin = PyImGui.checkbox("should_target_ebon_vanguard_assassin##should_target_ebon_vanguard_assassin",
-                                                                         ebon_vanguard_assassin_targeting)
-        except Exception as e:
-            self.should_target_ebon_vanguard_assassin = True
-            print(f"Failed to render ebon vanguard toggle, defaulting to true {e}:{traceback.format_exc()}")
-
-    @override
-    def has_persistence(self) -> bool:
-        return True
-
-    @override
-    def persist_configuration_for_account(self):
-        super().persist_configuration_for_account()
-        PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "should_target_ebon_vanguard_assassin", "1" if self.should_target_ebon_vanguard_assassin else "0")
-        print("configuration saved for account")
-
-    @override
-    def persist_configuration_as_global(self):
-        super().persist_configuration_as_global()
-        PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "should_target_ebon_vanguard_assassin", "1" if self.should_target_ebon_vanguard_assassin else "0")
-        print("configuration saved as global")
-
-    @override
-    def delete_persisted_configuration(self):
-        super().delete_persisted_configuration()
-        PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "should_target_ebon_vanguard_assassin")
-        print("configuration deleted")

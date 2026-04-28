@@ -1,11 +1,13 @@
 from typing import Any, Generator, override
 
-from Py4GWCoreLib import Range, Agent
+from Py4GWCoreLib import Player, Range, Agent
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
 from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
+from Sources.oazix.CustomBehaviors.primitives.scores.score_boosted_definition import ScoreBoostedDefinition
+from Sources.oazix.CustomBehaviors.primitives.scores.score_per_energy_definition import ScorePerEnergyDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
@@ -13,14 +15,15 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base i
 
 class CastigationSignetUtility(CustomSkillUtilityBase):
     """
-    Castigation Signet utility - simple attack targeting an enemy that is attacking.
+    Castigation Signet utility - energy management signet targeting attacking enemies.
+    Scores high when energy is missing to prioritize energy recovery over damage.
     """
     def __init__(self,
         event_bus: EventBus,
         current_build: list[CustomSkill],
-        score_definition: ScoreStaticDefinition = ScoreStaticDefinition(60),
+        score_definition: ScorePerEnergyDefinition = ScorePerEnergyDefinition(score_nominal=60, score_boosted=75, only_cast_if_energy_below=0.85, low_mana_threshold=0.30),
         mana_required_to_cast: int = 0,
-        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO]
+        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
         ) -> None:
 
         super().__init__(
@@ -31,7 +34,7 @@ class CastigationSignetUtility(CustomSkillUtilityBase):
             mana_required_to_cast=mana_required_to_cast,
             allowed_states=allowed_states)
                 
-        self.score_definition: ScoreStaticDefinition = score_definition
+        self.score_definition: ScorePerEnergyDefinition = score_definition
 
     def _get_target(self) -> int | None:
         """Get an enemy that is attacking, ordered by distance."""
@@ -45,7 +48,9 @@ class CastigationSignetUtility(CustomSkillUtilityBase):
         
         target = self._get_target()
         if target is None: return None
+
         return self.score_definition.get_score()
+
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:

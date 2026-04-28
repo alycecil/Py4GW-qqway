@@ -1,7 +1,7 @@
 from typing import Any, Generator, override
 
 from Py4GWCoreLib import Range
-from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
+from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
@@ -39,7 +39,7 @@ class HolyVeilUtility(CustomSkillUtilityBase):
     def _get_target(self) -> int | None:
         return custom_behavior_helpers.Targets.get_first_or_default_from_allies_ordered_by_priority(
             within_range=Range.Spellcast.value * 1.2,
-            condition=lambda agent_id: self.get_plugin_targeting_modifiers_filtering_predicate()(agent_id),
+            condition=lambda agent_id: self.get_plugin_targeting_modifiers_filtering_predicate_any()(agent_id),
             sort_key=(TargetingOrder.DISTANCE_ASC,),
             range_to_count_enemies=None,
             range_to_count_allies=None,

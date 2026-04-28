@@ -3,34 +3,20 @@ from typing import override
 from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
 from Py4GWCoreLib import Agent
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
+from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
-from Sources.oazix.CustomBehaviors.primitives.scores.score_per_health_gravity_definition import ScorePerHealthGravityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_utility import CustomBehaviorBaseUtility
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
-from Sources.oazix.CustomBehaviors.skills.common.breath_of_the_great_dwarf_utility import BreathOfTheGreatDwarfUtility
-from Sources.oazix.CustomBehaviors.skills.common.by_urals_hammer_utility import ByUralsHammerUtility
 from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_wisdom_utility import EbonBattleStandardOfWisdom
 from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
-from Sources.oazix.CustomBehaviors.skills.common.i_am_unstoppable_utility import IAmUnstoppableUtility
-from Sources.oazix.CustomBehaviors.skills.generic.generic_resurrection_utility import GenericResurrectionUtility
-from Sources.oazix.CustomBehaviors.skills.generic.auto_combat_utility import AutoCombatUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.preparation_utility import PreparationUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
-from Sources.oazix.CustomBehaviors.skills.mesmer import keystone_signet_utility
-from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_frustration_utility import CryOfFrustrationUtility
-from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_pain_utility import CryOfPainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.drain_enchantment_utility import DrainEnchantmentUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.keystone_signet_utility import KeystoneSignetUtility
-from Sources.oazix.CustomBehaviors.skills.mesmer.mistrust_utility import MistrustUtility
-from Sources.oazix.CustomBehaviors.skills.mesmer.power_drain_utility import PowerDrainUtility
-from Sources.oazix.CustomBehaviors.skills.mesmer.shatter_enchantment_utility import ShatterEnchantmentUtility
-from Sources.oazix.CustomBehaviors.skills.mesmer.shatter_hex_utility import ShatterHexUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.signet_under_keystone_utility import SignetUnderKeystoneUtility
-from Sources.oazix.CustomBehaviors.skills.mesmer.unnatural_signet_utility import UnnaturalSignetUtility
-from Sources.oazix.CustomBehaviors.skills.monk.blessed_signet_utility import Blessed_Signet_EffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.monk.castigation_signet_utility import CastigationSignetUtility
 from Sources.oazix.CustomBehaviors.skills.monk.holy_veil_utility import HolyVeilUtility
 from Sources.oazix.CustomBehaviors.skills.monk.mending_utility import MendingUtility
@@ -41,8 +27,8 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.spiritual_pain_utility import S
 
 class MesmerKeystone_UtilitySkillBar(CustomBehaviorBaseUtility):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, event_bus: EventBus):
+        super().__init__(event_bus)
         in_game_build = list(self.skillbar_management.get_in_game_build().values())
 
         # core
@@ -84,11 +70,7 @@ class MesmerKeystone_UtilitySkillBar(CustomBehaviorBaseUtility):
             score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 76 if enemy_qte >= 2 else 41 if enemy_qte <= 2 else 0),
             condition=lambda agent_id: Agent.IsAttacking(agent_id),
         )
-        self.blessed_signet_utility: CustomSkillUtilityBase = Blessed_Signet_EffectUpUtility(
-            event_bus=self.event_bus,
-            current_build=in_game_build,
-            score_definition=ScoreStaticDefinition(73),
-        )
+        
         self.castigation_signet_utility: CustomSkillUtilityBase = CastigationSignetUtility(
             event_bus=self.event_bus,
             current_build=in_game_build,
@@ -144,7 +126,6 @@ class MesmerKeystone_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.unnatural_signet_utility,
             self.signet_of_disruption_utility,
             self.bane_signet_utility,
-            self.blessed_signet_utility,
             self.castigation_signet_utility,
             self.mending_utility,
             self.strength_of_honor_utility,

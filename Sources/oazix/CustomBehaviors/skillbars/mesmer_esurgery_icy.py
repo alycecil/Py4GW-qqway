@@ -2,6 +2,7 @@ from typing import override
 
 from Py4GWCoreLib.enums_src.GameData_enums import Range
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
+from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_health_gravity_definition import ScorePerHealthGravityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
@@ -37,8 +38,8 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.overload_utility import Overloa
 
 class MesmerESurgery_Icy_UtilitySkillBar(CustomBehaviorBaseUtility):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, event_bus: EventBus):
+        super().__init__(event_bus)
         in_game_build = list(self.skillbar_management.get_in_game_build().values())
 
         # interrupt
@@ -90,7 +91,7 @@ class MesmerESurgery_Icy_UtilitySkillBar(CustomBehaviorBaseUtility):
             event_bus=self.event_bus,
             current_build=in_game_build,
             original_skill_to_cast=self.deep_freeze_utility,
-            auspicious_score_definition=ScoreStaticDefinition(87)
+            score_definition=ScoreStaticDefinition(87)
         )
 
         #common

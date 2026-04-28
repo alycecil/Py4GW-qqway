@@ -13,7 +13,7 @@ from Py4GWCoreLib.Pathing import AutoPathing
 from Py4GWCoreLib.Py4GWcorelib import Utils
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
 from .inventory_utils import InventoryUtilsConfig, InventoryUtils, InventoryMode
-from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
+from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_message import EventMessage
@@ -359,7 +359,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
             milliseconds = random.randint(800, 4600)
             yield from custom_behavior_helpers.Helpers.wait_for(milliseconds)
 
-            path3d = yield from AutoPathing().get_path_to(target_position[0], target_position[1], smooth_by_los=True, margin=100.0, step_dist=322.0)
+            path3d = yield from AutoPathing().get_path_to(target_position[0], target_position[1], smooth_by_los=True, margin=100.0, step_dist=242.0)
             path2d:list[tuple[float, float]]  = [(x, y) for (x, y, *_ ) in path3d]
 
             yield from Routines.Yield.Movement.FollowPath(
@@ -367,7 +367,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
                     custom_exit_condition=lambda: Agent.IsDead(Player.GetAgentID()),
                     tolerance=150,
                     log=constants.DEBUG,
-                    timeout=45_000,
+                    timeout=15_000,
                     progress_callback=lambda progress: ConsoleLog("MerchantRefillIfNeededUtility", f"FollowPath merchant_refill_if_needed_utility: progress: {progress}", Console.MessageType.Info) if constants.DEBUG else None,
                     custom_pause_fn=lambda: False)
 

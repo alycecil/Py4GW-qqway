@@ -7,17 +7,14 @@ from Py4GWCoreLib.Py4GWcorelib import Utils
 from Py4GWCoreLib.Map import Map
 from Py4GWCoreLib.Agent import Agent
 from Py4GWCoreLib.Player import Player
-from Py4GWCoreLib.enums import SharedCommandType
 from Py4GWCoreLib.enums_src.GameData_enums import ProfessionShort, ProfessionShort_Names
-from Sources.Nikon_Scripts import Enemies
-from Sources.oazix.CustomBehaviors.PathLocator import PathLocator
+from Sources.oazix.CustomBehaviors.primitives.infrastructure.path_locator import PathLocator
 from Sources.oazix.CustomBehaviors.gui.flag_panel.flag_panel import FlagPanel
 from Sources.oazix.CustomBehaviors.gui.flag_panel.flag_custom_grid_placement import FlagCustomGridPlacement
 from Sources.oazix.CustomBehaviors.gui.flag_panel.flag_backward_grid_placement import FlagBackwardGridPlacement
 from Sources.oazix.CustomBehaviors.gui.flag_panel.flag_stacked_placement import FlagStackedPlacement
 from Sources.oazix.CustomBehaviors.gui.following_panel.following_panel import FollowingPanel
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
-from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.following_behavior_priority import FollowingBehaviorPriority
 from Sources.oazix.CustomBehaviors.primitives.custom_behavior_loader import CustomBehaviorLoader
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers, custom_behavior_helpers_party
@@ -599,15 +596,8 @@ def render():
     PyImGui.separator()
 
     if True: # custom_behavior_helpers.CustomBehaviorHelperParty.is_party_leader():
-        
-        if PyImGui.tree_node_ex("[TEAM] Management :", 0):
 
-            from Sources.oazix.CustomBehaviors.primitives.hero_ai_wrapping.hero_ai_wrapping import HeroAiWrapping
-            hero_ai = HeroAiWrapping()
-            heroai_ui_visible = hero_ai.is_heroai_ui_visible()
-            new_state = PyImGui.checkbox("Show HeroUI Panels", heroai_ui_visible)
-            if new_state != heroai_ui_visible:
-                hero_ai.change_heroai_ui_visibility(is_visible=new_state)
+        if PyImGui.tree_node_ex("[TEAM] Management :", 0):
 
             PyImGui.text(f"Default PartyLeader is {GLOBAL_CACHE.Party.GetPartyLeaderID()}")
             PyImGui.text(f"Overriden PartyLeader is {custom_behavior_helpers.CustomBehaviorHelperParty.get_party_leader_id()}")

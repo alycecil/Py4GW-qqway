@@ -1,6 +1,7 @@
 from typing import override
 
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
+from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_health_gravity_definition import ScorePerHealthGravityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
@@ -23,8 +24,8 @@ class MesmerSignetOfIllusionsSmiteSupport_UtilitySkillBar(CustomBehaviorBaseUtil
     Me/Mo Signet of Illusions Smite Support
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, event_bus: EventBus):
+        super().__init__(event_bus)
         in_game_build = list(self.skillbar_management.get_in_game_build().values())
 
         # Core: maintain Signet of Illusions.
@@ -87,7 +88,7 @@ class MesmerSignetOfIllusionsSmiteSupport_UtilitySkillBar(CustomBehaviorBaseUtil
             event_bus=self.event_bus,
             current_build=in_game_build,
             original_skill_to_cast=self.heal_party_utility,
-            auspicious_score_definition=ScoreStaticDefinition(96),
+            score_definition=ScoreStaticDefinition(96),
             allowed_states=[
                 BehaviorState.IN_AGGRO,
                 BehaviorState.CLOSE_TO_AGGRO,

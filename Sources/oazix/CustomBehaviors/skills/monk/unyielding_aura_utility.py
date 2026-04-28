@@ -2,7 +2,7 @@ from typing import Any, Generator, override
 
 from Py4GWCoreLib import GLOBAL_CACHE, CombatEvents, Routines, Range, Player, Agent
 from Py4GWCoreLib.Effect import Effects
-from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
+from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
@@ -93,10 +93,11 @@ class UnyieldingAuraUtility(CustomSkillUtilityBase):
                     self._drop_unyielding_aura()
                     # Wait a moment for the buff to be dropped
                     yield from custom_behavior_helpers.Helpers.wait_for(500)
+                    CustomBehaviorParty().get_shared_lock_manager().release_lock(self._get_lock_key(dead_allies[0].agent_id))
                     return BehaviorResult.ACTION_PERFORMED
-            finally:
+            except Exception:
                 CustomBehaviorParty().get_shared_lock_manager().release_lock(self._get_lock_key(dead_allies[0].agent_id))
-                return BehaviorResult.ACTION_PERFORMED
+                return BehaviorResult.ACTION_SKIPPED
         else:
             return BehaviorResult.ACTION_SKIPPED
         

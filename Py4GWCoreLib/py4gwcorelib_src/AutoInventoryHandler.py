@@ -508,7 +508,7 @@ class AutoInventoryHandler():
         #ConsoleLog("AutoInventoryHandler", "ID, Salvage and Deposit routine completed", Console.MessageType.Success)
 
     def action_for_item(self, item_id):
-        from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
+        from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
         from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import string_to_dict
         from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
         data: str | None = PersistenceLocator().skills.read("my_inventory_utils_config", "inventory_utils_config")

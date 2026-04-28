@@ -1,20 +1,26 @@
 import inspect
 import importlib
 import pkgutil
-from typing import Generator, Any, List
+from typing import List
 
 from Sources.oazix.CustomBehaviors.primitives import constants
+from Sources.oazix.CustomBehaviors.primitives.infrastructure.path_locator import PathLocator
 
+from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
+from Sources.oazix.CustomBehaviors.primitives.bus.stub_event_bus import StubEventBus
 from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_utility import CustomBehaviorBaseUtility
-from Sources.oazix.CustomBehaviors.skillbars import hero_ai_fallback
+from Sources.oazix.CustomBehaviors.primitives.skillbars.utility_skill_finder import UtilitySkillFinder
+from Sources.oazix.CustomBehaviors.skillbars.generic_fallback import GenericFallback_UtilitySkillBar
 
 class MatchResult:
-    def __init__(self, build_size: int, matching_count: int, instance: CustomBehaviorBaseUtility, is_matched_with_current_build: bool):
+    def __init__(self, build_size: int, matching_count: int, instance: CustomBehaviorBaseUtility, is_matched_with_current_build: bool, custom_skills_count: int, custom_skills_matching_count: int):
         self.build_size = build_size
         self.matching_count: int = matching_count
         self.matching_result = build_size - matching_count
         self.is_matched_with_current_build: bool = is_matched_with_current_build
         self.instance: CustomBehaviorBaseUtility = instance
+        self.custom_skills_count: int = custom_skills_count
+        self.custom_skills_matching_count: int = custom_skills_matching_count
 
 class CustomBehaviorLoader:
     _instance = None  # Singleton instance
@@ -50,36 +56,9 @@ class CustomBehaviorLoader:
             A list of direct subclasses of the base_class.
         """
 
-        def __is_utility_class(cls: type) -> bool:
-            """
-            Determines if a class is a utility class based on its characteristics.
-            
-            Args:
-                cls: The class to check
-                
-            Returns:
-                bool: True if the class appears to be a utility class
-            """
-            # Check if class name contains 'Utility'
-            is_named_utility = 'UtilitySkillBar' in cls.__name__
-            
-            # Check if class has a utility flag or attribute
-            has_utility_flag = getattr(cls, '_is_utility', False)
-            
-            # A class is considered a utility if:
-            # 1. It has 'Utility' in its name, or
-            # 2. It's explicitly marked as a utility class
-            return is_named_utility or has_utility_flag
-
         def __load_all_modules_in_folder(full_package_name: str):
             """
             Dynamically loads all modules in the given package.
-
-            Args:
-                full_package_name: The dot-separated name of the package (e.g., 'HeroAI.custom_combat_behavior').
-
-            Returns:
-                A list of `ModuleType` objects representing the loaded modules.
             """
             loaded_modules = []
 
@@ -93,9 +72,9 @@ class CustomBehaviorLoader:
                 try:
                     # Dynamically import the module
                     module = importlib.import_module(module_name)
-                    if constants.DEBUG: print(f"Loaded submodule: {module.__name__}")
+                    if constants.DEBUG: print(f"Loaded module: {module.__name__}")
                     loaded_modules.append(module)
-                except Exception as e:
+                except ImportError as e:
                     print(f"Failed to import module {module_name}: {e}")
 
             return loaded_modules
@@ -122,38 +101,44 @@ class CustomBehaviorLoader:
         return subclasses
 
     def __find_and_order_custom_behaviors(self) -> List[MatchResult]:
+        # Use PathLocator to get the skillbars package name
+        skillbars_package = PathLocator.get_skillbars_package_name()
 
-        subclasses: list[type] = self.__find_subclasses_in_folder(CustomBehaviorBaseUtility, "Sources.oazix.CustomBehaviors.skillbars")
+        subclasses: list[type] = self.__find_subclasses_in_folder(CustomBehaviorBaseUtility, skillbars_package)
         matches: List[MatchResult] = []
+        UtilitySkillFinder().refresh_cache() # this is required [as the loader detected a build-change, slots in skills has changed]
 
         for subclass in subclasses:
             try:
                 if constants.DEBUG: print(f"Checking subclass: {subclass.__name__} (defined in {subclass.__module__})")
-                instance: CustomBehaviorBaseUtility = subclass()
+
+                # Create temporary instance with StubEventBus ONLY for matching check
+                instance: CustomBehaviorBaseUtility = subclass(StubEventBus())
 
                 build_size = len(instance.skills_required_in_behavior)
                 if constants.DEBUG: print(f"build_size: {build_size}")
                 matching_count = instance.count_matches_between_custom_behavior_and_in_game_build()
                 if constants.DEBUG: print(f"matching_count: {matching_count}")
+                custom_skills_count = len(instance.custom_skills_in_behavior)
+                if constants.DEBUG: print(f"custom_skills_count: {custom_skills_count}")
+                custom_skills_matching_count = instance.count_custom_skills_in_behavior_matching_in_game_build()
+                if constants.DEBUG: print(f"custom_skills_matching_count: {custom_skills_matching_count}")
 
                 if matching_count == build_size:
                     if constants.DEBUG: print(f"Found custom behavior: {subclass.__name__} (defined in {subclass.__module__})")
-                    # matches.append((matching_count,instance, True))
                     is_matched_with_current_build = True if matching_count > 0 else False
-                    matches.append(MatchResult(build_size=build_size, matching_count=matching_count, instance=instance, is_matched_with_current_build=is_matched_with_current_build))
+                    matches.append(MatchResult(build_size=build_size, matching_count=matching_count, instance=instance, is_matched_with_current_build=is_matched_with_current_build, custom_skills_count=custom_skills_count, custom_skills_matching_count=custom_skills_matching_count))
                 else:
                     if constants.DEBUG: print(f"{subclass.__name__} (defined in {subclass.__module__} - Custom behavior does not match in-game build.")
-                    matches.append(MatchResult(build_size=build_size, matching_count=matching_count, instance=instance, is_matched_with_current_build=False))
+                    matches.append(MatchResult(build_size=build_size, matching_count=matching_count, instance=instance, is_matched_with_current_build=False, custom_skills_count=custom_skills_count, custom_skills_matching_count=custom_skills_matching_count))
 
             except Exception as e:
                 # if there are errors on buildign out a skill bar class load the other classes but log the errors that prevented this one from loading
                 print(f"Exception loading subclass: {e}")
                 raise e
 
-
-
-        matches = sorted(matches, key=lambda x: (x.matching_result, -x.matching_count))
-
+        # Sort by: 1) matching_result (asc), 2) matching_count (desc), 3) custom_skills_matching_count (desc)
+        matches = sorted(matches, key=lambda x: (x.matching_result, -x.matching_count, -x.custom_skills_matching_count))
         return matches
 
     # public
@@ -162,18 +147,20 @@ class CustomBehaviorLoader:
 
         if self._has_loaded:
             return False
-
-        self.__behaviors_found = self.__find_and_order_custom_behaviors()
+        
+        self.__behaviors_found: list[MatchResult] = self.__find_and_order_custom_behaviors()
         __behaviors_candidates = [behavior for behavior in self.__behaviors_found if behavior.is_matched_with_current_build]
         result: CustomBehaviorBaseUtility | None = __behaviors_candidates[0].instance if len(__behaviors_candidates) > 0 else None
 
         if result is not None:
-            if constants.DEBUG: print(f"custom behavior instance affected")
-            self.custom_combat_behavior = result
+            if constants.DEBUG: print(f"custom behavior instance {result.__class__.__name__} affected")
+            # let's recreate the instance with a real event bus
+            result_with_real_event_bus: CustomBehaviorBaseUtility | None = result.__class__(EventBus())
+            self.custom_combat_behavior = result_with_real_event_bus
             self.custom_combat_behavior.enable()
         else:
-            if constants.DEBUG: print(f"no custom behavior found, fallback to hero_ai_fallback")
-            self.custom_combat_behavior = hero_ai_fallback.HeroAiFallback_UtilitySkillBar()
+            if constants.DEBUG: print(f"no custom behavior found, fallback to generic skillbar.")
+            self.custom_combat_behavior = GenericFallback_UtilitySkillBar(EventBus())
             self.custom_combat_behavior.enable()
 
         self._has_loaded = True

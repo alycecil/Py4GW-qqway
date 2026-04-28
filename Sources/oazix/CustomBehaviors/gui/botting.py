@@ -2,45 +2,16 @@ import Py4GW
 import PyImGui
 import os
 
-from Py4GWCoreLib import Player
+from Py4GWCoreLib import ImGui, Player
 from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
 from Py4GWCoreLib.EnemyBlacklist import draw_blacklist_ui
 from Py4GWCoreLib.ImGui_src.IconsFontAwesome5 import IconsFontAwesome5
-from Py4GWCoreLib.enums_src.Multiboxing_enums import SharedCommandType
-from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
-from Sources.oazix.CustomBehaviors.PathLocator import PathLocator
+from Sources.oazix.CustomBehaviors.primitives.infrastructure.path_locator import PathLocator
 from Sources.oazix.CustomBehaviors.primitives.botting.botting_manager import BottingManager
 from Sources.oazix.CustomBehaviors.primitives.custom_behavior_loader import CustomBehaviorLoader
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
-import os
-from Py4GWCoreLib import IconsFontAwesome5, ImGui, PyImGui
-from Py4GWCoreLib.Overlay import Overlay
-
-from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
-from Py4GWCoreLib.Py4GWcorelib import Utils
-from Py4GWCoreLib.Map import Map
-from Py4GWCoreLib.Agent import Agent
-from Py4GWCoreLib.Player import Player
-from Py4GWCoreLib.enums import SharedCommandType
-from Py4GWCoreLib.enums_src.GameData_enums import ProfessionShort, ProfessionShort_Names
-from Sources.Nikon_Scripts import Enemies
-from Sources.oazix.CustomBehaviors.PathLocator import PathLocator
-from Sources.oazix.CustomBehaviors.gui.flag_panel.flag_panel import FlagPanel
-from Sources.oazix.CustomBehaviors.gui.flag_panel.flag_custom_grid_placement import FlagCustomGridPlacement
-from Sources.oazix.CustomBehaviors.gui.flag_panel.flag_backward_grid_placement import FlagBackwardGridPlacement
-from Sources.oazix.CustomBehaviors.gui.flag_panel.flag_stacked_placement import FlagStackedPlacement
-from Sources.oazix.CustomBehaviors.gui.following_panel.following_panel import FollowingPanel
-from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
-from Sources.oazix.CustomBehaviors.primitives import constants
-from Sources.oazix.CustomBehaviors.primitives.following_behavior_priority import FollowingBehaviorPriority
-from Sources.oazix.CustomBehaviors.primitives.custom_behavior_loader import CustomBehaviorLoader
-from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers, custom_behavior_helpers_party
-from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
 from Sources.oazix.CustomBehaviors.primitives.parties.party_command_contants import PartyCommandConstants
-from Sources.oazix.CustomBehaviors.primitives.parties.party_flagging_manager import PartyFlaggingManager
-from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_typology_color import UtilitySkillTypologyColor
-from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_shared_memory import CustomBehaviorWidgetMemoryManager
 
 # Global state for bot selection and control
 _selected_bot_index = 0

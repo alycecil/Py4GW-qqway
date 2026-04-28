@@ -1298,7 +1298,7 @@ class BTNodes:
             """
             from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryUtils, InventoryUtilsConfig
             inventory_utils_config: InventoryUtilsConfig = InventoryUtilsConfig()
-            from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
+            from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
             data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")
             if data is not None:
                 inventory_utils_config: InventoryUtilsConfig = string_to_dict(data)

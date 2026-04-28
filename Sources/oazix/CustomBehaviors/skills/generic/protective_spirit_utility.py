@@ -81,7 +81,7 @@ class ProtectiveSpiritUtility(CustomSkillUtilityBase):
                 associated_to_skill=self.custom_skill,
                 condition=lambda agent_id: Agent.GetHealth(agent_id) > 0.3):
             return min(max_score, self.score_definition.get_score())  # High priority if spirit doesn't exist or is low health
-            
+
         return None  # No need to cast if spirit exists and is healthy
 
     @override

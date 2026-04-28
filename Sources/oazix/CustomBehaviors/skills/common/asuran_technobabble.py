@@ -58,7 +58,7 @@ class Technobabble_Utility(CustomSkillUtilityBase):
         mult = 1.0
         if Agent.HasBossGlow(target.agent_id):
             mult = 0.50
-        if Agent.IsCasting(target.agent_id):
+        elif Agent.IsCasting(target.agent_id):
             mult += 0.50
 
         return self.score_definition.get_score() * mult

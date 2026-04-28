@@ -37,12 +37,10 @@ class SeedOfLifeUtility(CustomSkillUtilityBase):
 
         self.add_plugin_targetting_modifier(lambda x: BuffConfigurator(event_bus, self.custom_skill, buff_configuration_per_profession= BuffConfigurationPerProfession.BUFF_CONFIGURATION_ALL))
 
-    def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
-        # TODO priority the emo
-
+    def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]: 
         targets: list[custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
             within_range=Range.Spellcast.value * 1.2,
-            condition=lambda agent_id: Agent.GetHealth(agent_id) < 0.9 and self.get_plugin_targeting_modifiers_filtering_predicate()(agent_id),
+            condition=lambda agent_id: Agent.GetHealth(agent_id) < 0.9 and self.get_plugin_targeting_modifiers_filtering_predicate_any()(agent_id),
             sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC))
         return targets
 
@@ -52,10 +50,10 @@ class SeedOfLifeUtility(CustomSkillUtilityBase):
         targets = self._get_targets()
         if len(targets) == 0: return None
 
-        if targets[0].hp < 0.85:
-            return self.score_definition.get_score(HealingScore.MEMBER_DAMAGED)
         if targets[0].hp < 0.40:
             return self.score_definition.get_score(HealingScore.MEMBER_DAMAGED_EMERGENCY)
+        if targets[0].hp < 0.85:
+            return self.score_definition.get_score(HealingScore.MEMBER_DAMAGED)
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:

@@ -1,49 +1,40 @@
 from abc import abstractmethod
 from collections import deque
 import inspect
-import traceback
-from typing import List, Generator, Any, override
+from typing import Generator, Any
 import time
 
 from Py4GWCoreLib import GLOBAL_CACHE, Routines, Map, Agent, Player
-from Py4GWCoreLib.Pathing import AutoPathing
 from Py4GWCoreLib.Py4GWcorelib import ThrottledTimer, Timer
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
-from Sources.oazix.CustomBehaviors.primitives.bus.event_type import EventType
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
 from Sources.oazix.CustomBehaviors.primitives.parties.memory_cache_manager import MemoryCacheManager
-from Sources.oazix.CustomBehaviors.primitives.skillbars import utility_skill_finder
 from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_skillbar_management import CustomBehaviorSkillbarManagement
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
+from Sources.oazix.CustomBehaviors.primitives.skillbars.disabilities.condition_priority import ConditionPriority
+from Sources.oazix.CustomBehaviors.primitives.skillbars.disabilities.hex_prioritiy import HexPriority
+from Sources.oazix.CustomBehaviors.primitives.skillbars.utility_skill_finder import UtilitySkillFinder
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_execution_strategy import UtilitySkillExecutionStrategy
 from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_execution_history import UtilitySkillExecutionHistory
-from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_typology import UtilitySkillTypology
-from Sources.oazix.CustomBehaviors.skills.blessing.take_near_blessing import TakeNearBlessingUtility
 from Sources.oazix.CustomBehaviors.skills.blessing.take_near_blessing import TakeNearBlessingUtility
 from Sources.oazix.CustomBehaviors.skills.botting.move_if_stuck import MoveIfStuckUtility
 from Sources.oazix.CustomBehaviors.skills.common.auto_attack_utility import AutoAttackUtility
+from Sources.oazix.CustomBehaviors.skills.common.scroll_of_resurrection_utility import ScrollOfResurrectionUtility
 from Sources.oazix.CustomBehaviors.skills.deamon.death_detection import DeathDetectionUtility
 from Sources.oazix.CustomBehaviors.skills.deamon.map_changed import MapChangedUtility
 from Sources.oazix.CustomBehaviors.skills.deamon.stuck_detection import StuckDetectionUtility
 from Sources.oazix.CustomBehaviors.skills.following.follow_flag_utility import FollowFlagUtility
-from Sources.oazix.CustomBehaviors.skills.following.follow_party_leader_only_utility import FollowPartyLeaderOnlyUtility
-from Sources.oazix.CustomBehaviors.skills.following.follow_party_leader_new_utility import FollowPartyLeaderNewUtility
 from Sources.oazix.CustomBehaviors.skills.following.follow_party_leader_utility import FollowPartyLeaderUtility
 from Sources.oazix.CustomBehaviors.skills.following.spread_during_combat_utility import SpreadDuringCombatUtility
-from Sources.oazix.CustomBehaviors.skills.generic.auto_combat_utility import AutoCombatUtility
 from Sources.oazix.CustomBehaviors.primitives.scores.comon_score import CommonScore
-from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.helpers.eval_profiler import EvalProfiler
 from Sources.oazix.CustomBehaviors.primitives.helpers.utility_skill_metrics import UtilitySkillMetrics
-from Sources.oazix.CustomBehaviors.skills.inventory.deposit_if_needed_utility import DepositIfNeededUtility
-from Sources.oazix.CustomBehaviors.skills.inventory.id_if_needed_utility import IdIfNeededUtility
-from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import MerchantRefillIfNeededUtility
-from Sources.oazix.CustomBehaviors.skills.inventory.salvage_if_needed_utility import SalvageIfNeededUtility
+from Sources.oazix.CustomBehaviors.skills.generic.stub_utility import StubUtility
 from Sources.oazix.CustomBehaviors.skills.looting.loot_utility import LootUtility
 from Sources.oazix.CustomBehaviors.skills.looting.open_near_chest_utility import OpenNearChestUtility
 from Sources.oazix.CustomBehaviors.skills.looting.open_near_dungeon_chest_utility import OpenNearDungeonChestUtility
@@ -54,8 +45,7 @@ class CustomBehaviorBaseUtility():
     are compatible with specific game builds. Subclasses implementing this class
     should define the template and the combat behavior logic.
     """
-
-    def __init__(self):
+    def __init__(self, event_bus: EventBus): # we should really implement more & more dependency injection. stop relying on singletons everywhere...
         super().__init__()
         self._generator_handle = self._handle()
         self.__is_enabled:bool = False
@@ -72,7 +62,7 @@ class CustomBehaviorBaseUtility():
         
         self.__injected_additional_utility_skills : list[CustomSkillUtilityBase] = list[CustomSkillUtilityBase]()
 
-        self.event_bus:EventBus = EventBus()
+        self.event_bus:EventBus = event_bus
 
         self.__additional_autonomous_skills: list[CustomSkillUtilityBase] = [
             # COMBAT
@@ -84,7 +74,6 @@ class CustomBehaviorBaseUtility():
             SpreadDuringCombatUtility(event_bus=self.event_bus, current_build=self.in_game_build),
 
             # BLESSING
-            # TakeNearBlessingUtility(event_bus=self.event_bus, current_build=self.in_game_build),
             TakeNearBlessingUtility(event_bus=self.event_bus, current_build=self.in_game_build),
             
             # LOOT
@@ -101,10 +90,7 @@ class CustomBehaviorBaseUtility():
             MoveIfStuckUtility(event_bus=self.event_bus, current_build=self.in_game_build),
 
             # INVENTORY_MANAGEMENT
-            MerchantRefillIfNeededUtility(event_bus=self.event_bus, current_build=self.in_game_build),
-            SalvageIfNeededUtility(event_bus=self.event_bus, current_build=self.in_game_build),
-            DepositIfNeededUtility(event_bus=self.event_bus, current_build=self.in_game_build),
-            IdIfNeededUtility(event_bus=self.event_bus, current_build=self.in_game_build),
+            ScrollOfResurrectionUtility(event_bus=self.event_bus, current_build=self.in_game_build),
         ]
         
         self.utility_generator: Generator[Any | None, Any | None, BehaviorResult] | None = None
@@ -156,13 +142,13 @@ class CustomBehaviorBaseUtility():
 
         highest_score: tuple[CustomSkillUtilityBase, float | None] | None = self.get_highest_score()
 
-        if highest_score is  None: 
+        if highest_score is  None:
             return False
 
-        if highest_score[1] is not None: 
+        if highest_score[1] is not None:
             # any skill with positive evaluation are a condition to stop an external script
             return True
-        
+
         if self.utility_generator is not None and inspect.getgeneratorstate(self.utility_generator) != inspect.GEN_CLOSED:
             # check that we are in the middle of an execution (utility_generator is still running)
             return True
@@ -187,7 +173,16 @@ class CustomBehaviorBaseUtility():
     @property
     @abstractmethod
     def additional_autonomous_skills(self) -> list[CustomSkillUtilityBase]:
+        '''
+        can be overriden to remove additional autonomous skills.
+        for very custom builds only...
+        '''
         return self.__additional_autonomous_skills
+
+    def add_additional_autonomous_skills(self, skill:CustomSkillUtilityBase):
+        if skill in self.__additional_autonomous_skills:
+            return
+        self.__additional_autonomous_skills.append(skill)
 
     @property
     @abstractmethod
@@ -208,7 +203,28 @@ class CustomBehaviorBaseUtility():
         '''
         pass
 
+    @abstractmethod
+    def decorate_skillbar(self, skills: list[CustomSkillUtilityBase]):
+        '''
+        allow to decorate skills with specific logic.
+        '''
+        pass
+
+    #------------------------------------------
+    # disabilities
+    #------------------------------------------
+
+    @abstractmethod
+    def hexes_to_dispell_extra_priority(self) -> list[HexPriority]:
+        return []
+
+    @abstractmethod
+    def conditions_to_dispell_extra_priority(self) -> list[ConditionPriority]:
+        return []
+
+    #------------------------------------------
     #build management
+    #------------------------------------------
 
     def count_matches_between_custom_behavior_and_in_game_build(self) -> int:
             '''
@@ -220,6 +236,20 @@ class CustomBehaviorBaseUtility():
 
             for custom_skill in custom_behavior_build:
                 if in_game_build.get(custom_skill.skill_id) is not None:
+                    result +=1
+
+            return result
+
+    def count_custom_skills_in_behavior_matching_in_game_build(self) -> int:
+            '''
+            count the number of custom skills in the behavior (custom_skills_in_behavior) that are in the in-game build.
+            '''
+            result:int = 0
+            in_game_build: dict[int, CustomSkill] = self.skillbar_management.get_in_game_build()
+            custom_skills: list[CustomSkillUtilityBase] = self.custom_skills_in_behavior
+
+            for custom_skill_utility in custom_skills:
+                if in_game_build.get(custom_skill_utility.custom_skill.skill_id) is not None:
                     result +=1
 
             return result
@@ -237,7 +267,7 @@ class CustomBehaviorBaseUtility():
         
         in_game_build_by_skill_id: dict[int, CustomSkill] = self.skillbar_management.get_in_game_build()
         custom_skills_in_behavior_by_skill_id: dict[int, CustomSkillUtilityBase] = {x.custom_skill.skill_id: x for x in self.custom_skills_in_behavior}
-        generic_utility_skills_by_skill_id: dict[int, CustomSkillUtilityBase] = utility_skill_finder.discover_all_utility_skills(
+        generic_utility_skills_by_skill_id: dict[int, CustomSkillUtilityBase] = UtilitySkillFinder().discover_all_utility_skills(
             event_bus=self.event_bus,
             in_game_build=list(in_game_build_by_skill_id.values())
         )
@@ -252,9 +282,10 @@ class CustomBehaviorBaseUtility():
                 final_list.append(custom_skills_in_behavior_by_skill_id[skill.skill_id])
             elif self.complete_build_with_generic_skills:
                 if skill.skill_id in generic_utility_skills_by_skill_id.keys():
-                    final_list.append(generic_utility_skills_by_skill_id[skill.skill_id])
+                    discovered_utility : CustomSkillUtilityBase = generic_utility_skills_by_skill_id[skill.skill_id]
+                    final_list.append(discovered_utility)
                 else:
-                    final_list.append(AutoCombatUtility(event_bus=self.event_bus, skill=skill, current_build=list(in_game_build_by_skill_id.values())))
+                    final_list.append(StubUtility(event_bus=self.event_bus, skill=skill, current_build=list(in_game_build_by_skill_id.values())))
 
         for skill in self.additional_autonomous_skills:
             final_list.append(skill)
@@ -262,55 +293,89 @@ class CustomBehaviorBaseUtility():
         for skill in self.__injected_additional_utility_skills:
             final_list.append(skill)
 
+        # allow skill decoration to be applied for the whole skillbar.
+        self.decorate_skillbar(final_list)
+
+        # cache the result
         self.__final_skills_list = final_list
         return self.__final_skills_list
 
     def is_custom_behavior_match_in_game_build(self) -> bool:
-        if not Map.IsOutpost(): return True # THIS DEGRADE PERFORMANCE A LOT, DO NOT ENABLE UNLESS DEBUGGING // USEFULL WHEN CHANGING BUILD IN EXPLORABLE AREA
-
+        in_game_build:list[tuple[int, int]] = self.skillbar_management.get_skill_ids_in_game_build()
+        in_game_build_by_skill_id: dict[int, int] = {x[0]: x[1] for x in in_game_build}
         utility_build_full:list[CustomSkillUtilityBase] = self.get_skills_final_list()
+        utility_build_full_by_skill_ids:list[int] = [x.custom_skill.skill_id for x in utility_build_full]
         is_completed:bool = self.complete_build_with_generic_skills
-        in_game_build:dict[int, CustomSkill] = self.skillbar_management.get_in_game_build()
 
-        # check if ingame slots match our definitions
-        for skill in utility_build_full:
-            if skill.custom_skill.skill_id != 0: #meaning it's an autonomous skill
-                skill_id = GLOBAL_CACHE.SkillBar.GetSkillIDBySlot(skill.custom_skill.skill_slot)
-                if skill_id != skill.custom_skill.skill_id:
-                    if constants.DEBUG: print(f"Slot {skill.custom_skill.skill_slot} doesn't match skill {skill.custom_skill.skill_id}, the behavior must be refreshed.")
-                    return False
+        def verify_build_in_explorable_area() -> bool:
+            for skill in in_game_build:
+                skill_id = skill[0]
+                skill_slot = skill[1]
+                if skill_id in utility_build_full_by_skill_ids: continue
+                
+                skill_in_slot:CustomSkillUtilityBase = [x for x in utility_build_full if x.custom_skill.skill_slot == skill_slot][0]
+                # this is a correct tradeoff, we absolutely don't want to refresh the behavior if those skills are changing.
+                # the tradeoff is : changes on those skills only will not be detected.
+                if skill_in_slot.custom_skill.skill_name == "Arcane_Echo": continue # arcane_echo slot is allowed to be replaced
+                if skill_in_slot.custom_skill.skill_name == "Arcane_Mimicry": continue # mimicry slot is allowed to be replaced
+                # and so on
+                if constants.DEBUG: print(f"Slot {skill_slot} has changed, the behavior must be refreshed.")
+                return False
+                
+            return True
 
-        # two case
+        def verify_build_in_town() -> bool:
 
-        if is_completed:
-            # check if all ingame skills are in the behavior.
-            for skill_id in in_game_build.keys():
-                if skill_id not in [item.custom_skill.skill_id for item in utility_build_full]:
-                    if constants.DEBUG: print(f"{skill_id} from in-game build doesn't exist in the behavior, the behavior must be refreshed.")
-                    return False
-
-        if not is_completed:
-            #  1/ check if all skills in the behavior are part of the in-game build.
+            # check if ingame slots match our definitions
             for skill in utility_build_full:
-                if skill.custom_skill.skill_id == 0: continue
-                if skill.custom_skill.skill_id not in in_game_build.keys():
-                    if constants.DEBUG: print(f"{skill.custom_skill.skill_id} that is present in the behavior is not part of the in-game build, the behavior must be refreshed.")
-                    return False
-
-            #  2/ check if we added a new ingame skill that should be part of the behavior.
-            for skill_id in in_game_build.keys():
-                if skill_id not in [item.custom_skill.skill_id for item in utility_build_full]:
-                    if skill_id in [item.custom_skill.skill_id for item in self.custom_skills_in_behavior]:
-                        if constants.DEBUG: print(f"{skill_id} should be present in the behavior, the behavior must be refreshed.")
+                if skill.custom_skill.skill_id != 0: #meaning it's an autonomous skill
+                    skill_id = GLOBAL_CACHE.SkillBar.GetSkillIDBySlot(skill.custom_skill.skill_slot)
+                    if skill_id != skill.custom_skill.skill_id:
+                        if constants.DEBUG: print(f"Slot {skill.custom_skill.skill_slot} doesn't match skill {skill.custom_skill.skill_id}, the behavior must be refreshed.")
                         return False
 
-        return True
+            # two case
 
+            if is_completed:
+                # check if all ingame skills are in the behavior.
+                for skill_id in in_game_build_by_skill_id.keys():
+                    if skill_id not in utility_build_full_by_skill_ids:
+                        if constants.DEBUG: print(f"{skill_id} from in-game build doesn't exist in the behavior, the behavior must be refreshed.")
+                        return False
+                    
+            if not is_completed:
+                #  1/ check if all skills in the behavior are part of the in-game build.
+                for skill in utility_build_full:
+                    if skill.custom_skill.skill_id == 0: continue
+                    if skill.custom_skill.skill_id not in in_game_build_by_skill_id:
+                        if constants.DEBUG: print(f"{skill.custom_skill.skill_id} that is present in the behavior is not part of the in-game build, the behavior must be refreshed.")
+                        return False
+
+                #  2/ check if we added a new ingame skill that should be part of the behavior.
+                for skill_id in in_game_build_by_skill_id.keys():
+                    if skill_id not in utility_build_full_by_skill_ids:
+                        if skill_id in [item.custom_skill.skill_id for item in self.custom_skills_in_behavior]:
+                            if constants.DEBUG: print(f"{skill_id} should be present in the behavior, the behavior must be refreshed.")
+                            return False
+                        
+            return True
+
+        # it's a matter of performance & robustness, 
+        # - in explorable area skillbar can change but we dont want always want the build to be refreshed (echo/mimicry...), so we limit the checks we do
+        # - in town, we want precise refresh
+
+        if Map.IsExplorable():
+            return verify_build_in_explorable_area()
+        else:
+            return verify_build_in_town()
+    
+    #------------------------------------------
     # orchestration
+    #------------------------------------------
 
     timer = Timer()
     throttler = ThrottledTimer(50)
-    compute_throttler = ThrottledTimer(300)
+    compute_throttler = ThrottledTimer(80)
     execute_throttler = ThrottledTimer(80)
 
     def act(self):
@@ -332,14 +397,6 @@ class CustomBehaviorBaseUtility():
         if not self.is_custom_behavior_match_in_game_build():
             if constants.DEBUG: print("Custom behavior doesn't match in game build, you are not allowed to perform behavior.act().")
             return
-
-        # if self.get_final_is_enabled():
-        #     account_email = Player.GetAccountEmail()
-        #     hero_ai_options = GLOBAL_CACHE.ShMem.GetHeroAIOptions(account_email)
-        #     if hero_ai_options is not None:
-        #         hero_ai_options.Combat = False
-        #         hero_ai_options.Following = False
-        #         hero_ai_options.Looting = False
 
         # it is interesting to compute score less often, as the execution :
         # - if we are executing with EXECUTE_THROUGH_THE_END, most of the time it take more than 300/400 ms with the aftercast.
@@ -436,14 +493,12 @@ class CustomBehaviorBaseUtility():
         _profiler.begin_cycle()
 
         # Track whether a purpose-built combat skill scored, so we can skip
-        # autocombat fallbacks (base score 9.91) that can never win
         combat_skill_scored = False
         previously_attempted = list(self.__previously_attempted_skills)
 
         for utility in utilities:
             with _profiler.measure_skill(utility.custom_skill.skill_name):
-                # Lazy skip: autocombat can never outscore a purpose-built combat skill
-                if isinstance(utility, AutoCombatUtility) and combat_skill_scored:
+                if isinstance(utility, StubUtility) and combat_skill_scored:
                     utility_scores.append((utility, None))
                     continue
 

@@ -18,6 +18,7 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomS
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_nature import CustomSkillNature
 from Sources.oazix.CustomBehaviors.primitives.scores.score_definition import ScoreDefinition
 from Sources.oazix.CustomBehaviors.primitives import constants
+from Sources.oazix.CustomBehaviors.primitives.skills.plugins.utility_skill_option import UtilitySkillOption
 from Sources.oazix.CustomBehaviors.primitives.skills.plugins.utility_skill_watchdog import UtilitySkillWatchdog
 from Sources.oazix.CustomBehaviors.primitives.skills.plugins.utility_skill_plugin import UtilitySkillPlugin
 from Sources.oazix.CustomBehaviors.primitives.skills.plugins.utility_skill_precondition import UtilitySkillPrecondition
@@ -71,6 +72,13 @@ class CustomSkillUtilityBase:
             raise Exception(f"Targeting modifier {plugin_instance.plugin_name} already added to {self.custom_skill.skill_name}")
         self._utility_skill_plugins.append(plugin_instance)
         return self
+    
+    def add_plugin_option(self, option: Callable[['CustomSkillUtilityBase'], UtilitySkillOption] ) -> 'CustomSkillUtilityBase':
+        plugin_instance: UtilitySkillPlugin = option(self)
+        if plugin_instance.plugin_name in [capability.plugin_name for capability in self._utility_skill_plugins]: 
+            raise Exception(f"Option {plugin_instance.plugin_name} already added to {self.custom_skill.skill_name}")
+        self._utility_skill_plugins.append(plugin_instance)
+        return self
 
     def get_plugins(self) -> list[UtilitySkillPlugin]:
         return self._utility_skill_plugins
@@ -82,6 +90,12 @@ class CustomSkillUtilityBase:
             if not plugin.is_satisfied():
                 return False
         return True
+
+    def get_plugin_option(self, option_name: str) -> UtilitySkillOption | None:
+        for plugin in self._utility_skill_plugins:
+            if isinstance(plugin, UtilitySkillOption) and plugin.plugin_name == option_name:
+                return plugin
+        return None
     
     def get_plugin_watchdogs(self) -> list[UtilitySkillWatchdog]:
         return [plugin for plugin in self._utility_skill_plugins if isinstance(plugin, UtilitySkillWatchdog)]
@@ -89,9 +103,16 @@ class CustomSkillUtilityBase:
     def _get_plugin_targeting_modifiers(self) -> list[UtilitySkillTargetingModifier]:
         return [plugin for plugin in self._utility_skill_plugins if isinstance(plugin, UtilitySkillTargetingModifier)]
     
-    def get_plugin_targeting_modifiers_filtering_predicate(self) -> Callable[[int], bool]:
+    def get_plugin_targeting_modifiers_filtering_predicate_any(self) -> Callable[[int], bool]:
         modifiers = self._get_plugin_targeting_modifiers()
         if len(modifiers) == 0: return lambda agent_id: True
+        # 'any' is good to cumulate filtering predicates on same skill.
+        return lambda agent_id: any(modifier.get_agent_id_filtering_predicate()(agent_id) for modifier in modifiers)
+    
+    def get_plugin_targeting_modifiers_filtering_predicate_all(self) -> Callable[[int], bool]:
+        modifiers = self._get_plugin_targeting_modifiers()
+        if len(modifiers) == 0: return lambda agent_id: True
+        # 'all' is good to cumulate filtering predicates on same skill.
         return lambda agent_id: all(modifier.get_agent_id_filtering_predicate()(agent_id) for modifier in modifiers)
 
     def get_plugin_targeting_modifiers_ordering_predicate(self) -> Callable[[int], int]:
@@ -150,22 +171,22 @@ class CustomSkillUtilityBase:
             return None
         
         if self.utility_skill_typology == UtilitySkillTypology.COMBAT and not CustomBehaviorParty().get_party_is_combat_enabled():
-            if constants.DEBUG: print(f'Reject COMBAT Not Enabled {self.custom_skill.skill_name}')
+            if constants.DEBUG: print(f'Reject Combat Not Enabled {self.custom_skill.skill_name}')
             return None
         if self.utility_skill_typology == UtilitySkillTypology.FOLLOWING and not CustomBehaviorParty().get_party_is_following_enabled():
-            if constants.DEBUG: print(f'Reject FOLLOWING Not Enabled {self.custom_skill.skill_name}')
+            if constants.DEBUG: print(f'Reject Combat Not Enabled {self.custom_skill.skill_name}')
             return None
         if self.utility_skill_typology == UtilitySkillTypology.LOOTING and not CustomBehaviorParty().get_party_is_looting_enabled():
-            if constants.DEBUG: print(f'Reject LOOTING Not Enabled {self.custom_skill.skill_name}')
+            if constants.DEBUG: print(f'Reject Combat Not Enabled {self.custom_skill.skill_name}')
             return None
         if self.utility_skill_typology == UtilitySkillTypology.CHESTING and not CustomBehaviorParty().get_party_is_chesting_enabled():
-            if constants.DEBUG: print(f'Reject CHESTING Not Enabled {self.custom_skill.skill_name}')
+            if constants.DEBUG: print(f'Reject Combat Not Enabled {self.custom_skill.skill_name}')
             return None
         if self.utility_skill_typology == UtilitySkillTypology.BLESSING and not CustomBehaviorParty().get_party_is_blessing_enabled():
-            if constants.DEBUG: print(f'Reject BLESSING Not Enabled {self.custom_skill.skill_name}')
+            if constants.DEBUG: print(f'Reject Combat Not Enabled {self.custom_skill.skill_name}')
             return None
         if self.utility_skill_typology == UtilitySkillTypology.INVENTORY and not CustomBehaviorParty().get_party_is_inventory_enabled():
-            if constants.DEBUG: print(f'Reject INVENTORY Not Enabled {self.custom_skill.skill_name}')
+            if constants.DEBUG: print(f'Reject Combat Not Enabled {self.custom_skill.skill_name}')
             return None
         if current_state == BehaviorState.IDLE:
             if (self.utility_skill_typology != UtilitySkillTypology.BOTTING
@@ -226,15 +247,6 @@ class CustomSkillUtilityBase:
         This method is used to display the debug UI for the skill.
         Can be overridden by the skill itself to display additional information.
         """
-        pass
-
-    @abstractmethod
-    def get_buff_configuration(self) -> CustomBuffMultipleTarget | None:
-        '''
-        This method is used to get the buff configuration for the skill.
-        Can be overridden by the skill itself to return the buff configuration.
-        If the skill does not use buffs, return None.
-        '''
         pass
 
     @abstractmethod

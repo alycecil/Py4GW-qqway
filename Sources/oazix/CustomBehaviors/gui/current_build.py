@@ -2,7 +2,7 @@ import os
 
 from Py4GWCoreLib import IconsFontAwesome5, ImGui, PyImGui
 from Py4GWCoreLib.Py4GWcorelib import Color, Utils
-from Sources.oazix.CustomBehaviors.PathLocator import PathLocator
+from Sources.oazix.CustomBehaviors.primitives.infrastructure.path_locator import PathLocator
 from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_utility import CustomBehaviorBaseUtility
 from Sources.oazix.CustomBehaviors.primitives.custom_behavior_loader import CustomBehaviorLoader
 from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
@@ -106,6 +106,8 @@ def render():
                             def label_generic_utility(utility: CustomSkillUtilityBase) -> str:
                                 if utility.__class__.__name__ == "AutoCombatUtility":
                                     return f" AutoCombat"
+                                elif utility.__class__.__name__ == "StubUtility":
+                                    return f" Stub"
                                 return ""
                             score_text = f"{score[1]:06.4f}" if score[1] is not None else "Ø"
                             texture_file = get_skill_texture_with_fallback(score[0].custom_skill.get_texture())

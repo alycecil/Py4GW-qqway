@@ -250,7 +250,7 @@ def main():
             add_row("Stack Size", str(item.quantity) if item else "N/A")
 
             try:
-                from Sources.oazix.CustomBehaviors.PersistenceLocator import PersistenceLocator
+                from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
                 from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryUtilsConfig
                 from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryUtils
 

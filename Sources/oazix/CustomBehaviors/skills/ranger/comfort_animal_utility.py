@@ -1,7 +1,6 @@
 from typing import Any, Generator, override
 
 from Py4GWCoreLib import GLOBAL_CACHE, Agent, Player, Routines
-from Py4GWCoreLib.enums_src.GameData_enums import Range
 from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus

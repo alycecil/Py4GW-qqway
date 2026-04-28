@@ -7,16 +7,16 @@ from typing import Any, Callable, Optional, Tuple
 from Py4GWCoreLib.GlobalCache.SharedMemory import AccountStruct
 from Py4GWCoreLib.enums_src.GameData_enums import Profession, SkillType
 from Py4GWCoreLib.enums_src.Model_enums import GadgetModelID
-from Py4GWCoreLib.routines_src.Yield import Yield
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers_tests
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
 from Sources.oazix.CustomBehaviors.primitives.helpers.custom_behavior_helpers_target import CustomTargeting
 from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
 from Sources.oazix.CustomBehaviors.primitives.helpers.sortable_agent_data import SortableAgentData
 from Sources.oazix.CustomBehaviors.primitives.parties.memory_cache_manager import MemoryCacheManager
+from Sources.oazix.CustomBehaviors.primitives.parties.party_disability_manager import PartyDisabilityManager
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 
-from Py4GWCoreLib import GLOBAL_CACHE, Agent, Player, Overlay, SkillBar, ActionQueueManager, Routines, Range, Utils, SPIRIT_BUFF_MAP, SpiritModelID, AgentArray, GWUI
+from Py4GWCoreLib import GLOBAL_CACHE, Agent, Player, Overlay, SkillBar, ActionQueueManager, Routines, Range, Utils, SPIRIT_BUFF_MAP, SpiritModelID, AgentArray
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.helpers.custom_behavior_helpers_party import CustomBehaviorHelperParty
 from Sources.oazix.CustomBehaviors.primitives.helpers.eval_profiler import EvalProfiler
@@ -313,10 +313,12 @@ class Resources:
     
     @staticmethod
     def is_ally_under_specific_effect(agent_id: int, skill_id: int) -> bool:
-        if agent_id == Player.GetAgentID() :
-            # if target is the player, check if the player has the effect
-            has_buff: bool = Routines.Checks.Effects.HasBuff(Player.GetAgentID(), skill_id)
-            return has_buff
+        if agent_id == Player.GetAgentID():
+            # For self: use EffectExists (is the bond ON me) instead of HasBuff
+            # which includes maintained-on-others and causes a false positive.
+            # For others: delegate to the buff config predicate as normal.
+            has_effect:bool = Routines.Checks.Effects.HasEffect(agent_id, skill_id)
+            return has_effect
         else:
             # else check if the party target has the effect
             # we should also deep dive inside player.pet
@@ -329,6 +331,44 @@ class Resources:
                         if buff.SkillId == skill_id:
                             return True
 
+        return False
+
+    @staticmethod
+    def is_ally_under_specific_effect_types(agent_id: int, skill_types: list[SkillType]) -> bool:
+
+        skill_ids = []
+
+        if agent_id == Player.GetAgentID() :
+            # if target is the player, check if the player has the effect
+            skill_ids = [effect.skill_id for effect in GLOBAL_CACHE.Effects.GetBuffs(agent_id) + GLOBAL_CACHE.Effects.GetEffects(agent_id)]
+        else:
+            # else check if the party target has the effect
+            accounts:list[AccountStruct] = GLOBAL_CACHE.ShMem.GetAllAccountData()
+            for account in accounts:
+                if account.AgentData.AgentID == agent_id:
+                    skill_ids = [buff.SkillId for buff in account.AgentData.Buffs.Buffs]
+                    break
+
+        for skill_id in skill_ids:
+            effect_type, _ = GLOBAL_CACHE.Skill.GetType(skill_id)
+            skill_type_values = [skill_type.value for skill_type in skill_types]
+            if effect_type in skill_type_values:
+                return True
+
+        return False
+
+    @staticmethod
+    def is_ally_under_protective_effect(agent_id: int) -> bool:
+        Shelter = CustomSkill("Shelter")
+        Protective_Bond = CustomSkill("Protective_Bond")
+        Protective_Spirit = CustomSkill("Protective_Spirit")
+        Spirit_Bond = CustomSkill("Spirit_Bond")
+        # very bad perf
+        protective_skills = [Shelter, Protective_Bond, Protective_Spirit, Spirit_Bond]
+
+        for skill in protective_skills:
+            if Resources.is_ally_under_specific_effect(agent_id, skill.skill_id):
+                return True
         return False
 
 class Actions:
@@ -671,9 +711,13 @@ class Targets:
             range_to_count_enemies: float | None = None,
             range_to_count_allies: float | None = None,
             is_alive: bool = True) -> list[SortableAgentData]:
+
         with EvalProfiler().measure("ally_targeting"):
             player_pos: tuple[float, float] = Player.GetXY()
-            all_agent_ids: list[int] = AgentArray.GetAllyArray()
+            all_agent_ids: list[int] = AgentArray.GetAllyArray() # only 8 team members  (no pets, no npc-allies)
+            all_agent_pets = [agent_id for agent_id in AgentArray.GetSpiritPetArray() if Agent.IsPet(agent_id)] # add pets
+            all_agent_ids = all_agent_ids + all_agent_pets
+
             all_enemies_ids: list[int] = AgentArray.GetEnemyArray()
 
             agent_ids = AgentArray.Filter.ByDistance(all_agent_ids, player_pos, within_range)
@@ -715,7 +759,9 @@ class Targets:
                     is_martial=Agent.IsMartial(agent_id),
                     enemy_quantity_within_range=enemies_quantity_within_range,
                     agent_quantity_within_range=allies_quantity_within_range,
-                    energy=Resources.get_energy_percent_in_party(agent_id)
+                    energy=Resources.get_energy_percent_in_party(agent_id),
+                    hex_priority_level=PartyDisabilityManager().get_hex_score(agent_id),
+                    condition_priority_level=PartyDisabilityManager().get_condition_score(agent_id),
                 )
 
             data_to_sort = list(map(lambda agent_id: build_sortable_array(agent_id), agent_ids))
@@ -747,6 +793,10 @@ class Targets:
                     data_to_sort = sorted(data_to_sort, key=lambda x: x.is_caster)
                 elif criterion == TargetingOrder.MELEE_THEN_CASTER:
                     data_to_sort = sorted(data_to_sort, key=lambda x: x.is_melee)
+                elif criterion == TargetingOrder.HEX_PRIORITY_LEVEL_DESC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: -x.hex_priority_level)
+                elif criterion == TargetingOrder.CONDITION_PRIORITY_LEVEL_DESC:
+                    data_to_sort = sorted(data_to_sort, key=lambda x: -x.condition_priority_level)
                 else:
                     raise ValueError(f"Invalid sorting criterion: {criterion}")
 
@@ -869,7 +919,9 @@ class Targets:
                     is_martial=agentData.is_martial,
                     enemy_quantity_within_range=enemy_quantity_within_range,
                     agent_quantity_within_range=0,  # Not used for enemies
-                    energy=0.0  # Not used for enemies
+                    energy=0.0,  # Not used for enemies
+                    hex_priority_level=0,  # Not used for enemies
+                    condition_priority_level=0,  # Not used for enemies
                 )
 
             data_to_sort = list(map(lambda agentData: build_sortable_array(agentData), agentDatas))
@@ -898,7 +950,7 @@ class Targets:
                 else:
                     raise ValueError(f"Invalid sorting criterion: {criterion}")
 
-            data_to_sort = sorted(data_to_sort, key=lambda x: not Agent.IsSpirit(x.agent_id))
+            # TODO SPIRIT SORT data_to_sort = sorted(data_to_sort, key=lambda x: not Agent.IsSpirit(x.agent_id))
 
             if should_prioritize_party_target:
                 party_forced_target_agent_id: int | None = CustomBehaviorHelperParty.get_party_custom_target()
