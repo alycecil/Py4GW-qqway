@@ -19,6 +19,8 @@ from Sources.oazix.CustomBehaviors.skills.generic.minion_invocation_from_corpse_
 from Sources.oazix.CustomBehaviors.skills.generic.preparation_utility import PreparationUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.minion_invocation_from_corpse_utility import MinionInvocationFromCorpseUtility
+from Sources.oazix.CustomBehaviors.skills.generic.protective_shout_targeted_utility import \
+    ProtectiveShoutTargetedUtility
 from Sources.oazix.CustomBehaviors.skills.generic.protective_shout_utility import ProtectiveShoutUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_attack_utility import RawSimpleAttackUtility
@@ -177,10 +179,12 @@ class GenericUtilitySkillsList:
 
         # paragon
         skills.append(ProtectiveShoutUtility(event_bus=event_bus, skill=CustomSkill("Stand_Your_Ground"), current_build=in_game_build, allies_health_less_than_percent=0.9,allies_quantity_required=2,score_definition=ScoreStaticDefinition(88), allowed_states=[BehaviorState.IN_AGGRO]))
-        skills.append(ProtectiveShoutUtility(event_bus=event_bus, skill=CustomSkill("Help_Me"), current_build=in_game_build,
-                                             allies_health_less_than_percent=0.9,allies_quantity_required=1,
-                                             score_definition=ScoreStaticDefinition(88),
-                                             allowed_states=[BehaviorState.IN_AGGRO]))
+        skills.append(ProtectiveShoutTargetedUtility(
+            event_bus=event_bus, skill=CustomSkill("Help_Me"), current_build=in_game_build,
+            allies_health_less_than_percent=0.7,allies_quantity_required=1,
+            score_definition=ScoreStaticDefinition(88),
+            allowed_states=[BehaviorState.IN_AGGRO])
+        )
         skills.append(KeepSelfEffectUpUtility(
             event_bus=event_bus, skill=CustomSkill("Aggressive_Refrain"), current_build=in_game_build,
             score_definition=ScoreStaticDefinition(10),
