@@ -1,17 +1,9 @@
-import json
-from enum import Enum
 import random
-from re import DEBUG
-from types import SimpleNamespace
 from typing import Any, Generator, override
 
 import PyImGui
 
-from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, ItemArray, Routines, Range, Map, Agent, Player, Inventory, Item, \
-    PyUIManager
-from Py4GWCoreLib.Pathing import AutoPathing
-from Py4GWCoreLib.Py4GWcorelib import Utils
-from Py4GWCoreLib.enums_src.Model_enums import ModelID
+from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, ItemArray, Routines, Range, Map
 from Py4GWCoreLib.py4gwcorelib_src.Timer import ThrottledTimer
 from .inventory_utils import InventoryUtilsConfig, InventoryUtils, InventoryMode
 from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
@@ -71,13 +63,15 @@ class DepositIfNeededUtility(CustomSkillUtilityBase):
         self.event_bus.subscribe(EventType.MAP_CHANGED, self.map_changed, subscriber_name=self.custom_skill.skill_name)
 
         self.inventory_utils: InventoryUtils = InventoryUtils()
-        self.movement_check_timer = ThrottledTimer(60000)
+        self.movement_check_timer = ThrottledTimer(5000+random.randint(100, 3000))
 
     def map_changed(self, message: EventMessage) -> Generator[Any, Any, Any]:
         if Map.IsGuildHall():
             self.npc_visited[MerchantType.XUNLAI_CHEST] = False
         elif Map.IsOutpost():
             self.npc_visited[MerchantType.XUNLAI_CHEST] = False
+
+        self.movement_check_timer = ThrottledTimer(3000+random.randint(100, 5000))
 
         yield
 
@@ -120,7 +114,7 @@ class DepositIfNeededUtility(CustomSkillUtilityBase):
 
             from Py4GWCoreLib.py4gwcorelib_src.AutoInventoryHandler import AutoInventoryHandler
             inventory_handler = AutoInventoryHandler()
-            current_state =  inventory_handler.module_active
+            current_state = inventory_handler.module_active
             inventory_handler.module_active = False
 
             yield from inventory_handler.DepositMaterials()
@@ -134,20 +128,11 @@ class DepositIfNeededUtility(CustomSkillUtilityBase):
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
 
-        lock_key = self.generic_player_lock_key()
-
         if self.needsToVisit(MerchantType.XUNLAI_CHEST):
             if self.movement_check_timer.IsExpired():
-                self.movement_check_timer.Reset()
-                pass
-            elif not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10):
-                return BehaviorResult.ACTION_SKIPPED
-            yield from self._visit(MerchantType.XUNLAI_CHEST)
+                self.movement_check_timer = ThrottledTimer(6000+random.randint(1000, 60000))
+                yield from self._visit(MerchantType.XUNLAI_CHEST)
 
         return BehaviorResult.ACTION_SKIPPED
-
-    def generic_player_lock_key(self):
-        from Sources.oazix.CustomBehaviors.primitives.helpers.lock_key_helper import LockKeyHelper
-        return LockKeyHelper.generic_player_lock_key()
 
 

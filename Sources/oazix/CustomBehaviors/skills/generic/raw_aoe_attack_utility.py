@@ -10,9 +10,11 @@ from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_hel
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
 from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.condition_factors import \
-    condition_factor_prefer_omni
+    condition_factor_prefer_omni, Condition_Factors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.default_score_factors import \
-    called_target_factor_DefaultScoreFactors, spirit_factor_DefaultScoreFactors
+    called_target_factor_DefaultScoreFactors
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.spirit_factors import \
+    spirit_factor_DefaultScoreFactors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.distance_factors import \
     DistanceFactors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.health_factors import \
@@ -42,7 +44,7 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
                  ignore_spirits: bool = False,
                  custom_agent_targeting_predicate: Callable[[int], bool] | None = None,
 
-                 condition_factor: condition_factor_prefer_omni = condition_factor_prefer_omni(),
+                 condition_factor: Condition_Factors = condition_factor_prefer_omni(),
                  target_type_factor: target_type_factor_DefaultScoreFactors = target_type_factor_DefaultScoreFactors(),
                  called_target_factor: called_target_factor_DefaultScoreFactors = called_target_factor_DefaultScoreFactors(),
                  hex_factor: Hex_Factors = Hex_Factors(),

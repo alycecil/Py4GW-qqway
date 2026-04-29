@@ -53,7 +53,22 @@ class DistanceFactors_Simple(DistanceFactors):
 
 
 class DistanceFactors_Short(DistanceFactors):
-    #todo constructor
+    def __init__(self,
+                 touch=12,
+                 adjacent=7,
+                 nearby=5,
+                 area=3,
+                 twice_area=2,
+                 earshot=1,
+                 ) -> None:
+        self.touch = touch
+        self.adjacent = adjacent
+        self.nearby = nearby
+        self.area = area
+        self.twice_area = twice_area
+        self.earshot = earshot
+
+    # todo constructor
     def distance_factor(
             self,
             score_max, score_min, score_offset,
@@ -61,22 +76,22 @@ class DistanceFactors_Short(DistanceFactors):
     ):
         # Distance factor
         if distance < Range.Touch.value:
-            score_offset += 12
+            score_offset += self.touch
         elif distance < Range.Adjacent.value:
-            score_offset += 7
+            score_offset += self.adjacent
         elif distance < Range.Nearby.value:
-            score_offset += 5
+            score_offset += self.nearby
         elif distance < Range.Area.value:
-            score_offset += 3
+            score_offset += self.area
         elif distance < Range.Area.value * 2:
-            score_offset += 2
+            score_offset += self.twice_area
         elif distance < Range.Earshot.value:
-            score_offset += 1
+            score_offset += self.earshot
         return score_max, score_min, score_offset
 
     @override
     def score_definition_debug_ui(self) -> str:
-        string = "distance => (max, min, score) (not short range)"
+        string = "distance => (max, min, score)"
 
         for _range in [Range.Touch, Range.Adjacent, Range.Nearby, Range.Area, Range.Earshot]:
             nearby = self.distance_factor(0, 0, 0, _range.value - 1, True)

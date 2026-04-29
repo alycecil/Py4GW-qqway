@@ -5,7 +5,9 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_definition import Sco
 from Py4GWCoreLib import GLOBAL_CACHE, Routines, Range, Agent, Player
 from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.default_score_factors import \
-    called_target_factor_DefaultScoreFactors, spirit_factor_DefaultScoreFactors
+    called_target_factor_DefaultScoreFactors
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.spirit_factors import \
+    spirit_factor_DefaultScoreFactors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.distance_factors import \
     DistanceFactors, DistanceFactors_Simple
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.hex_factors import Hex_Factors

@@ -29,13 +29,17 @@ class Health_Factors(ScoreDefinition):
             score_max += 5.0
             score_min += 15.0
             score_offset += 3
+        elif health <= .9:
+            score_max += 1.0
+            score_min += 1.0
+            score_offset += 1
         return score_max, score_min, score_offset
 
     @override
     def score_definition_debug_ui(self) -> str:
         string = "Health => (max, min, score)"
 
-        for _range in [0,0.25,0.50,0.75,1]:
+        for _range in [0,0.20,0.40,0.50,0.60,0.80,1]:
             nearby = self._health_factors(_range, 0, 0, 0)
             string += f"""
     {round(_range*100)}% => {nearby} """
