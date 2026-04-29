@@ -85,8 +85,6 @@ class MesmerESurgery_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.wastrels_demise_utility,
             self.spiritual_pain_utility,
 
-            self.power_drain_utility,
-
             self.arcane_echo_utility,
 
             self.ebon_vanguard_assassin_support,

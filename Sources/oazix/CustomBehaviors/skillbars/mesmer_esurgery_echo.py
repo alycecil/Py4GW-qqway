@@ -130,10 +130,8 @@ class MesmerESurgery_Echo_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.wastrels_demise_utility,
             self.spiritual_pain_utility,
 
-            self.power_drain_utility,
             self.leech_signet_utility,
 
-            self.energy_tap_utility,
             self.overload_utility,
 
             self.fall_back_utility,

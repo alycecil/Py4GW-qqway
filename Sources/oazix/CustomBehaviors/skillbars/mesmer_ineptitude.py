@@ -55,7 +55,7 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.fall_back_utility,
             self.ineptitude_utility,
             self.cry_of_pain_utility,
-            self.power_drain_utility,
+
             self.judges_insight_utility,
             self.wandering_eye_utility,
             self.arcane_conundrum_utility,

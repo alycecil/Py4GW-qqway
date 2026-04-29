@@ -159,7 +159,7 @@ class NecromancerCultistOfNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
 
             self.cry_of_pain_utility,
             self.cry_of_frustration_utility,
-            self.power_drain_utility,
+
             self.leech_signet_utility,
 
             self.mistrust_utility,
