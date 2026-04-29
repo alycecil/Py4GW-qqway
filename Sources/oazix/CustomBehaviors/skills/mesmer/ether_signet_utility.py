@@ -6,12 +6,13 @@ from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorStat
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
+from Sources.oazix.CustomBehaviors.primitives.helpers.custom_behavior_helpers import Resources
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 
 
-class Blessed_Signet_EffectUpUtility(CustomSkillUtilityBase):
+class Ether_Signet_EffectUpUtility(CustomSkillUtilityBase):
     def __init__(self,
     event_bus: EventBus,
     current_build: list[CustomSkill],
@@ -22,7 +23,7 @@ class Blessed_Signet_EffectUpUtility(CustomSkillUtilityBase):
 
         super().__init__(
             event_bus=event_bus,
-            skill=CustomSkill("Blessed_Signet"),
+            skill=CustomSkill("Ether_Signet"),
             in_game_build=current_build,
             score_definition=score_definition,
             mana_required_to_cast=mana_required_to_cast,
@@ -33,7 +34,8 @@ class Blessed_Signet_EffectUpUtility(CustomSkillUtilityBase):
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
-        if custom_behavior_helpers.Resources.get_energy_percent_in_party(Player.GetAgentID()) < 0.5:
+        player_energy = Resources.get_player_absolute_energy()
+        if player_energy < 4:
             return self.score_definition.get_score()
         
         return None
