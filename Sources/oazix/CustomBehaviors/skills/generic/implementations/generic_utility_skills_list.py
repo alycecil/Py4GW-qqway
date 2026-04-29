@@ -306,6 +306,17 @@ class GenericUtilitySkillsList:
             target_self=False,
             after_cast_delay=False,
         ))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Throw_Dirt"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 21 if enemy_qte >= 3 else 15 if enemy_qte == 2 else 10),
+            mana_required_to_cast=0,
+            ignore_spirits=True,
+            hex_factor=Simple_Hex_Factors(not_hexed_factor=0, already_hexed_factor=1, already_hexed_maxed=None),
+            target_type_factor=target_type_factor_DefaultScoreFactors(caster_factor=-15.0, non_caster_factor=10),
+            distance_factor=DistanceFactors_Short(touch=40.0),
+        ))
 
         # naive JUNUNDU version
         skills.append(RawSimpleAttackUtility(event_bus=event_bus, skill=CustomSkill("Junundu_Strike"), current_build=in_game_build, score_definition=ScoreStaticDefinition(65)))
