@@ -14,6 +14,7 @@ from Py4GWCoreLib.enums_src.Item_enums import Bags, Rarity
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
 from Py4GWCoreLib.py4gwcorelib_src.ActionQueue import ActionQueueManager
 from Py4GWCoreLib.py4gwcorelib_src.Console import ConsoleLog
+from Py4GWCoreLib.py4gwcorelib_src.Timer import ThrottledTimer
 from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryUtilsConfig, InventoryUtils, InventoryMode
 from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives import constants
@@ -59,6 +60,7 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
         self.inventory_utils: InventoryUtils = InventoryUtils()
 
         self.clicked_recently = False
+        self.movement_check_timer = ThrottledTimer(3000+random.randint(100, 5000))
 
     def map_changed(self, message: EventMessage) -> Generator[Any, Any, Any]:
 
@@ -70,6 +72,7 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
             self.inventory_utils_config: InventoryUtilsConfig = InventoryUtilsConfig()
 
         self.clicked_recently = False
+        self.movement_check_timer = ThrottledTimer(3000+random.randint(100, 5000))
         yield
 
     def get_identifiable_items(
@@ -107,16 +110,14 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
         if Agent.IsDead(Player.GetAgentID()):
             return None
 
-        lock_key = self.generic_player_lock_key()
-        if CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(lock_key):
+        if self.movement_check_timer.IsExpired():
+            if self.inventory_utils.GetIDKits() > 0:
+                return self.score_definition.get_score()
+            else:
+                ConsoleLog("IdIfNeededUtility", "Kits needed")
+                return None
+        else:
             return None
-
-        if self.inventory_utils.GetIDKits() > 0:
-            return self.score_definition.get_score()
-
-        ConsoleLog("IdIfNeededUtility", "Kits needed")
-
-        return None
 
     @override
     def has_persistence(self) -> bool:
@@ -145,22 +146,14 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
 
-        lock_key = self.generic_player_lock_key()
-
-        if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10):
-            if constants.DEBUG: ConsoleLog("IdIfNeededUtility", "Could not get lock")
-            yield
-            return BehaviorResult.ACTION_SKIPPED
-
         if constants.DEBUG: ConsoleLog("IdIfNeededUtility", "Got lock")
 
-        if not self.clicked_recently:
-            yield from self.IdentifyAll()
-            self.clicked_recently = True
-            yield
-            return BehaviorResult.ACTION_PERFORMED
+        yield from self.IdentifyAll()
+        self.clicked_recently = True
+        self.movement_check_timer.Reset()
+        self.movement_check_timer = ThrottledTimer(3000+random.randint(100, 365000))
 
-        elif Map.IsOutpost() or Map.IsGuildHall():
+        if Map.IsOutpost() or Map.IsGuildHall():
             inventory_item_ids = self.get_identifiable_items()
 
             if inventory_item_ids is None or len(inventory_item_ids) == 0:
