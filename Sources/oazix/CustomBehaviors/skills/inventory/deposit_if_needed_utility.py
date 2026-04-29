@@ -12,6 +12,7 @@ from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, ItemArray, Routines, Range, M
 from Py4GWCoreLib.Pathing import AutoPathing
 from Py4GWCoreLib.Py4GWcorelib import Utils
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
+from Py4GWCoreLib.py4gwcorelib_src.Timer import ThrottledTimer
 from .inventory_utils import InventoryUtilsConfig, InventoryUtils, InventoryMode
 from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives import constants
@@ -70,6 +71,7 @@ class DepositIfNeededUtility(CustomSkillUtilityBase):
         self.event_bus.subscribe(EventType.MAP_CHANGED, self.map_changed, subscriber_name=self.custom_skill.skill_name)
 
         self.inventory_utils: InventoryUtils = InventoryUtils()
+        self.movement_check_timer = ThrottledTimer(60000)
 
     def map_changed(self, message: EventMessage) -> Generator[Any, Any, Any]:
         if Map.IsGuildHall():
@@ -98,6 +100,8 @@ class DepositIfNeededUtility(CustomSkillUtilityBase):
 
         if self.needsToVisit(MerchantType.XUNLAI_CHEST):
             return self.score_definition.get_score()
+        if self.movement_check_timer.IsExpired():
+            return self.score_definition.get_score() / 2.0
         return None
 
     def _visit(self, merchant_type: MerchantType) -> Generator[Any, None, None]:
@@ -126,13 +130,17 @@ class DepositIfNeededUtility(CustomSkillUtilityBase):
             inventory_handler.module_active = current_state
             self.npc_visited[MerchantType.XUNLAI_CHEST] = True
 
+
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
 
         lock_key = self.generic_player_lock_key()
 
-        if not self.npc_visited[MerchantType.XUNLAI_CHEST]:
-            if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10):
+        if self.needsToVisit(MerchantType.XUNLAI_CHEST):
+            if self.movement_check_timer.IsExpired():
+                self.movement_check_timer.Reset()
+                pass
+            elif not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=10):
                 return BehaviorResult.ACTION_SKIPPED
             yield from self._visit(MerchantType.XUNLAI_CHEST)
 
