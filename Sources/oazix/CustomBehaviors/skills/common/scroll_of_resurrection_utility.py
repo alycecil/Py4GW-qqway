@@ -37,7 +37,7 @@ class ScrollOfResurrectionUtility(CustomSkillUtilityBase):
         )
         
         self.score_definition: ScorePerAgentQuantityDefinition = score_definition
-        self.min_dead_allies_required = 2
+        self.min_dead_allies_required = 3
         self.scroll_of_resurrection_model_id = ModelID.Scroll_Of_Resurrection.value  # 26501
 
     def _has_scroll_in_inventory(self) -> bool:
