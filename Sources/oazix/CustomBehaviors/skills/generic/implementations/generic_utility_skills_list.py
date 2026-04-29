@@ -7,6 +7,9 @@ from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorStat
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.scores.comon_score import CommonScore
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.distance_factors import DistanceFactors_Short
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.hex_factors import Simple_Hex_Factors
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.target_type_factors import \
+    target_type_factor_DefaultScoreFactors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_health_gravity_definition import ScorePerHealthGravityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
@@ -213,6 +216,12 @@ class GenericUtilitySkillsList:
         # mesmer
         skills.append(ApplyHexCommonUtility(
             event_bus=event_bus, skill=CustomSkill("Shrinking_Armor"), current_build=in_game_build,
+        ))
+        skills.append(ApplyHexCommonUtility(
+            event_bus=event_bus, skill=CustomSkill("Empathy"), current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 10),
+            hex_factor=Simple_Hex_Factors(not_hexed_factor=20, already_hexed_factor=-5, already_hexed_maxed=None),
+            target_type_factor=target_type_factor_DefaultScoreFactors(caster_factor=-15.0, non_caster_factor=10)
         ))
         # pve
         skills.append(KeepSelfEffectUpUtility(event_bus=event_bus, skill=CustomSkill("Air_of_Superiority"), current_build=in_game_build, score_definition=ScoreStaticDefinition(30), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]))

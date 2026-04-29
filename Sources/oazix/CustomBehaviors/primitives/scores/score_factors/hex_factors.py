@@ -38,7 +38,7 @@ class Hex_Factors(ScoreDefinition):
         return f"""not_hexed_factor => {self.not_hexed_factor}
 already_hexed_factor => {self.already_hexed_factor}"""
 
-class Simple_Hex_Factors(ScoreDefinition):
+class Simple_Hex_Factors(Hex_Factors):
 
     def __init__(
             self,
