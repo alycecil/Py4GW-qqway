@@ -179,7 +179,12 @@ class GenericUtilitySkillsList:
         skills.append(RawSimpleHealUtility(event_bus=event_bus, skill=CustomSkill("Healing_Burst"), current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(1)))
 
         # paragon
-        skills.append(ProtectiveShoutUtility(event_bus=event_bus, skill=CustomSkill("Stand_Your_Ground"), current_build=in_game_build, allies_health_less_than_percent=0.9,allies_quantity_required=2,score_definition=ScoreStaticDefinition(88), allowed_states=[BehaviorState.IN_AGGRO]))
+        skills.append(ProtectiveShoutUtility(
+            event_bus=event_bus, skill=CustomSkill("Stand_Your_Ground"), current_build=in_game_build,
+            allies_health_less_than_percent=0.99,allies_quantity_required=1,
+            score_definition=ScoreStaticDefinition(88),
+            allowed_states=[BehaviorState.IN_AGGRO])
+        )
         skills.append(ProtectiveShoutTargetedUtility(
             event_bus=event_bus, skill=CustomSkill("Angelic_Bond"), current_build=in_game_build,
             allies_health_less_than_percent=0.5,allies_quantity_required=1,
