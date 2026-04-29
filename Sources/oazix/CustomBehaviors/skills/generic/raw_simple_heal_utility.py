@@ -34,43 +34,8 @@ class RawSimpleHealUtility(CustomSkillUtilityBase):
                 
         self.score_definition: ScorePerHealthGravityDefinition = score_definition
 
-    def _save_the_turtle(self) -> list[custom_behavior_helpers.SortableAgentData] | None:
-        # underworld
-        #TorturedSpirit1 = 2353
-        #TorturedSpirit2 = 2354
-        # that gd luxon quest
-        # THE_BABY_TURTLES = 3587
-        THE_BABY_TURTLES2 = 3638
-        # FOW
-        # GRIFFS = 2827
-
-        important_npcs: list[
-            custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_ncs_of_model_ordered_by_priority_raw(
-            model_ids=[
-                #THE_BABY_TURTLES,
-                THE_BABY_TURTLES2,
-                #TorturedSpirit1,
-                #TorturedSpirit2,
-                #GRIFFS
-            ],
-            within_range=Range.Spellcast.value * 1.5,
-            sort_key=(TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_ASC),
-            range_to_count_allies=None,
-            range_to_count_enemies=max(GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id), Range.Adjacent.value))
-
-        if len(important_npcs) > 0:
-            if constants.DEBUG: print("Turtles detected")
-
-            condition=lambda agent: agent.agent_id != Player.GetAgentID() and Agent.GetHealth(agent.agent_id) < 0.7
-            important_npcs = list(filter(condition, important_npcs))
-
-            if len(important_npcs) > 0:
-                print("I HAVE TURTLES TO SAVE")
-
-        return important_npcs
-
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
-        turtles = self._save_the_turtle()
+        turtles = custom_behavior_helpers.Targets.save_the_turtle(self.custom_skill.skill_id)
         if len(turtles) > 0:
             return turtles
 
@@ -101,4 +66,9 @@ class RawSimpleHealUtility(CustomSkillUtilityBase):
         target = targets[0]
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
         return result
+
+    @override
+    def customized_debug_ui(self, current_state):
+        PyImGui.bullet_text(f"timer : {self.far_from_aggro_timer.GetTimeRemaining()}")
+        PyImGui.bullet_text(f"is in timeout : {self.far_from_aggro_timer.IsExpired()}")
 

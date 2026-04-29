@@ -37,50 +37,8 @@ class EbonEscapeUtility(CustomSkillUtilityBase):
         self.score_definition: ScorePerHealthGravityDefinition = score_definition
         self.add_plugin_targetting_modifier(lambda x: BuffConfigurator(event_bus, self.custom_skill, buff_configuration_per_profession= BuffConfigurationPerProfession.BUFF_CONFIGURATION_ALL))
 
-    def _save_the_turtle(self) -> list[custom_behavior_helpers.SortableAgentData] | None:
-        # underworld
-        #TorturedSpirit1 = 2353
-        #TorturedSpirit2 = 2354
-        # that gd luxon quest
-        # THE_BABY_TURTLES = 3587
-        THE_BABY_TURTLES2 = 3638
-        # FOW
-        # GRIFFS = 2827
-
-        important_npcs: list[
-            custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_ncs_of_model_ordered_by_priority_raw(
-            model_ids=[
-                #THE_BABY_TURTLES,
-                THE_BABY_TURTLES2,
-                #TorturedSpirit1,
-                #TorturedSpirit2,
-                #GRIFFS
-
-                # TOGO
-                3078, 3081, 3120, 3215,
-
-                # mhenlo
-                1926, 2136, 2855, 3121, 4577, 5990, 4587, 1503,
-            ],
-            condition=lambda agent_id: Agent.CanBeViewedInPartyWindow(agent_id),
-            within_range=Range.Spellcast.value * 1.5,
-            sort_key=(TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_ASC),
-            range_to_count_allies=None,
-            range_to_count_enemies=Range.Adjacent.value)
-
-        if len(important_npcs) > 0:
-            if constants.DEBUG: print("Turtles detected")
-
-            condition=lambda agent: agent.agent_id != Player.GetAgentID() and Agent.GetHealth(agent.agent_id) < 0.7
-            important_npcs = list(filter(condition, important_npcs))
-
-            if len(important_npcs) > 0:
-                print("I HAVE TURTLES TO SAVE")
-
-        return important_npcs
-
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
-        save_the_turtle = self._save_the_turtle()
+        save_the_turtle = custom_behavior_helpers.Targets.save_the_turtle(self.custom_skill.skill_id)
         if len(save_the_turtle) > 0:
             return save_the_turtle
 

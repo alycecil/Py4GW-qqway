@@ -452,7 +452,52 @@ class Actions:
         yield
         return BehaviorResult.ACTION_SKIPPED
 
+
 class Targets:
+
+    @staticmethod
+    def save_the_turtle(skill_id: int) -> list[SortableAgentData] | None:
+        # underworld
+        #TorturedSpirit1 = 2353
+        #TorturedSpirit2 = 2354
+        # that gd luxon quest
+        # THE_BABY_TURTLES = 3587
+        THE_BABY_TURTLES2 = 3638
+        # FOW
+        # GRIFFS = 2827
+
+        important_npcs: list[SortableAgentData] = Targets.get_all_possible_ncs_of_model_ordered_by_priority_raw(
+            model_ids=[
+                #THE_BABY_TURTLES,
+                THE_BABY_TURTLES2,
+                #TorturedSpirit1,
+                #TorturedSpirit2,
+                #GRIFFS
+
+                # TOGO
+                3078, 3081, 3120, 3215,
+
+                # mhenlo
+                1926, 2136, 2855, 3121, 4577, 5990, 4587, 1503,
+
+                # Goren in Dasha's Vestibule
+                4486,
+            ],
+            within_range=Range.Spellcast.value * 1.5,
+            sort_key=(TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_ASC),
+            range_to_count_allies=None,
+            range_to_count_enemies=max(GLOBAL_CACHE.Skill.Data.GetAoERange(skill_id), Range.Adjacent.value))
+
+        if len(important_npcs) > 0:
+            if constants.DEBUG: print("Turtles detected")
+
+            condition=lambda agent: agent.agent_id != Player.GetAgentID() and 0 < Agent.GetHealth(agent.agent_id) < 0.7
+            important_npcs = list(filter(condition, important_npcs))
+
+            if len(important_npcs) > 0:
+                print("I HAVE TURTLES TO SAVE")
+
+        return important_npcs
     
     @staticmethod
     def find_optimal_gravity_center(range_to_cover: Range, agent_ids: list[int]) -> GravityCenter | None:
@@ -666,7 +711,9 @@ class Targets:
                     is_martial=Agent.IsMartial(agent_id),
                     enemy_quantity_within_range=enemies_quantity_within_range,
                     agent_quantity_within_range=allies_quantity_within_range,
-                    energy=Resources.get_energy_percent_in_party(agent_id)
+                    energy=Resources.get_energy_percent_in_party(agent_id),
+                    hex_priority_level=PartyDisabilityManager().get_hex_score(agent_id),
+                    condition_priority_level=PartyDisabilityManager().get_condition_score(agent_id),
                 )
 
             data_to_sort = list(map(lambda agent_id: build_sortable_array(agent_id), agent_ids))
