@@ -1,6 +1,6 @@
 from typing import Any, Generator, override
 
-from Py4GWCoreLib import GLOBAL_CACHE, Range, Player
+from Py4GWCoreLib import GLOBAL_CACHE, Range, Player, Agent
 from Py4GWCoreLib.enums import ModelID
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
@@ -69,6 +69,9 @@ class ScrollOfResurrectionUtility(CustomSkillUtilityBase):
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
+
+        if Agent.IsMoving(Player.GetAgentID()):
+            return None
         
         if not self._has_scroll_in_inventory(): 
             return None
