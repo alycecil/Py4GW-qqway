@@ -10,6 +10,7 @@ from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_hel
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
 from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
 from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
+from Sources.oazix.CustomBehaviors.primitives.scores.comon_score import CommonScore
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
@@ -27,7 +28,7 @@ class SaveYourselvesUtility(CustomSkillUtilityBase):
         emergency_health_percent: float = 0.45,
         score_definition: ScoreStaticDefinition = ScoreStaticDefinition(90),
         mana_required_to_cast: int = 0,
-        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO]
+        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]
         ) -> None:
 
         super().__init__(
@@ -68,7 +69,7 @@ class SaveYourselvesUtility(CustomSkillUtilityBase):
         emergency_allies = [ally for ally in allies if ally.hp < self.emergency_health_percent]
         if len(emergency_allies) >= 1: return self.score_definition.get_score()
 
-        return None
+        return CommonScore.GENERIC_SKILL_HERO_AI.value
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:
