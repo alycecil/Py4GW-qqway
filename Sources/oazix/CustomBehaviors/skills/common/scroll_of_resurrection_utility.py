@@ -94,6 +94,8 @@ class ScrollOfResurrectionUtility(CustomSkillUtilityBase):
         lock_keys = self._get_lock_keys([ally.agent_id for ally in dead_allies])
         acquired_locks = CustomBehaviorParty().get_shared_lock_manager().try_aquire_locks(lock_keys, min_locks_to_acquire=self.min_dead_allies_required)
         if acquired_locks is None: return BehaviorResult.ACTION_SKIPPED
+
+        # todo This needs work
         
         try:
             if self._use_scroll():
