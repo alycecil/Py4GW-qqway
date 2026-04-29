@@ -180,6 +180,12 @@ class GenericUtilitySkillsList:
         # paragon
         skills.append(ProtectiveShoutUtility(event_bus=event_bus, skill=CustomSkill("Stand_Your_Ground"), current_build=in_game_build, allies_health_less_than_percent=0.9,allies_quantity_required=2,score_definition=ScoreStaticDefinition(88), allowed_states=[BehaviorState.IN_AGGRO]))
         skills.append(ProtectiveShoutTargetedUtility(
+            event_bus=event_bus, skill=CustomSkill("Angelic_Bond"), current_build=in_game_build,
+            allies_health_less_than_percent=0.5,allies_quantity_required=1,
+            score_definition=ScoreStaticDefinition(60),
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO, BehaviorState.IDLE])
+        )
+        skills.append(ProtectiveShoutTargetedUtility(
             event_bus=event_bus, skill=CustomSkill("Help_Me"), current_build=in_game_build,
             allies_health_less_than_percent=0.7,allies_quantity_required=1,
             score_definition=ScoreStaticDefinition(88),
