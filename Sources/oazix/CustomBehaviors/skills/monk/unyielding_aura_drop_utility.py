@@ -52,7 +52,7 @@ class UnyieldingAuraDropUtility(CustomSkillUtilityBase):
 
     def _get_dead_allies(self) -> list[custom_behavior_helpers.SortableAgentData]:
         return custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
-            within_range=Range.Spellcast.value * 1.5,
+            within_range=Range.Earshot.value,
             sort_key=(TargetingOrder.DISTANCE_ASC,),
             is_alive=False
         )

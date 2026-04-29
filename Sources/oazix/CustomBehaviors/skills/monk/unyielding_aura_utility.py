@@ -26,7 +26,7 @@ class UnyieldingAuraUtility(CustomSkillUtilityBase):
         current_build: list[CustomSkill],
         score_definition: ScoreStaticDefinition = ScoreStaticDefinition(95),
         mana_required_to_cast: int = 5,
-        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]
+        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO, BehaviorState.IDLE]
         ) -> None:
 
         super().__init__(
@@ -51,7 +51,7 @@ class UnyieldingAuraUtility(CustomSkillUtilityBase):
 
     def _get_dead_allies(self) -> list[custom_behavior_helpers.SortableAgentData]:
         return custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
-            within_range=Range.Spellcast.value * 1.5,
+            within_range=Range.Earshot.value,
             sort_key=(TargetingOrder.DISTANCE_ASC,),
             is_alive=False
         )
