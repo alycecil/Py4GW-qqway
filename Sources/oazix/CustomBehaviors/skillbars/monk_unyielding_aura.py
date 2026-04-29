@@ -1,5 +1,6 @@
 from typing import override
 
+from Py4GWCoreLib import Player, Routines
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_health_gravity_definition import ScorePerHealthGravityDefinition
@@ -13,6 +14,7 @@ from Sources.oazix.CustomBehaviors.skills.common.i_am_unstoppable_utility import
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.preparation_utility import PreparationUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_heal_utility import RawSimpleHealUtility
+from Sources.oazix.CustomBehaviors.skills.mesmer.arcane_mimicry_utility import ArcaneMimicryUtility
 from Sources.oazix.CustomBehaviors.skills.monk.blessed_signet_utility import Blessed_Signet_EffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.monk.cure_hex_utility import CureHexUtility
 from Sources.oazix.CustomBehaviors.skills.monk.dismiss_condition_utility import DismissConditionUtility
@@ -23,6 +25,8 @@ from Sources.oazix.CustomBehaviors.skills.monk.unyielding_aura_utility import Un
 from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_lost_souls_utility import SignetOfLostSoulsUtility
 from Sources.oazix.CustomBehaviors.skills.paragon.fall_back_utility import FallBackUtility
 from Sources.oazix.CustomBehaviors.skills.plugins.preconditions.should_wait_for_effect import ShouldWaitForEffect
+from Sources.oazix.CustomBehaviors.skills.plugins.preconditions.should_wait_for_heroic_refrain import \
+    ShouldWaitForHeroicRefrain
 from Sources.oazix.CustomBehaviors.skills.plugins.preconditions.should_wait_for_serpents_quickness import ShouldWaitForSerpentsQuickness
 
 
@@ -79,6 +83,15 @@ class MonkUnyieldingAura_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.by_urals_hammer_utility: CustomSkillUtilityBase = ByUralsHammerUtility(event_bus=self.event_bus, current_build=in_game_build)
         self.finish_him_utility: CustomSkillUtilityBase = FinishHimUtility(event_bus=self.event_bus, current_build=in_game_build)
 
+        healers_boon = CustomSkill("Healers_Boon")
+        self.arcane_mimicry_utility: CustomSkillUtilityBase = (
+            ArcaneMimicryUtility(
+                event_bus=self.event_bus,current_build=in_game_build,
+                pre_check_condition= lambda: not Routines.Checks.Effects.HasBuff(Player.GetAgentID(), healers_boon.skill_id),
+                skill_to_copy_instance= lambda: KeepSelfEffectUpUtility(event_bus=self.event_bus, current_build=in_game_build, skill=healers_boon, score_definition=ScoreStaticDefinition(88)))
+           .add_plugin_precondition(lambda x: ShouldWaitForHeroicRefrain(x.custom_skill, False))
+           )
+
     @property
     @override
     def custom_skills_in_behavior(self) -> list[CustomSkillUtilityBase]:
@@ -108,6 +121,8 @@ class MonkUnyieldingAura_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.Signet_of_Rejuvenation_utility,
             self.Signet_of_Devotion_utility,
             self.healing_ribbon_utility,
+
+            self.arcane_mimicry_utility,
         ]
 
     @property
