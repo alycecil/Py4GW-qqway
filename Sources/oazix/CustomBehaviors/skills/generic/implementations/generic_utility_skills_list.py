@@ -6,6 +6,7 @@ from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.scores.comon_score import CommonScore
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.distance_factors import DistanceFactors_Short
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_health_gravity_definition import ScorePerHealthGravityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
@@ -196,6 +197,13 @@ class GenericUtilitySkillsList:
             score_definition=ScoreStaticDefinition(75),
             custom_agent_targeting_predicate=lambda agent_id: Agent.IsKnockedDown(agent_id) and Utils.Distance(Player.GetXY(), Agent.GetXY(agent_id)) < Range.Adjacent.value
         ))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Soldiers_Strike"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 12 if enemy_qte >= 3 else 10),
+            distance_factor=DistanceFactors_Short()
+        ))
         # Warrior # AOE
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
@@ -223,7 +231,6 @@ class GenericUtilitySkillsList:
             custom_agent_targeting_predicate=lambda agent_id: Agent.IsCasting(agent_id),
             within_range=Range.Nearby
         ))
-
 
         # Ranger Things
         skills.append(KeepSelfEffectUpUtility(

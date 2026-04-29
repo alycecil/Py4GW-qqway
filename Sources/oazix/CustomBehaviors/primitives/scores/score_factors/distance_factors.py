@@ -50,3 +50,36 @@ class DistanceFactors_Simple(DistanceFactors):
     {_range.name} => {nearby} ({longer})"""
 
         return string
+
+
+class DistanceFactors_Short(DistanceFactors):
+    def distance_factor(
+            self,
+            score_max, score_min, score_offset,
+            distance, short_range
+    ):
+        # Distance factor
+        if distance < Range.Touch.value:
+            score_offset += 12
+        elif distance < Range.Adjacent.value:
+            score_offset += 7
+        elif distance < Range.Nearby.value:
+            score_offset += 5
+        elif distance < Range.Area.value:
+            score_offset += 3
+        elif distance < Range.Area.value * 2:
+            score_offset += 2
+        elif distance < Range.Earshot.value:
+            score_offset += 1
+        return score_max, score_min, score_offset
+
+    @override
+    def score_definition_debug_ui(self) -> str:
+        string = "distance => (max, min, score) (not short range)"
+
+        for _range in [Range.Touch, Range.Adjacent, Range.Nearby, Range.Area, Range.Earshot]:
+            nearby = self.distance_factor(0, 0, 0, _range.value - 1, True)
+            string += f"""
+    {_range.name} => {nearby}"""
+
+        return string
