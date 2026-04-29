@@ -95,7 +95,7 @@ class CustomBehaviorBaseUtility():
             MoveIfStuckUtility(event_bus=self.event_bus, current_build=self.in_game_build),
 
             # INVENTORY_MANAGEMENT
-            # ScrollOfResurrectionUtility(event_bus=self.event_bus, current_build=self.in_game_build),
+            ScrollOfResurrectionUtility(event_bus=self.event_bus, current_build=self.in_game_build),
             MerchantRefillIfNeededUtility(event_bus=self.event_bus, current_build=self.in_game_build),
             SalvageIfNeededUtility(event_bus=self.event_bus, current_build=self.in_game_build),
             DepositIfNeededUtility(event_bus=self.event_bus, current_build=self.in_game_build),
