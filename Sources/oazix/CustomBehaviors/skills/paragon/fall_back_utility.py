@@ -1,18 +1,15 @@
-from re import S
-from typing import Any, Callable, Generator, override
-import random
+from typing import Any, Generator, override
 
-from Py4GWCoreLib import GLOBAL_CACHE, Routines, Agent, Player
-from Py4GWCoreLib.enums import Profession, Range
+from Py4GWCoreLib import Routines, Agent, Player
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
-from Sources.oazix.CustomBehaviors.primitives.helpers.targeting_order import TargetingOrder
 from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
+
 
 class FallBackUtility(CustomSkillUtilityBase):
     def __init__(
