@@ -3,9 +3,8 @@ from typing import List, Any, Generator, Callable, override
 
 import PyImGui
 
-from HeroAI.types import SkillType
 from Py4GWCoreLib import GLOBAL_CACHE, Player, Routines, Range, Agent
-from Py4GWCoreLib.enums_src.GameData_enums import Profession
+from Py4GWCoreLib.enums_src.GameData_enums import Profession, SkillType
 from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
 from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives import constants
