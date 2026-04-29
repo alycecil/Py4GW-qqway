@@ -463,8 +463,6 @@ class Targets:
         # that gd luxon quest
         # THE_BABY_TURTLES = 3587
         THE_BABY_TURTLES2 = 3638
-        # FOW
-        # GRIFFS = 2827
 
         important_npcs: list[SortableAgentData] = Targets.get_all_possible_ncs_of_model_ordered_by_priority_raw(
             model_ids=[
@@ -472,7 +470,6 @@ class Targets:
                 THE_BABY_TURTLES2,
                 #TorturedSpirit1,
                 #TorturedSpirit2,
-                #GRIFFS
 
                 # TOGO
                 3078, 3081, 3120, 3215,
@@ -482,6 +479,10 @@ class Targets:
 
                 # Goren in Dasha's Vestibule
                 4486,
+
+                # FOW
+                2877, # Rastigan
+                2827, # Griffs
             ],
             within_range=Range.Spellcast.value * 1.5,
             sort_key=(TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_ASC),
