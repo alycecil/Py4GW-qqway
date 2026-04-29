@@ -183,7 +183,6 @@ class MonkSpellBreaker_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.Signet_of_Devotion_utility,
 
             self.blessed_signet_utility,
-            self.Ether_Signet_utility,
 
             self.arcane_echo_utility,
             self.auspicious_incantation_utility,
