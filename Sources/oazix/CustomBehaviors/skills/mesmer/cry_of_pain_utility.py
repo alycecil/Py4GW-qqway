@@ -1,5 +1,6 @@
 from typing import Any, Generator, Callable, override
 
+import traceback
 from Py4GWCoreLib import GLOBAL_CACHE, Agent, Range
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus

@@ -122,7 +122,7 @@ class CustomBehaviorParty:
             return
 
         match message.Command:
-            case SharedCommandType.CustomBehaviors:
+            case SharedCommandType.ReservedLegacyCommand:
                 
                 pass
 

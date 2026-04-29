@@ -2555,7 +2555,7 @@ def ProcessMessages():
             # privately Handled Command, by frenkey
             pass
         case SharedCommandType.ReservedLegacyCommand:
-            GLOBAL_CACHE.ShMem.MarkMessageAsFinished(account_email, index)
+            # GLOBAL_CACHE.ShMem.MarkMessageAsFinished(account_email, index)
             pass
         case _:
             GLOBAL_CACHE.ShMem.MarkMessageAsFinished(account_email, index)

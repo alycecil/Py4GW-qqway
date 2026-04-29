@@ -40,7 +40,8 @@ class ProtectiveShoutUtility(CustomSkillUtilityBase):
         
         targets: list[custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
             within_range=Range.Earshot.value,
-            condition=lambda agent_id: Agent.GetHealth(agent_id) < self.allies_health_less_than_percent,
+            condition=lambda agent_id: Agent.GetHealth(agent_id) < self.allies_health_less_than_percent
+               and not custom_behavior_helpers.Resources.is_ally_under_specific_effect(agent_id, self.custom_skill.skill_id),
             sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC))
         
         if len(targets) == 0: return None

@@ -42,7 +42,7 @@ class HealingSeedUtility(CustomSkillUtilityBase):
 
         targets: list[custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
             within_range=Range.Spellcast.value * 1.2,
-            condition=lambda agent_id: Agent.GetHealth(agent_id) < 0.9 and self.get_plugin_targeting_modifiers_filtering_predicate()(agent_id),
+            condition=lambda agent_id: Agent.GetHealth(agent_id) < 0.9 and self.get_plugin_targeting_modifiers_filtering_predicate_all()(agent_id),
             sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC))
         return targets
 

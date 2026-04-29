@@ -44,7 +44,7 @@ class ParagonRefrain_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.theyre_on_fire_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(
             event_bus=self.event_bus, skill=CustomSkill("Theyre_on_Fire"),
             current_build=in_game_build, score_definition=ScoreStaticDefinition(80),
-            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO],
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO, BehaviorState.IDLE],
             renew_before_expiration_in_milliseconds=0,
             after_cast_delay=False
         )

@@ -40,22 +40,11 @@ class MendingRefrainUtility(CustomSkillUtilityBase):
 
     def _get_target_agent_id(self) -> int | None:
 
-        # PHASE 1 - DOUBLE CAST ON PARAGON
-        # it will cause issue if you don't have 16 leadership base. can be dactivated through UI(customized_debug_ui & detailled mode)
-
-        attributes: list[AttributeStruct] = Agent.GetAttributes(Player.GetAgentID())
-        leadership_attribute:AttributeStruct|None = next((attribute for attribute in attributes if attribute.GetName() == 'Leadership'), None)
-        if leadership_attribute is not None and leadership_attribute.level < 20:
-            return Player.GetAgentID()
-
-        # PHASE 2 - CAST ON PARTY
-
         targets: list[custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
                 within_range=Range.Spellcast.value * 1.2,
                 condition=lambda agent_id:
-                    self.get_plugin_targeting_modifiers_filtering_predicate()(agent_id) 
-                    and not custom_behavior_helpers.Resources.is_ally_under_specific_effect(agent_id, self.custom_skill.skill_id)
-                    ,
+                    self.get_plugin_targeting_modifiers_filtering_predicate_any()(agent_id)
+                    and not custom_behavior_helpers.Resources.is_ally_under_specific_effect(agent_id, self.custom_skill.skill_id),
                 sort_key=(TargetingOrder.DISTANCE_ASC, TargetingOrder.CASTER_THEN_MELEE),
                 range_to_count_enemies=None,
                 range_to_count_allies=None)

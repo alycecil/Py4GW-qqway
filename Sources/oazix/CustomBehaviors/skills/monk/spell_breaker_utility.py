@@ -48,7 +48,7 @@ class SpellBreakerUtility(CustomSkillUtilityBase):
                 within_range=Range.Spellcast.value * 1.2,
                 condition=lambda agent_id: 
                     agent_id != Player.GetAgentID() and
-                    self.get_plugin_targeting_modifiers_filtering_predicate()(agent_id) and
+                    self.get_plugin_targeting_modifiers_filtering_predicate_all()(agent_id) and
                     not CustomBehaviorParty().get_shared_lock_manager().is_lock_taken(self._get_lock_key(agent_id)),
                 sort_key=(TargetingOrder.DISTANCE_DESC, TargetingOrder.CASTER_THEN_MELEE),
                 range_to_count_enemies=None,

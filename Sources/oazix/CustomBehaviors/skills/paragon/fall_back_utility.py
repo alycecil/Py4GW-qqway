@@ -20,7 +20,7 @@ class FallBackUtility(CustomSkillUtilityBase):
             event_bus: EventBus,
             current_build: list[CustomSkill],
             score_definition: ScoreStaticDefinition = ScoreStaticDefinition(99.99),
-            allowed_states: list[BehaviorState] = [BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]
+            allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO, BehaviorState.IDLE]
             ) -> None:
 
         super().__init__(
@@ -37,7 +37,11 @@ class FallBackUtility(CustomSkillUtilityBase):
         has_buff = Routines.Checks.Effects.HasBuff(Player.GetAgentID(), self.custom_skill.skill_id)
         is_moving = Agent.IsMoving(Player.GetAgentID())
         
-        if not has_buff and is_moving: return self.score_definition.get_score()
+        if not has_buff:
+            if is_moving:
+                return self.score_definition.get_score()
+            else:
+                return 10
         return None
 
     @override
@@ -45,10 +49,10 @@ class FallBackUtility(CustomSkillUtilityBase):
 
         lock_key = f"Fall_Back_utility"
 
-        if CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key) == False:
+        if not CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key):
             yield
             return BehaviorResult.ACTION_SKIPPED
 
         result:BehaviorResult = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
         CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
-        return result 
+        return result

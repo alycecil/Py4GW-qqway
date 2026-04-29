@@ -176,6 +176,12 @@ class GenericUtilitySkillsList:
 
         # paragon
         skills.append(ProtectiveShoutUtility(event_bus=event_bus, skill=CustomSkill("Stand_Your_Ground"), current_build=in_game_build, allies_health_less_than_percent=0.9,allies_quantity_required=2,score_definition=ScoreStaticDefinition(88), allowed_states=[BehaviorState.IN_AGGRO]))
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, skill=CustomSkill("Aggressive_Refrain"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(10),
+            renew_before_expiration_in_milliseconds=0,
+            allowed_states=[BehaviorState.IN_AGGRO]),
+        )
 
         # pve
         skills.append(KeepSelfEffectUpUtility(event_bus=event_bus, skill=CustomSkill("Air_of_Superiority"), current_build=in_game_build, score_definition=ScoreStaticDefinition(30), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]))
