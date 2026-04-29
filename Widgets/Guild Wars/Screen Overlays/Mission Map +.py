@@ -1097,6 +1097,8 @@ class MissionMap:
             return False
         if not Player.IsPlayerLoaded():
             return False
+        if self.loot_nearby():
+            return True
         try:
             px, py = Player.GetXY()
             enemies = Routines.Agents.GetFilteredEnemyArray(px, py, self.snap_danger_radius)
@@ -1127,21 +1129,50 @@ class MissionMap:
                 _snap_launch_path_coroutine(snapped_target[0], snapped_target[1], self)
             )
 
+    @staticmethod
+    def loot_nearby() -> bool:
+        from Py4GWCoreLib.Py4GWcorelib import LootConfig
+        import os
+        script_directory = os.path.dirname(os.path.abspath(__file__))
+        RARITY_FILTER_DATA_FILE = os.path.join(script_directory, "Widgets", "Data", "rarity_filter_data.json")
+        def load_rarity_filter_data():
+            if os.path.exists(RARITY_FILTER_DATA_FILE):
+                try:
+                    with open(RARITY_FILTER_DATA_FILE, "r") as f:
+                        import json
+                        data = json.load(f)
+                    #Py4GW.Console.Log("LootManager", "Loaded rarity_filter_data.json")
+                    return data
+                except Exception as e:
+                    Py4GW.Console.Log("LootManager", f"Failed to load rarity_filter_data.json: {str(e)}", Py4GW.Console.MessageType.Error)
+            else:
+                Py4GW.Console.Log("LootManager","rarity_filter_data.json not found", Py4GW.Console.MessageType.Error)
+            return {}
+
+        if GLOBAL_CACHE.Inventory.GetFreeSlotCount() < 1: # we're full, no need to stand around like a dolt
+            return False
+
+        loot_filter_singleton = LootConfig()
+        rarity_data = load_rarity_filter_data()
+        loot_filter_singleton.SetProperties(
+            loot_whites=rarity_data.get("white", False),
+            loot_blues=rarity_data.get("blue", False),
+            loot_purples=rarity_data.get("purple", False),
+            loot_golds=rarity_data.get("gold", False),
+            loot_greens=rarity_data.get("green", False),
+            loot_gold_coins=rarity_data.get("gold_coins", False)
+        )
+
+        loot_array:list[int] = loot_filter_singleton.GetfilteredLootArray(Range.Earshot.value, multibox_loot=True)
+
+        if len(loot_array) == 0:
+            return False
+        item_id = loot_array.pop(0)
+        if item_id is None or item_id == 0:
+            return False
+        return True
+
     def _snap_can_resume_move(self) -> bool:
-        def loot_nearby() -> bool:
-            from Py4GWCoreLib.Py4GWcorelib import LootConfig
-
-            if GLOBAL_CACHE.Inventory.GetFreeSlotCount() < 1: # we're full, no need to stand around like a dolt
-                return False
-
-            loot_array:list[int] = LootConfig().GetfilteredLootArray(Range.Earshot.value, multibox_loot=True)
-
-            if len(loot_array) == 0:
-                return False
-            item_id = loot_array.pop(0)
-            if item_id is None or item_id == 0:
-                return False
-            return True
 
         if not Player.IsPlayerLoaded():
             return False
@@ -1155,7 +1186,7 @@ class MissionMap:
             return False
         if Agent.IsAttacking(self.player_agent_id):
             return False
-        if not loot_nearby():
+        if not self.loot_nearby():
             return False
         return True
 
