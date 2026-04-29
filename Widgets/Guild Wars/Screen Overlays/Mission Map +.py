@@ -1128,6 +1128,21 @@ class MissionMap:
             )
 
     def _snap_can_resume_move(self) -> bool:
+        def loot_nearby() -> bool:
+            from Py4GWCoreLib.Py4GWcorelib import LootConfig
+
+            if GLOBAL_CACHE.Inventory.GetFreeSlotCount() < 1: # we're full, no need to stand around like a dolt
+                return False
+
+            loot_array:list[int] = LootConfig().GetfilteredLootArray(Range.Earshot.value, multibox_loot=True)
+
+            if len(loot_array) == 0:
+                return False
+            item_id = loot_array.pop(0)
+            if item_id is None or item_id == 0:
+                return False
+            return True
+
         if not Player.IsPlayerLoaded():
             return False
         if self.player_agent_id == 0:
@@ -1139,6 +1154,8 @@ class MissionMap:
         if Agent.IsCasting(self.player_agent_id):
             return False
         if Agent.IsAttacking(self.player_agent_id):
+            return False
+        if not loot_nearby():
             return False
         return True
 
