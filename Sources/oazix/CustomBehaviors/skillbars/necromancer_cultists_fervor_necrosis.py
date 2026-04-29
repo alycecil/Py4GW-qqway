@@ -122,7 +122,6 @@ class NecromancerCultistOfNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
 
         # utilities`
         # todo low energy check
-        self.energy_tap_utility: CustomSkillUtilityBase = AutoCombatUtility(event_bus=self.event_bus, skill=CustomSkill("Energy_Tap"), current_build=in_game_build, score_definition=ScoreStaticDefinition(85))
         self.fall_back_utility: CustomSkillUtilityBase = FallBackUtility(event_bus=self.event_bus, current_build=in_game_build)
 
         # common
@@ -182,7 +181,6 @@ class NecromancerCultistOfNecrosis_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.Signet_of_Corruption_luxon_utility,
             self.Signet_of_Corruption_kurzick_utility,
 
-            self.energy_tap_utility,
             self.fall_back_utility,
 
             self.ebon_battle_standard_of_honor_utility,

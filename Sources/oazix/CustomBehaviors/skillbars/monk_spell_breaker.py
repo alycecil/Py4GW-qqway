@@ -53,12 +53,6 @@ class MonkSpellBreaker_UtilitySkillBar(CustomBehaviorBaseUtility):
             score_definition=ScoreStaticDefinition(73),
         )
 
-        self.Ether_Signet_utility: CustomSkillUtilityBase = AutoCombatUtility(
-            event_bus=self.event_bus,
-            skill=CustomSkill("Ether_Signet"),
-            current_build=in_game_build,
-            score_definition=ScoreStaticDefinition(40),
-        )
         self.Spell_Breaker_utility: CustomSkillUtilityBase = SpellBreakerUtility(event_bus=self.event_bus, current_build=in_game_build)
 
         self.arcane_echo_utility: CustomSkillUtilityBase = ArcaneEchoUtility(
