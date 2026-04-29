@@ -53,6 +53,7 @@ class DistanceFactors_Simple(DistanceFactors):
 
 
 class DistanceFactors_Short(DistanceFactors):
+    #todo constructor
     def distance_factor(
             self,
             score_max, score_min, score_offset,
