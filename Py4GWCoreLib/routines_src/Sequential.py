@@ -354,7 +354,7 @@ class Sequential:
             sleep(1)
 
             Sequential.Agents.TargetNearestItem(distance=300)
-            filtered_loot = LootConfig().GetfilteredLootArray(Range.Area.value, multibox_loot= True)
+            filtered_loot = LootConfig().GetfilteredLootArray(Range.Area.value, multibox_loot= False)
             item = Utils.GetFirstFromArray(filtered_loot)
             Sequential.Agents.ChangeTarget(item)
             Sequential.Player.InteractTarget()

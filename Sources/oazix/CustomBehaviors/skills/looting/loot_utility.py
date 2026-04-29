@@ -56,7 +56,7 @@ class LootUtility(CustomSkillUtilityBase):
         """Get filtered loot array, cached per evaluation cycle via MemoryCacheManager."""
         return MemoryCacheManager.get_or_set(
             self._LOOT_CACHE_KEY,
-            lambda: LootConfig().GetfilteredLootArray(Range.Earshot.value, multibox_loot=True)
+            lambda: LootConfig().GetfilteredLootArray(Range.Earshot.value, multibox_loot=False)
         )
 
     @override
@@ -118,7 +118,7 @@ class LootUtility(CustomSkillUtilityBase):
         while True:
 
             if GLOBAL_CACHE.Inventory.GetFreeSlotCount() < 1: break
-            loot_array:list[int] = LootConfig().GetfilteredLootArray(Range.Longbow.value, multibox_loot=True)
+            loot_array:list[int] = LootConfig().GetfilteredLootArray(Range.Longbow.value, multibox_loot=False)
             if len(loot_array) == 0: break
             item_id = loot_array.pop(0)
             if item_id is None or item_id == 0:
@@ -145,7 +145,7 @@ class LootUtility(CustomSkillUtilityBase):
             # 2) check if loot has been looted
             pickup_timer = ThrottledTimer(7_000)
             while not pickup_timer.IsExpired():
-                loot_array = LootConfig().GetfilteredLootArray(Range.Longbow.value, multibox_loot=True)
+                loot_array = LootConfig().GetfilteredLootArray(Range.Longbow.value, multibox_loot=False)
                 if item_id not in loot_array or len(loot_array) == 0:
                     break
                 yield from custom_behavior_helpers.Helpers.wait_for(100)
@@ -163,5 +163,6 @@ class LootUtility(CustomSkillUtilityBase):
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
         PyImGui.bullet_text(f"is_in_loot_cooldown : {self.loot_cooldown_timer.IsInCooldown()}")
         PyImGui.bullet_text(f"loot_cd_remaining_ms: {int(self.loot_cooldown_timer.GetTimeRemaining())}")
-        PyImGui.bullet_text(f"loot_array : {LootConfig().GetfilteredLootArray(Range.Longbow.value, multibox_loot=True)}")
+        PyImGui.bullet_text(f"loot_array : {LootConfig().GetfilteredLootArray(Range.Longbow.value, multibox_loot=False)}")
+        PyImGui.bullet_text(f"loot_array_all_players : {LootConfig().GetfilteredLootArray(Range.Longbow.value, multibox_loot=True)}")
         return

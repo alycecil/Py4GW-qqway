@@ -994,7 +994,7 @@ def LootItems(distance: float = Range.Earshot.value, timeout_ms: int = 10000) ->
 
         loot_array = LootConfig().GetfilteredLootArray(
             distance=distance,
-            multibox_loot=True,
+            multibox_loot=False,
             allow_unasigned_loot=False,
         )
         if not loot_array:

@@ -1449,7 +1449,7 @@ def PickUpLoot(index:int , message: SharedMessageStruct):
 
     GLOBAL_CACHE.ShMem.MarkMessageAsRunning(message.ReceiverEmail, index)
 
-    loot_array = LootConfig().GetfilteredLootArray(Range.Earshot.value, multibox_loot=True)
+    loot_array = LootConfig().GetfilteredLootArray(Range.Earshot.value, multibox_loot=False)
     if len(loot_array) == 0:
         RestoreHeroAISnapshot(message.ReceiverEmail)  # <-- missing before
         GLOBAL_CACHE.ShMem.MarkMessageAsFinished(message.ReceiverEmail, index)
@@ -1462,7 +1462,7 @@ def PickUpLoot(index:int , message: SharedMessageStruct):
         DisableHeroAIOptions(message.ReceiverEmail)
         yield from Routines.Yield.wait(100)
         while True:
-            loot_array = LootConfig().GetfilteredLootArray(Range.Earshot.value, multibox_loot=True)
+            loot_array = LootConfig().GetfilteredLootArray(Range.Earshot.value, multibox_loot=False)
             if len(loot_array) == 0:
                 break
             item_id = loot_array.pop(0)
@@ -1536,7 +1536,7 @@ def PickUpLoot(index:int , message: SharedMessageStruct):
                     ActionQueueManager().ResetAllQueues()
                     return
 
-                loot_array = LootConfig().GetfilteredLootArray(Range.Earshot.value, multibox_loot=True)
+                loot_array = LootConfig().GetfilteredLootArray(Range.Earshot.value, multibox_loot=False)
                 if item_id not in loot_array or len(loot_array) == 0:
                     yield from Routines.Yield.wait(100)
                     break

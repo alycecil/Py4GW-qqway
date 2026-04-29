@@ -164,7 +164,7 @@ class Agents:
         yield from wait(500)
 
         yield from Agents.TargetNearestItem(distance=300)
-        filtered_loot = LootConfig().GetfilteredLootArray(Range.Area.value, multibox_loot=True)
+        filtered_loot = LootConfig().GetfilteredLootArray(Range.Area.value, multibox_loot=False)
         item = Utils.GetFirstFromArray(filtered_loot)
         yield from Agents.ChangeTarget(item)
         yield from YieldPlayer.InteractTarget()
