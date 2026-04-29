@@ -15,7 +15,6 @@ from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_wisdom_
 from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.common.i_am_unstoppable_utility import IAmUnstoppableUtility
 from Sources.oazix.CustomBehaviors.skills.generic.generic_resurrection_utility import GenericResurrectionUtility
-from Sources.oazix.CustomBehaviors.skills.generic.auto_combat_utility import AutoCombatUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.arcane_echo_utility import ArcaneEchoUtility
@@ -27,7 +26,6 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.ether_nightmare_utility import 
 from Sources.oazix.CustomBehaviors.skills.mesmer.leech_signet_utility import LeechSignetUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.mistrust_utility import MistrustUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.overload_utility import OverloadUtility
-from Sources.oazix.CustomBehaviors.skills.mesmer.power_drain_utility import PowerDrainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.shatter_enchantment_utility import ShatterEnchantmentUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.shatter_hex_utility import ShatterHexUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.spiritual_pain_utility import SpiritualPainUtility
@@ -45,7 +43,6 @@ class MesmerESurgery_Icy_UtilitySkillBar(CustomBehaviorBaseUtility):
         # interrupt
         self.cry_of_pain_utility: CustomSkillUtilityBase = CryOfPainUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(90))
         self.cry_of_frustration_utility: CustomSkillUtilityBase = CryOfFrustrationUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(91))
-        self.power_drain_utility: CustomSkillUtilityBase = PowerDrainUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(92))
         self.leech_signet_utility: CustomSkillUtilityBase = LeechSignetUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(89))
 
         # hex
@@ -71,7 +68,6 @@ class MesmerESurgery_Icy_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.spiritual_pain_utility: CustomSkillUtilityBase = SpiritualPainUtility(event_bus=self.event_bus, current_build=in_game_build, mana_required_to_cast=10)
 
         # utilities
-        self.energy_tap_utility: CustomSkillUtilityBase = AutoCombatUtility(event_bus=self.event_bus, skill=CustomSkill("Energy_Tap"), current_build=in_game_build, score_definition=ScoreStaticDefinition(85))
         self.fall_back_utility: CustomSkillUtilityBase = FallBackUtility(event_bus=self.event_bus, current_build=in_game_build)
 
         # necrosis

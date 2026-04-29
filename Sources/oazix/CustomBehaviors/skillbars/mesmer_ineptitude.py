@@ -13,7 +13,6 @@ from Sources.oazix.CustomBehaviors.skills.mesmer.arcane_conundrum_utility import
 from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_pain_utility import CryOfPainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.drain_enchantment_utility import DrainEnchantmentUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.ineptitude_utility import IneptitudeUtility
-from Sources.oazix.CustomBehaviors.skills.mesmer.power_drain_utility import PowerDrainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.signet_of_clumsiness_utility import SignetOfClumsinessUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.wandering_eye_utility import WanderingEyeUtility
 from Sources.oazix.CustomBehaviors.skills.paragon.fall_back_utility import FallBackUtility
@@ -27,7 +26,6 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
 
         # interrupt
         self.cry_of_pain_utility: CustomSkillUtilityBase = CryOfPainUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(90))
-        self.power_drain_utility: CustomSkillUtilityBase = PowerDrainUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerEnergyDefinition(score_nominal=40, score_boosted=100, low_mana_threshold=0.30, only_cast_if_energy_below=0.85))
 
 #         Cast Glyph of Lesser Energy↦Arcane Conundrum↦Cry of Pain on the largest group of foes, preferably hitting casters.
 #         Deal damage against balled up attacking foes utilizing Ineptitude, Wandering Eye and Signet of Clumsiness.
