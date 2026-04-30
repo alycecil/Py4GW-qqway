@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from tkinter import filedialog
 
 from Py4GWCoreLib import *
+from Sources.oazix.CustomBehaviors.skills.looting.loot_utility import LootUtility, loot_filter_singleton, loot_items
 
 MODULE_NAME = "Loot Manager"
 MODULE_ICON = "Textures/Module_Icons/LootManager.png"
@@ -13,8 +14,6 @@ tk_root.withdraw()
 
 
 # --- Globals ---
-loot_filter_singleton = LootConfig()
-loot_items = []
 temp_model_id = 0
 initialized = False
 include_model_id_in_tooltip = False

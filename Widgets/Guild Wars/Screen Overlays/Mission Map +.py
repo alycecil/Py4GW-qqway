@@ -1152,27 +1152,14 @@ class MissionMap:
                 _snap_launch_path_coroutine(snapped_target[0], snapped_target[1], self)
             )
 
-        try:
-            self.loaded_rarity_filter_data = load_rarity_filter_data()
-            self.loot_filter_singleton : LootConfig = LootConfig()
-            rarity_data = self.loaded_rarity_filter_data
-            self.loot_filter_singleton.SetProperties(
-                loot_whites=rarity_data.get("white", False),
-                loot_blues=rarity_data.get("blue", False),
-                loot_purples=rarity_data.get("purple", False),
-                loot_golds=rarity_data.get("gold", False),
-                loot_greens=rarity_data.get("green", False),
-                loot_gold_coins=rarity_data.get("gold_coins", False)
-            )
-        except Exception as e:
-            Py4GW.Console.Log("MissionMap+", f"Error finding loots: {str(e)}", Py4GW.Console.MessageType.Error)
-
     def loot_nearby(self) -> bool:
         try:
+            from Sources.oazix.CustomBehaviors.skills.looting.loot_utility import loot_filter_singleton
+
             if GLOBAL_CACHE.Inventory.GetFreeSlotCount() < 1: # we're full, no need to stand around like a dolt
                 return False
 
-            loot_array:list[int] = self.loot_filter_singleton.GetfilteredLootArray(Range.Earshot.value, multibox_loot=True)
+            loot_array:list[int] = loot_filter_singleton.GetfilteredLootArray(Range.Area.value*2, multibox_loot=True)
 
             if len(loot_array) == 0:
                 return False
