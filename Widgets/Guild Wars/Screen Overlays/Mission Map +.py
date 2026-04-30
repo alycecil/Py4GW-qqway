@@ -17,9 +17,13 @@ from Py4GWCoreLib.routines_src.BehaviourTrees import BT as RoutinesBT
 from Py4GWCoreLib.py4gwcorelib_src.BehaviorTree import BehaviorTree
 from Py4GWCoreLib.Pathing import NavMesh
 from Py4GWCoreLib.native_src.context.AgentContext import AgentStruct
+from Py4GWCoreLib.Py4GWcorelib import LootConfig
+import Py4GW
 
 from typing import Any, Union, cast
 import math
+import os
+import json
 
 #region CONSTANTS
 MODULE_NAME = "Mission Map+"
@@ -42,6 +46,24 @@ _SNAP_USE_BT_MOVETO = True
 _SNAP_PAUSE_ON_DANGER = True
 _SNAP_DANGER_RADIUS = Range.Earshot.value
 
+
+script_directory = Py4GW.Console.get_projects_path()
+RARITY_FILTER_DATA_FILE = os.path.join(script_directory, "Widgets", "Data", "rarity_filter_data.json")
+
+
+def load_rarity_filter_data():
+    global RARITY_FILTER_DATA_FILE
+    if os.path.exists(RARITY_FILTER_DATA_FILE):
+        try:
+            with open(RARITY_FILTER_DATA_FILE, "r") as f:
+                data = json.load(f)
+            Py4GW.Console.Log("MissionMap+", "Loaded rarity_filter_data.json")
+            return data
+        except Exception as e:
+            Py4GW.Console.Log("MissionMap+", f"Failed to load rarity_filter_data.json: {str(e)}", Py4GW.Console.MessageType.Error)
+    else:
+        Py4GW.Console.Log("MissionMap+","rarity_filter_data.json not found", Py4GW.Console.MessageType.Error)
+    return {}
 #end region
 
 #region ENUMS
@@ -1130,34 +1152,11 @@ class MissionMap:
                 _snap_launch_path_coroutine(snapped_target[0], snapped_target[1], self)
             )
 
-    @staticmethod
-    def load_rarity_filter_data():
-        import os
-        script_directory = os.path.dirname(os.path.abspath(__file__))
-        RARITY_FILTER_DATA_FILE = os.path.join(script_directory, "Widgets", "Data", "rarity_filter_data.json")
-        if os.path.exists(RARITY_FILTER_DATA_FILE):
-            try:
-                with open(RARITY_FILTER_DATA_FILE, "r") as f:
-                    import json
-                    data = json.load(f)
-                Py4GW.Console.Log("MissionMap+", "Loaded rarity_filter_data.json")
-                return data
-            except Exception as e:
-                Py4GW.Console.Log("MissionMap+", f"Failed to load rarity_filter_data.json: {str(e)}", Py4GW.Console.MessageType.Error)
-        else:
-            Py4GW.Console.Log("MissionMap+","rarity_filter_data.json not found", Py4GW.Console.MessageType.Error)
-        return {}
-
-    def loot_nearby(self) -> bool:
         try:
-            from Py4GWCoreLib.Py4GWcorelib import LootConfig
-
-            if GLOBAL_CACHE.Inventory.GetFreeSlotCount() < 1: # we're full, no need to stand around like a dolt
-                return False
-
-            loot_filter_singleton = LootConfig()
-            rarity_data = self.load_rarity_filter_data()
-            loot_filter_singleton.SetProperties(
+            self.loaded_rarity_filter_data = load_rarity_filter_data()
+            self.loot_filter_singleton : LootConfig = LootConfig()
+            rarity_data = self.loaded_rarity_filter_data
+            self.loot_filter_singleton.SetProperties(
                 loot_whites=rarity_data.get("white", False),
                 loot_blues=rarity_data.get("blue", False),
                 loot_purples=rarity_data.get("purple", False),
@@ -1165,8 +1164,15 @@ class MissionMap:
                 loot_greens=rarity_data.get("green", False),
                 loot_gold_coins=rarity_data.get("gold_coins", False)
             )
+        except Exception as e:
+            Py4GW.Console.Log("MissionMap+", f"Error finding loots: {str(e)}", Py4GW.Console.MessageType.Error)
 
-            loot_array:list[int] = loot_filter_singleton.GetfilteredLootArray(Range.Earshot.value, multibox_loot=False)
+    def loot_nearby(self) -> bool:
+        try:
+            if GLOBAL_CACHE.Inventory.GetFreeSlotCount() < 1: # we're full, no need to stand around like a dolt
+                return False
+
+            loot_array:list[int] = self.loot_filter_singleton.GetfilteredLootArray(Range.Earshot.value, multibox_loot=True)
 
             if len(loot_array) == 0:
                 return False
@@ -1176,9 +1182,9 @@ class MissionMap:
             return True
         except Exception as e:
             Py4GW.Console.Log("MissionMap+", f"Error finding loots: {str(e)}", Py4GW.Console.MessageType.Error)
+            return False
 
     def _snap_can_resume_move(self) -> bool:
-
         if not Player.IsPlayerLoaded():
             return False
         if self.player_agent_id == 0:
