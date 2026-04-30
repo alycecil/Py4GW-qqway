@@ -388,7 +388,7 @@ class GenericUtilitySkillsList:
             mana_required_to_cast=0,
             ignore_spirits=True,
             custom_agent_targeting_predicate=lambda agent_id: Agent.IsCasting(agent_id),
-            within_range=Range.Nearby
+            within_range=Range.Adjacent
         ))
         # Shouts Section
         # Really should be limited to imbagon but whatever
