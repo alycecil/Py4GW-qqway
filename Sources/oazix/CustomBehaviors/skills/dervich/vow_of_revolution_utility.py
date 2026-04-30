@@ -16,7 +16,7 @@ class Vow_of_Revolution_KeepSelfEffectUpUtility(CustomSkillUtilityBase):
     def __init__(self,
     event_bus: EventBus,
     current_build: list[CustomSkill],
-    score_definition: ScoreStaticDefinition = ScoreStaticDefinition(85),
+    score_definition: ScoreStaticDefinition = ScoreStaticDefinition(25),
     allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]
     ) -> None:
 
@@ -53,7 +53,7 @@ class Vow_of_Revolution_KeepSelfEffectUpUtility(CustomSkillUtilityBase):
         buff_time_remaining = GLOBAL_CACHE.Effects.GetEffectTimeRemaining(Player.GetAgentID(), self.custom_skill.skill_id)
         if 1000 < buff_time_remaining <= self.renew_before_expiration_in_milliseconds: return 10
 
-        if current_state in [BehaviorState.IN_AGGRO]:
+        if current_state in [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]:
             if not Routines.Checks.Skills.IsSkillSlotReady(self.custom_skill.skill_slot):
                 if constants.DEBUG:
                     print(f"custom_skill.skill_slot: {self.custom_skill.skill_slot}")
