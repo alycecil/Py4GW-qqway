@@ -15,6 +15,9 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_per_health_gravity_de
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
+from Sources.oazix.CustomBehaviors.skills.dervich.imbue_health_utility import ImbueHealthUtility
+from Sources.oazix.CustomBehaviors.skills.dervich.vow_of_revolution_utility import \
+    Vow_of_Revolution_KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.apply_hex_simple_utility import ApplyHexCommonUtility
 from Sources.oazix.CustomBehaviors.skills.generic.generic_resurrection_utility import GenericResurrectionUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
@@ -276,6 +279,14 @@ class GenericUtilitySkillsList:
             renew_before_expiration_in_milliseconds=0,
             target_self=False, # no need
             allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]
+        ))
+        skills.append(Vow_of_Revolution_KeepSelfEffectUpUtility(
+            event_bus=event_bus, current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(15),
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]
+        ))
+        skills.append(ImbueHealthUtility(
+            event_bus=event_bus, current_build=in_game_build,
         ))
 
     @staticmethod
