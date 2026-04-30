@@ -2,6 +2,7 @@ from typing import Any, Generator, override
 
 from Py4GWCoreLib import GLOBAL_CACHE, Routines, Player
 from Py4GWCoreLib.enums_src.GameData_enums import Profession
+from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
@@ -16,7 +17,7 @@ class Vow_of_Revolution_KeepSelfEffectUpUtility(CustomSkillUtilityBase):
     event_bus: EventBus,
     current_build: list[CustomSkill],
     score_definition: ScoreStaticDefinition = ScoreStaticDefinition(85),
-    allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO]
+    allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]
     ) -> None:
 
         super().__init__(
@@ -31,13 +32,36 @@ class Vow_of_Revolution_KeepSelfEffectUpUtility(CustomSkillUtilityBase):
         self.renew_before_expiration_in_milliseconds: int = 2222
 
     @override
+    def are_common_pre_checks_valid(self, current_state: BehaviorState) -> bool:
+        if current_state is BehaviorState.IDLE: return False
+
+        if self.allowed_states is not None and current_state not in self.allowed_states:
+            if constants.DEBUG: print(f'PreCheck Reject - Wrong State {self.custom_skill.skill_name}')
+            return False
+        if custom_behavior_helpers.Resources.get_player_absolute_energy() < self.mana_required_to_cast:
+            if constants.DEBUG: print(f'PreCheck Reject - Energy Requirement for Utility {self.custom_skill.skill_name}')
+            return False
+        if not custom_behavior_helpers.Resources.has_enough_resources(self.custom_skill):
+            if constants.DEBUG: print(f'PreCheck Reject - Resources Requirement for Ability {self.custom_skill.skill_name}')
+            return False
+
+        return True
+
+    @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
         buff_time_remaining = GLOBAL_CACHE.Effects.GetEffectTimeRemaining(Player.GetAgentID(), self.custom_skill.skill_id)
-        if buff_time_remaining <= self.renew_before_expiration_in_milliseconds: return 10
+        if 1000 < buff_time_remaining <= self.renew_before_expiration_in_milliseconds: return 10
 
-        has_buff = Routines.Checks.Effects.HasBuff(Player.GetAgentID(), self.custom_skill.skill_id)
-        if not has_buff: return self.score_definition.get_score()
+        if current_state in [BehaviorState.IN_AGGRO]:
+            if not Routines.Checks.Skills.IsSkillSlotReady(self.custom_skill.skill_slot):
+                if constants.DEBUG:
+                    print(f"custom_skill.skill_slot: {self.custom_skill.skill_slot}")
+                    print(f'PreCheck Reject - IsSkillSlotReady {self.custom_skill.skill_name}')
+                return False
+
+            has_buff = Routines.Checks.Effects.HasBuff(Player.GetAgentID(), self.custom_skill.skill_id)
+            if not has_buff: return self.score_definition.get_score()
 
         return None
 
@@ -52,8 +76,10 @@ class Vow_of_Revolution_KeepSelfEffectUpUtility(CustomSkillUtilityBase):
                     result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
                     if result != BehaviorResult.ACTION_SKIPPED:
                         return result
-
-            return BehaviorResult.ACTION_SKIPPED
         else:
-            result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
-            return result
+            if state in [BehaviorState.IN_AGGRO]:
+                result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
+                return result
+
+        return BehaviorResult.ACTION_SKIPPED
+
