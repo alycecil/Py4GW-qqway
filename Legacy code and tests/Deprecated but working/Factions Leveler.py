@@ -16,9 +16,9 @@ class FSM_Config:
         self.combat_active = True
         self.run_timer = Timer()
         
-        self.use_cupcakes = True
+        self.use_cupcakes = False
         self.amount_of_cupcakes = 50
-        self.use_honeycombs = True
+        self.use_honeycombs = False
         self.amount_of_honeycombs = 100
         
         self.draw_follow_path = True
@@ -995,9 +995,9 @@ def ShowMainWindow():
         PyImGui.text("Time Elapsed: " + str(main_FSM.run_timer.FormatElapsedTime("hh:mm:ss")))
         
         main_FSM.use_cupcakes = PyImGui.checkbox("Use Cupcakes", main_FSM.use_cupcakes)
-        main_FSM.amount_of_cupcakes = PyImGui.slider_int("Amount of Cupcakes", main_FSM.amount_of_cupcakes, 1, 100)
+        main_FSM.amount_of_cupcakes = PyImGui.slider_int("Amount of Cupcakes", main_FSM.amount_of_cupcakes, 0, 100)
         main_FSM.use_honeycombs = PyImGui.checkbox("Use Honeycombs", main_FSM.use_honeycombs)
-        main_FSM.amount_of_honeycombs = PyImGui.slider_int("Amount of Honeycombs", main_FSM.amount_of_honeycombs, 1, 100)
+        main_FSM.amount_of_honeycombs = PyImGui.slider_int("Amount of Honeycombs", main_FSM.amount_of_honeycombs, 0, 100)
 
         if PyImGui.button("Start"):
             main_FSM.script_running = True
