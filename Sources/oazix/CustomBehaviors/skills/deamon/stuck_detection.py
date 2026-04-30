@@ -96,8 +96,10 @@ class StuckDetectionUtility(CustomSkillUtilityBase):
         # let's be more restrictive, stuck is only possible when leader is a bit far away
         party_leader_id = custom_behavior_helpers.CustomBehaviorHelperParty.get_party_leader_id()
         if Player.GetAgentID() != party_leader_id:
-            if Utils.Distance(current_player_pos, Agent.GetXY(party_leader_id)) < 400: return None
-        
+            if Utils.Distance(current_player_pos, Agent.GetXY(party_leader_id)) < Range.Area.value*2: return None
+        else:
+            return None
+
         distance_moved = Utils.Distance(self.__previous_player_position, current_player_pos)
 
         if distance_moved < self.movement_threshold:  # likely stuck
