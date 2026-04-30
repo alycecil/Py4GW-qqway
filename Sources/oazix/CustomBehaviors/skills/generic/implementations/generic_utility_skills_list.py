@@ -87,6 +87,7 @@ class GenericUtilitySkillsList:
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Disenchantment"), current_build=in_game_build, score_definition=ScoreStaticDefinition(49), owned_spirit_model_id=SpiritModelID.DISENCHANTMENT))
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Anguish"), current_build=in_game_build, score_definition=ScoreStaticDefinition(50), owned_spirit_model_id=SpiritModelID.ANGUISH))
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Restoration"), current_build=in_game_build, score_definition=ScoreStaticDefinition(CommonScore.GENERIC_SKILL_HERO_AI.value), owned_spirit_model_id=SpiritModelID.RESTORATION)) # intentionally below hero ai util
+        skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Recovery"), current_build=in_game_build, score_definition=ScoreStaticDefinition(10), owned_spirit_model_id=SpiritModelID.RECOVERY))
         ## PVE generics
         skills.append(RawSpiritUtility(event_bus=event_bus, skill=CustomSkill("Winds"), current_build=in_game_build, score_definition=ScoreStaticDefinition(10), owned_spirit_model_id=SpiritModelID.WINDS))
         ## Ranger Generics
