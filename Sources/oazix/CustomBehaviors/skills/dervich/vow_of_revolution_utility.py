@@ -17,7 +17,8 @@ class Vow_of_Revolution_KeepSelfEffectUpUtility(CustomSkillUtilityBase):
     event_bus: EventBus,
     current_build: list[CustomSkill],
     score_definition: ScoreStaticDefinition = ScoreStaticDefinition(25),
-    allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]
+    allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO],
+    cast_skill_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]
     ) -> None:
 
         super().__init__(
@@ -30,6 +31,7 @@ class Vow_of_Revolution_KeepSelfEffectUpUtility(CustomSkillUtilityBase):
         
         self.score_definition: ScoreStaticDefinition = score_definition
         self.renew_before_expiration_in_milliseconds: int = 2222
+        self.cast_skill_states: list[BehaviorState] = cast_skill_states
 
     @override
     def are_common_pre_checks_valid(self, current_state: BehaviorState) -> bool:
@@ -53,7 +55,7 @@ class Vow_of_Revolution_KeepSelfEffectUpUtility(CustomSkillUtilityBase):
         buff_time_remaining = GLOBAL_CACHE.Effects.GetEffectTimeRemaining(Player.GetAgentID(), self.custom_skill.skill_id)
         if 1000 < buff_time_remaining <= self.renew_before_expiration_in_milliseconds: return 10
 
-        if current_state in [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]:
+        if current_state in self.cast_skill_states:
             if not Routines.Checks.Skills.IsSkillSlotReady(self.custom_skill.skill_slot):
                 if constants.DEBUG:
                     print(f"custom_skill.skill_slot: {self.custom_skill.skill_slot}")
@@ -71,13 +73,14 @@ class Vow_of_Revolution_KeepSelfEffectUpUtility(CustomSkillUtilityBase):
         if has_buff:
             for skill in self.in_game_build:
                 profession_id, _ = GLOBAL_CACHE.Skill.GetProfession(skill.skill_id)
-                if profession_id != Profession.Dervish.value:
+                if (profession_id != Profession.Dervish.value
+                        and skill.skill_id != self.custom_skill.skill_id): # vor is not dervish i guess?
                     # yolo cast!
-                    result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
+                    result = yield from custom_behavior_helpers.Actions.cast_skill(skill)
                     if result != BehaviorResult.ACTION_SKIPPED:
                         return result
         else:
-            if state in [BehaviorState.IN_AGGRO]:
+            if state in self.cast_skill_states:
                 result = yield from custom_behavior_helpers.Actions.cast_skill(self.custom_skill)
                 return result
 
