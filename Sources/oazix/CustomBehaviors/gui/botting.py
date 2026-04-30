@@ -107,13 +107,12 @@ def render():
 
     if not custom_behavior_helpers.CustomBehaviorHelperParty.is_party_leader():
         PyImGui.text(f"Feature restricted to party leader.")
-        return
-    
-    PyImGui.separator()
+    else:
+        _render_enemy_blacklist()
+        _render_utility_skills_config()
+        _render_bot_scripts_table()
 
-    _render_enemy_blacklist()
-    _render_utility_skills_config()
-    _render_bot_scripts_table()
+    PyImGui.separator()
 
     if CustomBehaviorParty().is_ready_for_action():
         default_dialog_string = ImGui.input_text("Dialog Id", default_dialog_string, 0)
