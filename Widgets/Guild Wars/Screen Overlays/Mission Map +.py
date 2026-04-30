@@ -1098,6 +1098,7 @@ class MissionMap:
         if not Player.IsPlayerLoaded():
             return False
         if self.loot_nearby():
+            Py4GW.Console.Log("MissionMap+", f"Pause for loot", Py4GW.Console.MessageType.Error)
             return True
         try:
             px, py = Player.GetXY()
@@ -1130,30 +1131,31 @@ class MissionMap:
             )
 
     @staticmethod
-    def loot_nearby() -> bool:
-        from Py4GWCoreLib.Py4GWcorelib import LootConfig
+    def load_rarity_filter_data():
         import os
         script_directory = os.path.dirname(os.path.abspath(__file__))
         RARITY_FILTER_DATA_FILE = os.path.join(script_directory, "Widgets", "Data", "rarity_filter_data.json")
-        def load_rarity_filter_data():
-            if os.path.exists(RARITY_FILTER_DATA_FILE):
-                try:
-                    with open(RARITY_FILTER_DATA_FILE, "r") as f:
-                        import json
-                        data = json.load(f)
-                    #Py4GW.Console.Log("LootManager", "Loaded rarity_filter_data.json")
-                    return data
-                except Exception as e:
-                    Py4GW.Console.Log("LootManager", f"Failed to load rarity_filter_data.json: {str(e)}", Py4GW.Console.MessageType.Error)
-            else:
-                Py4GW.Console.Log("LootManager","rarity_filter_data.json not found", Py4GW.Console.MessageType.Error)
-            return {}
+        if os.path.exists(RARITY_FILTER_DATA_FILE):
+            try:
+                with open(RARITY_FILTER_DATA_FILE, "r") as f:
+                    import json
+                    data = json.load(f)
+                Py4GW.Console.Log("MissionMap+", "Loaded rarity_filter_data.json")
+                return data
+            except Exception as e:
+                Py4GW.Console.Log("MissionMap+", f"Failed to load rarity_filter_data.json: {str(e)}", Py4GW.Console.MessageType.Error)
+        else:
+            Py4GW.Console.Log("MissionMap+","rarity_filter_data.json not found", Py4GW.Console.MessageType.Error)
+        return {}
+
+    def loot_nearby(self) -> bool:
+        from Py4GWCoreLib.Py4GWcorelib import LootConfig
 
         if GLOBAL_CACHE.Inventory.GetFreeSlotCount() < 1: # we're full, no need to stand around like a dolt
             return False
 
         loot_filter_singleton = LootConfig()
-        rarity_data = load_rarity_filter_data()
+        rarity_data = self.load_rarity_filter_data()
         loot_filter_singleton.SetProperties(
             loot_whites=rarity_data.get("white", False),
             loot_blues=rarity_data.get("blue", False),
@@ -1163,7 +1165,7 @@ class MissionMap:
             loot_gold_coins=rarity_data.get("gold_coins", False)
         )
 
-        loot_array:list[int] = loot_filter_singleton.GetfilteredLootArray(Range.Earshot.value, multibox_loot=True)
+        loot_array:list[int] = loot_filter_singleton.GetfilteredLootArray(Range.Earshot.value, multibox_loot=False)
 
         if len(loot_array) == 0:
             return False
@@ -1186,7 +1188,8 @@ class MissionMap:
             return False
         if Agent.IsAttacking(self.player_agent_id):
             return False
-        if not self.loot_nearby():
+        if self.loot_nearby():
+            Py4GW.Console.Log("MissionMap+", f"Paused for loot", Py4GW.Console.MessageType.Error)
             return False
         return True
 
