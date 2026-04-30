@@ -22,7 +22,7 @@ class DervichEnchantmentUtility(CustomSkillUtilityBase):
         current_build: list[CustomSkill],
         score_definition: ScoreStaticDefinition,
         mana_required_to_cast: int = 0,
-        renew_before_expiration_in_milliseconds: int = 200,
+        renew_before_expiration_in_milliseconds: int = 0,
         allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
     ) -> None:
 
