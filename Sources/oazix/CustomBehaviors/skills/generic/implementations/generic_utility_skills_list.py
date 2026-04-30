@@ -16,6 +16,7 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_per_health_gravity_de
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
+from Sources.oazix.CustomBehaviors.skills.dervich.dervich_enchantment_utility import DervichEnchantmentUtility
 from Sources.oazix.CustomBehaviors.skills.dervich.imbue_health_utility import ImbueHealthUtility
 from Sources.oazix.CustomBehaviors.skills.dervich.vow_of_revolution_utility import \
     Vow_of_Revolution_KeepSelfEffectUpUtility
@@ -181,6 +182,19 @@ class GenericUtilitySkillsList:
                                               allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO,
                                                               BehaviorState.FAR_FROM_AGGRO]))
 
+        skills.append(KeepSelfEffectUpUtility(event_bus=event_bus, current_build=in_game_build,
+                                              skill=CustomSkill("Summon_Ice_Imp"),
+                                              score_definition=ScoreStaticDefinition(10)))
+        skills.append(KeepSelfEffectUpUtility(event_bus=event_bus, current_build=in_game_build,
+                                              skill=CustomSkill("Summon_Mursaat"),
+                                              score_definition=ScoreStaticDefinition(10)))
+        skills.append(KeepSelfEffectUpUtility(event_bus=event_bus, current_build=in_game_build,
+                                              skill=CustomSkill("Summon_Naga_Shaman"),
+                                              score_definition=ScoreStaticDefinition(10)))
+        skills.append(KeepSelfEffectUpUtility(event_bus=event_bus, current_build=in_game_build,
+                                              skill=CustomSkill("Summon_Ruby_Djinn"),
+                                              score_definition=ScoreStaticDefinition(10)))
+
     @staticmethod
     def monkSkills(event_bus, in_game_build, skills):
         # monk
@@ -290,6 +304,42 @@ class GenericUtilitySkillsList:
         ))
         skills.append(ImbueHealthUtility(
             event_bus=event_bus, current_build=in_game_build,
+        ))
+        skills.append(DervichEnchantmentUtility(
+            event_bus=event_bus, skill=CustomSkill("Dust_Cloak"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(11),
+            renew_before_expiration_in_milliseconds=0
+        ))
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, skill=CustomSkill("Intimidating_Aura"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(10),
+            renew_before_expiration_in_milliseconds=0,
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
+        ))
+        skills.append(DervichEnchantmentUtility(
+            event_bus=event_bus, skill=CustomSkill("Staggering_Force"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(11),
+            renew_before_expiration_in_milliseconds=0
+        ))
+        skills.append(DervichEnchantmentUtility(
+            event_bus=event_bus, skill=CustomSkill("Hearth_of_Holy_Flame"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(10),
+            renew_before_expiration_in_milliseconds=0
+        ))
+        skills.append(DervichEnchantmentUtility(
+            event_bus=event_bus, skill=CustomSkill("Sand_Shards"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(10),
+            renew_before_expiration_in_milliseconds=0
+        ))
+        skills.append(DervichEnchantmentUtility(
+            event_bus=event_bus, skill=CustomSkill("Mirage_Cloak"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(10),
+            renew_before_expiration_in_milliseconds=0
+        ))
+        skills.append(DervichEnchantmentUtility(
+            event_bus=event_bus, skill=CustomSkill("Rending_Aura"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(10),
+            renew_before_expiration_in_milliseconds=0
         ))
 
     @staticmethod
