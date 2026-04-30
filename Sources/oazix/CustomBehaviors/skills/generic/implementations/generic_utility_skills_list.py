@@ -6,6 +6,7 @@ from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.scores.comon_score import CommonScore
+from Sources.oazix.CustomBehaviors.primitives.scores.score_combot_definition import ScoreCombotDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.distance_factors import DistanceFactors_Short
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.hex_factors import Simple_Hex_Factors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.target_type_factors import \
@@ -30,6 +31,7 @@ from Sources.oazix.CustomBehaviors.skills.generic.protective_shout_targeted_util
     ProtectiveShoutTargetedUtility
 from Sources.oazix.CustomBehaviors.skills.generic.protective_shout_utility import ProtectiveShoutUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
+from Sources.oazix.CustomBehaviors.skills.generic.raw_combot_attack_utility import RawCombotAttackUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_attack_utility import RawSimpleAttackUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_heal_utility import RawSimpleHealUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_party_heal_utility import RawSimplePartyHealUtility
@@ -82,6 +84,8 @@ class GenericUtilitySkillsList:
         GenericUtilitySkillsList.warriorSkills(event_bus, in_game_build, skills)
 
         GenericUtilitySkillsList.dervishSkills(event_bus, in_game_build, skills)
+
+        GenericUtilitySkillsList.assassinSkills(event_bus, in_game_build, skills)
 
         GenericUtilitySkillsList.ranger_skills(event_bus, in_game_build, skills)
 
@@ -519,3 +523,13 @@ class GenericUtilitySkillsList:
             GenericResurrectionUtility(event_bus=event_bus, skill=CustomSkill("Rebirth"), current_build=in_game_build))
         skills.append(GenericResurrectionUtility(event_bus=event_bus, skill=CustomSkill("Sunspear_Rebirth_Signet"),
                                                  current_build=in_game_build))
+
+    @classmethod
+    def assassinSkills(cls, event_bus, in_game_build, skills):
+        jagged_strike_utility: CustomSkillUtilityBase = RawCombotAttackUtility(event_bus=event_bus, skill=CustomSkill("Jagged_Strike"), current_build=in_game_build, score_definition=ScoreCombotDefinition(40), mana_required_to_cast=13)
+        fox_fangs_utility: CustomSkillUtilityBase = RawCombotAttackUtility(event_bus=event_bus, skill=CustomSkill("Fox_Fangs"), current_build=in_game_build, score_definition=ScoreCombotDefinition(40), mana_required_to_cast=13)
+        death_blossom_utility: CustomSkillUtilityBase = RawCombotAttackUtility(event_bus=event_bus, skill=CustomSkill("Death_Blossom"), current_build=in_game_build, score_definition=ScoreCombotDefinition(40), mana_required_to_cast=13)
+        skills.append(jagged_strike_utility)
+        skills.append(fox_fangs_utility)
+        skills.append(death_blossom_utility)
+        pass
