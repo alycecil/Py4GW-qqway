@@ -1149,30 +1149,33 @@ class MissionMap:
         return {}
 
     def loot_nearby(self) -> bool:
-        from Py4GWCoreLib.Py4GWcorelib import LootConfig
+        try:
+            from Py4GWCoreLib.Py4GWcorelib import LootConfig
 
-        if GLOBAL_CACHE.Inventory.GetFreeSlotCount() < 1: # we're full, no need to stand around like a dolt
-            return False
+            if GLOBAL_CACHE.Inventory.GetFreeSlotCount() < 1: # we're full, no need to stand around like a dolt
+                return False
 
-        loot_filter_singleton = LootConfig()
-        rarity_data = self.load_rarity_filter_data()
-        loot_filter_singleton.SetProperties(
-            loot_whites=rarity_data.get("white", False),
-            loot_blues=rarity_data.get("blue", False),
-            loot_purples=rarity_data.get("purple", False),
-            loot_golds=rarity_data.get("gold", False),
-            loot_greens=rarity_data.get("green", False),
-            loot_gold_coins=rarity_data.get("gold_coins", False)
-        )
+            loot_filter_singleton = LootConfig()
+            rarity_data = self.load_rarity_filter_data()
+            loot_filter_singleton.SetProperties(
+                loot_whites=rarity_data.get("white", False),
+                loot_blues=rarity_data.get("blue", False),
+                loot_purples=rarity_data.get("purple", False),
+                loot_golds=rarity_data.get("gold", False),
+                loot_greens=rarity_data.get("green", False),
+                loot_gold_coins=rarity_data.get("gold_coins", False)
+            )
 
-        loot_array:list[int] = loot_filter_singleton.GetfilteredLootArray(Range.Earshot.value, multibox_loot=False)
+            loot_array:list[int] = loot_filter_singleton.GetfilteredLootArray(Range.Earshot.value, multibox_loot=False)
 
-        if len(loot_array) == 0:
-            return False
-        item_id = loot_array.pop(0)
-        if item_id is None or item_id == 0:
-            return False
-        return True
+            if len(loot_array) == 0:
+                return False
+            item_id = loot_array.pop(0)
+            if item_id is None or item_id == 0:
+                return False
+            return True
+        except Exception as e:
+            Py4GW.Console.Log("MissionMap+", f"Error finding loots: {str(e)}", Py4GW.Console.MessageType.Error)
 
     def _snap_can_resume_move(self) -> bool:
 
