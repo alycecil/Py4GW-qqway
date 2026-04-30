@@ -124,9 +124,9 @@ class ImbueHealthUtility(CustomSkillUtilityBase):
             return None
 
         top = targets[0]
-        if top.hp < 0.40:
+        if top.hp < 0.35:
             return self.score_definition.get_score(HealingScore.MEMBER_DAMAGED_EMERGENCY)
-        if top.hp < 0.70: # reserve Infuse for truly damaged; should_cast_when_mana_low widens under energy pressure
+        if top.hp < 0.60: # reserve Infuse for truly damaged; should_cast_when_mana_low widens under energy pressure
             return self.score_definition.get_score(HealingScore.MEMBER_DAMAGED)
 
         return None
