@@ -127,6 +127,8 @@ class Resources:
             GadgetModelID.CHEST_DUNGEON_SLAVERS_EXILE_JUSTICIAR_THOMMIS_ROOM.value,
             GadgetModelID.BURIED_TREASURE_THE_MIRROR_OF_LYSS.value,
             GadgetModelID.BURIED_TREASURE_NIGHTFALLEN_JAHAI_AND_DOMAIN_OF_PAIN_AND_KODLONU_HAMLET.value,
+            # Zealot's Chest
+            9619,
         ]
 
         gadget_array = AgentArray.GetGadgetArray()
