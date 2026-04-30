@@ -60,7 +60,7 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
         self.inventory_utils: InventoryUtils = InventoryUtils()
 
         self.clicked_recently = False
-        self.movement_check_timer = ThrottledTimer(3000+random.randint(100, 5000))
+        self.movement_check_timer : ThrottledTimer = ThrottledTimer(3000+random.randint(100, 5000))
 
     def map_changed(self, message: EventMessage) -> Generator[Any, Any, Any]:
 
@@ -115,6 +115,7 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
                 return self.score_definition.get_score()
             else:
                 ConsoleLog("IdIfNeededUtility", "Kits needed")
+                self.movement_check_timer = ThrottledTimer(3000+random.randint(100, 35000))
                 return None
         else:
             return None
