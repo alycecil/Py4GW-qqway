@@ -1007,6 +1007,8 @@ class MissionMap:
         self.mega_zoom_renderer.world_space.set_world_space(True)
         self._mask_enabled = True
 
+        self.log_timer : ThrottledTimer = ThrottledTimer(7500)
+
     def _clear_snap_bt_draw_state(self) -> None:
         bb = self.snap_bt_draw_helper.blackboard
         bb["move_state"] = ""
@@ -1120,7 +1122,6 @@ class MissionMap:
         if not Player.IsPlayerLoaded():
             return False
         if self.loot_nearby():
-            Py4GW.Console.Log("MissionMap+", f"Pause for loot", Py4GW.Console.MessageType.Error)
             return True
         try:
             px, py = Player.GetXY()
@@ -1163,9 +1164,16 @@ class MissionMap:
 
             if len(loot_array) == 0:
                 return False
+
             item_id = loot_array.pop(0)
             if item_id is None or item_id == 0:
                 return False
+
+            if self.log_timer.IsExpired():
+                Py4GW.Console.Log("MissionMap+", f"Pause for loot item_id={item_id}, loot_array={loot_array}", Py4GW.Console.MessageType.Error)
+                self.log_timer.Reset()
+
+
             return True
         except Exception as e:
             Py4GW.Console.Log("MissionMap+", f"Error finding loots: {str(e)}", Py4GW.Console.MessageType.Error)
@@ -1185,7 +1193,6 @@ class MissionMap:
         if Agent.IsAttacking(self.player_agent_id):
             return False
         if self.loot_nearby():
-            Py4GW.Console.Log("MissionMap+", f"Paused for loot", Py4GW.Console.MessageType.Error)
             return False
         return True
 
