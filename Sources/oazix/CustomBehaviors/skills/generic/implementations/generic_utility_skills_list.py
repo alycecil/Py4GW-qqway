@@ -283,7 +283,6 @@ class GenericUtilitySkillsList:
         skills.append(Vow_of_Revolution_KeepSelfEffectUpUtility(
             event_bus=event_bus, current_build=in_game_build,
             score_definition=ScoreStaticDefinition(15),
-            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]
         ))
         skills.append(ImbueHealthUtility(
             event_bus=event_bus, current_build=in_game_build,
