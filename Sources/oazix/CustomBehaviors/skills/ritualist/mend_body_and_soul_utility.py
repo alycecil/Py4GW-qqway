@@ -28,6 +28,7 @@ class MendBodyAndSoulUtility(CustomSkillUtilityBase):
             skill=CustomSkill("Mend_Body_and_Soul"),
             in_game_build=current_build,
             score_definition=score_definition,
+            mana_required_to_cast=10,
             allowed_states=allowed_states)
 
         self.score_definition: ScorePerHealthGravityDefinition = score_definition
