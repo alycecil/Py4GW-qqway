@@ -223,6 +223,27 @@ class GenericUtilitySkillsList:
             allowed_states=[BehaviorState.IN_AGGRO]),
         )
 
+        spear_distance_factor = DistanceFactors_Short(touch=5, adjacent=4, nearby=3, area=2, twice_area=1.5, earshot=1)
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Barbed_Spear"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 12 if enemy_qte >= 3 else 10),
+            distance_factor=spear_distance_factor,
+            within_range=Range.Earshot,
+            ignore_spirits=True,
+            custom_agent_targeting_predicate=lambda agent_id: not Agent.IsBleeding(agent_id)
+        ))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Spear_of_Lightning"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 12 if enemy_qte >= 3 else 10),
+            distance_factor=spear_distance_factor,
+            within_range=Range.Earshot,
+            ignore_spirits=True
+        ))
+
     @staticmethod
     def mesmerSkills(event_bus, in_game_build, skills):
         # mesmer
