@@ -89,8 +89,7 @@ class StuckDetectionUtility(CustomSkillUtilityBase):
 
         if not throttle_timer.IsExpired():
             return None
-        
-                
+
         current_player_pos = Player.GetXY()
 
         # let's be more restrictive, stuck is only possible when leader is a bit far away
