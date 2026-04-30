@@ -1,5 +1,7 @@
 from typing import Any, Generator, override
 
+import PyImGui
+
 from Py4GWCoreLib import Range, Agent, GLOBAL_CACHE, Player
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
@@ -66,9 +68,4 @@ class RawSimpleHealUtility(CustomSkillUtilityBase):
         target = targets[0]
         result = yield from custom_behavior_helpers.Actions.cast_skill_to_target(self.custom_skill, target_agent_id=target.agent_id)
         return result
-
-    @override
-    def customized_debug_ui(self, current_state):
-        PyImGui.bullet_text(f"timer : {self.far_from_aggro_timer.GetTimeRemaining()}")
-        PyImGui.bullet_text(f"is in timeout : {self.far_from_aggro_timer.IsExpired()}")
 
