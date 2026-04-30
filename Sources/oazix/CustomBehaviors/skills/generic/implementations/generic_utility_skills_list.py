@@ -78,6 +78,8 @@ class GenericUtilitySkillsList:
 
         GenericUtilitySkillsList.warriorSkills(event_bus, in_game_build, skills)
 
+        GenericUtilitySkillsList.dervishSkills(event_bus, in_game_build, skills)
+
         GenericUtilitySkillsList.ranger_skills(event_bus, in_game_build, skills)
 
         GenericUtilitySkillsList.pveSkills(event_bus, in_game_build, skills)
@@ -264,6 +266,17 @@ class GenericUtilitySkillsList:
     def intentionalStubs(event_bus, in_game_build, skills):
         skills.append(
             StubUtility(event_bus=event_bus, skill=CustomSkill("Signet_of_Capture"), current_build=in_game_build))
+
+    @staticmethod
+    def dervishSkills(event_bus, in_game_build, skills):
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, current_build=in_game_build,
+            skill=CustomSkill("Vital_Boon"),
+            score_definition=ScoreStaticDefinition(15),
+            renew_before_expiration_in_milliseconds=0,
+            target_self=False, # no need
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]
+        ))
 
     @staticmethod
     def warriorSkills(event_bus, in_game_build, skills):
