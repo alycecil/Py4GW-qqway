@@ -18,7 +18,7 @@ class WieldersBoonUtility(CustomSkillUtilityBase):
         event_bus: EventBus,
         current_build: list[CustomSkill],
         score_definition: ScorePerHealthGravityDefinition = ScorePerHealthGravityDefinition(6),
-        mana_required_to_cast: int = 5,
+        mana_required_to_cast: int = 7,
         allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
     ) -> None:
 
