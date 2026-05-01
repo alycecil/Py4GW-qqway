@@ -4,6 +4,7 @@ from typing import Any, Generator, override
 from Py4GWCoreLib import GLOBAL_CACHE, Routines, Range, Agent, Player
 from Py4GWCoreLib.Py4GWcorelib import ThrottledTimer
 from Py4GWCoreLib.enums_src.GameData_enums import Profession
+from Py4GWCoreLib.py4gwcorelib_src.Console import ConsoleLog
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
@@ -43,18 +44,20 @@ class CallPriorityTargetUtility(CustomSkillUtilityBase):
 
     def __get_target_agent_id(self) -> int:
         def my_condition(agent_id) -> bool:
-            if not Agent.IsCaster(agent_id):
-                return False
 
             skill_id = Agent.GetCastingSkillID(agent_id)
+            if skill_id is None or skill_id == 0:
+                return False
+
             profession, _ = GLOBAL_CACHE.Skill.GetProfession(skill_id)
-            if profession == Profession.Monk:
+            if profession == Profession.Monk.value:
                 return True
 
             return False
 
         party_target_id = Routines.Party.GetPartyTargetID()
         if party_target_id is not None and party_target_id > 0:
+            ConsoleLog("call_priority_target_utility", f"Already have a called target {party_target_id}")
             return 0 # Something is already the called target
 
         targets = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
