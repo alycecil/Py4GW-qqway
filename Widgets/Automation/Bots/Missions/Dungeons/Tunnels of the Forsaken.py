@@ -23,11 +23,6 @@ MODULE_NAME = "Tunnels of the Forsaken"
 MODULE_ICON = "Textures/Skill_Icons/[264] - Pacifism.jpg"
 
 PIKEN_SQUARE = 40
-TARNISHED_HAVEN = 641
-VARAJAR_FELLS = 553
-PATH_TO_REVELATIONS_QUEST_ID = 893
-KERRSH_XY = (25203.0, -10694.0)
-PATH_TO_REVELATIONS_DIALOG = 0x837D01
 ZONING_STEP_NAME = "[H]Zoning into explorable area_2"
 START_COMBAT_STEP_NAME = "[H]Start Combat_3"
 
@@ -699,43 +694,7 @@ def pickup_torch(max_scan_dist: float = 5000, attempts: int = 40) -> Generator:
         arr = AgentArray.Filter.ByDistance(arr, Player.GetXY(), max_scan_dist)
         arr = AgentArray.Sort.ByDistance(arr, Player.GetXY())
 
-        target_agent: int = 0
-        ground_item_id: int = 0
-        owner: int = -1
-
-        for a in arr:
-            aid = int(a)
-            it = Agent.GetItemAgentByID(aid)
-            if not it:
-                continue
-
-            try:
-                gid = int(Agent.GetItemAgentItemID(aid))
-            except Exception:
-                continue
-
-            mid: Optional[int] = None
-            if Item is not None:
-                try:
-                    m = Item.GetModelID(gid)
-                    mid = int(m) if isinstance(m, int) else None
-                except Exception:
-                    mid = None
-
-            item_id = it.item_id
-
-            if mid in SPECIAL_MODEL_IDS or item_id in SPECIAL_MODEL_IDS:
-
-                try:
-                    owner = int(it.owner)
-                    if owner not in (0, me):
-                        ConsoleLog("TORCH", "Found the item")
-                        continue
-                except Exception:
-                    pass
-                target_agent = aid
-                ground_item_id = gid
-                break
+        ground_item_id, owner, target_agent = find_item_on_ground(arr, me)
 
         if not target_agent:
             ConsoleLog("TORCH", "Failed to find")
@@ -817,6 +776,63 @@ def pickup_torch(max_scan_dist: float = 5000, attempts: int = 40) -> Generator:
 
     ConsoleLog("TORCH", "Torch pickup failed")
     yield
+
+
+def find_item_on_ground(arr, me):
+    target_agent: int = 0
+    ground_item_id: int = 0
+    owner: int = -1
+    for a in arr:
+        aid = int(a)
+        it = Agent.GetItemAgentByID(aid)
+        if not it:
+            continue
+
+        gid = None
+        try:
+            gid = int(Agent.GetItemAgentItemID(aid))
+        except Exception:
+            continue
+
+        mid: Optional[int] = None
+        if Item is not None:
+            try:
+                m = Item.GetModelID(gid)
+                mid = int(m) if isinstance(m, int) else None
+            except Exception:
+                mid = None
+
+        item_id = it.item_id
+
+        if not Item.IsNameReady(item_id):
+            Item.RequestName(item_id)
+
+        agent_name = Agent.GetNameByID(aid)
+        item_name = Item.GetName(item_id)
+
+        right_name = "Elemental Keystone" in item_name or "Elemental Keystone" in agent_name or "Boss Key" in item_name or "Boss Key" in agent_name
+
+        # right_model_ids = mid in SPECIAL_MODEL_IDS or item_id in SPECIAL_MODEL_IDS
+
+        if right_name:
+
+            try:
+                owner = int(it.owner)
+                if owner not in (0, me):
+                    ConsoleLog("TORCH", f"Found the item but not for us - agent={agent_name},item={item_name}")
+                    continue
+            except Exception:
+                ConsoleLog("TORCH", f"Found the item but unknown owner info - agent={agent_name},item={item_name}")
+                pass
+
+            ConsoleLog("TORCH", f"Found the item - agent={agent_name},item={item_name}")
+            target_agent = aid
+            ground_item_id = gid
+            break
+        else:
+            ConsoleLog("TORCH", f"Found an item but not the one we wanted - agent={agent_name},item={item_name}")
+
+    return ground_item_id, owner, target_agent
 
 
 def command_type_routine_in_message_is_active(account_email, shared_command_type):
@@ -1363,20 +1379,20 @@ def _on_party_wipe(bot: "Botting"):
 
     # All accounts revived resume route from nearest path point
     # TODO which map
-    pos = Player.GetXY()
-    if pos:
-        nearest_idx = _nearest_path_index(Norn_Path, pos[0], pos[1])
-        remaining_path = Norn_Path[nearest_idx:]
-        bot.config.path = remaining_path.copy()
-        bot.config.path_to_draw = remaining_path.copy()
-        yield from Routines.Yield.Movement.FollowPath(
-            path_points=remaining_path,
-            tolerance=bot.config.config_properties.movement_tolerance.get("value"),
-            timeout=bot.config.config_properties.movement_timeout.get("value"),
-            custom_pause_fn=lambda: False,
-        )
-
-    bot.States.JumpToStepName(START_COMBAT_STEP_NAME)
+    # pos = Player.GetXY()
+    # if pos:
+    #     nearest_idx = _nearest_path_index(Norn_Path, pos[0], pos[1])
+    #     remaining_path = Norn_Path[nearest_idx:]
+    #     bot.config.path = remaining_path.copy()
+    #     bot.config.path_to_draw = remaining_path.copy()
+    #     yield from Routines.Yield.Movement.FollowPath(
+    #         path_points=remaining_path,
+    #         tolerance=bot.config.config_properties.movement_tolerance.get("value"),
+    #         timeout=bot.config.config_properties.movement_timeout.get("value"),
+    #         custom_pause_fn=lambda: False,
+    #     )
+    #
+    # bot.States.JumpToStepName(START_COMBAT_STEP_NAME)
     bot.config.FSM.resume()
 
 
