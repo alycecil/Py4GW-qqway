@@ -159,6 +159,8 @@ def ConfigureAggressiveEnv(bot: Botting) -> None:
     else:
         bot.Templates.Aggressive()
     bot.Properties.Enable("auto_inventory_management")
+    bot.Properties.Enable("pause_on_danger")
+    bot.Properties.Enable("auto_loot")
 # endregion
 
 to_dungeon = [
@@ -385,14 +387,10 @@ LEVEL_TWO_PART_ONE = [
     (-8633,19713),
     (-8831,19491),
     (-8974,19311),
-    (-8928,19118),
-    (-8933,17669),
 ]
 
 
 LEVEL_TWO_PART_TWO = [
-    (-8941,19232),
-    (-8789,19491),
     (-8515,19830),
     (-8140,19859),
     (-7946,20162),
@@ -880,6 +878,8 @@ def bot_routine(bot: Botting) -> None:
     bot.States.AddCustomState(lambda: _coro_travel_random_district(bot, PIKEN_SQUARE), "Travel to PIKEN_SQUARE")
     bot.States.AddCustomState(lambda: _maybe_setup_heroes(bot), "Setup Heroes")
     bot.States.AddCustomState(lambda: _restock_consumables_if_enabled(bot), "Restock Consumables If Enabled")
+
+    bot.Wait.ForTime(11300)
 
     bot.States.AddHeader("Zoning into explorable area")
     bot.Party.SetHardMode(True)
