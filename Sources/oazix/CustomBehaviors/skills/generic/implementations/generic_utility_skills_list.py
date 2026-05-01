@@ -442,6 +442,13 @@ class GenericUtilitySkillsList:
     def ranger_skills(event_bus, in_game_build, skills):
         # Ranger Things
         skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, skill=CustomSkill("Run_as_One"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(15), mana_required_to_cast=15,
+            renew_before_expiration_in_milliseconds=0,
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
+            target_self=False,
+        ))
+        skills.append(KeepSelfEffectUpUtility(
             event_bus=event_bus, skill=CustomSkill("Apply_Poison"), current_build=in_game_build,
             score_definition=ScoreStaticDefinition(15), mana_required_to_cast=15,
             renew_before_expiration_in_milliseconds=0,
