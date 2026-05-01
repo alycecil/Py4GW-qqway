@@ -726,7 +726,9 @@ class LootConfig:
             player_agent_id = Player.GetAgentID()
             owner_id = Agent.GetItemAgentOwnerID(item_id)
             # TODO if playing with not your guys this is bad
-            return ((multibox_loot or owner_id == player_agent_id) or (owner_id == 0))
+            is_loot_we_want = (multibox_loot or owner_id == player_agent_id) or (owner_id == 0)
+            # if not is_loot_we_want:
+            return (is_loot_we_want)
         
         def IsValidLeaderItem(item_id, allow_unasigned_loot: bool):
             if not Agent.IsValid(item_id):

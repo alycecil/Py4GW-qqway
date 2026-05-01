@@ -243,7 +243,7 @@ class LootUtility(CustomSkillUtilityBase):
 
         self.load_rarity_filter_data()
 
-        loot_array = self.loot_config.GetfilteredLootArray(Range.Longbow.value, multibox_loot=False)
+        loot_array = self.get_loot_array()
         # print(f"Loot array: {loot_array}")
         if len(loot_array) == 0:
             self._last_eval_score = None
@@ -260,17 +260,16 @@ class LootUtility(CustomSkillUtilityBase):
             return BehaviorResult.ACTION_SKIPPED
 
         # Use per-cycle cache for entry check (deduplicates with _evaluate scan)
-        loot_array = self.loot_config.GetfilteredLootArray(Range.Longbow.value, multibox_loot=False)
+        loot_array = self.get_loot_array()
         if len(loot_array) == 0:
             yield
             return BehaviorResult.ACTION_SKIPPED
 
         self.throttle_timer.Reset()
-
         while True:
 
             if GLOBAL_CACHE.Inventory.GetFreeSlotCount() < 1: break
-            loot_array:list[int] = self.loot_config.GetfilteredLootArray(Range.Longbow.value, multibox_loot=False)
+            loot_array:list[int] = self.get_loot_array()
             if len(loot_array) == 0: break
             item_id = loot_array.pop(0)
             if item_id is None or item_id == 0:
@@ -297,7 +296,7 @@ class LootUtility(CustomSkillUtilityBase):
             # 2) check if loot has been looted
             pickup_timer = ThrottledTimer(7_000)
             while not pickup_timer.IsExpired():
-                loot_array = self.loot_config.GetfilteredLootArray(Range.Longbow.value, multibox_loot=False)
+                loot_array = self.get_loot_array()
                 if item_id not in loot_array or len(loot_array) == 0:
                     break
                 yield from custom_behavior_helpers.Helpers.wait_for(100)
@@ -311,10 +310,13 @@ class LootUtility(CustomSkillUtilityBase):
         yield from custom_behavior_helpers.Helpers.wait_for(100)
         return BehaviorResult.ACTION_PERFORMED
 
+    def get_loot_array(self):
+        array = self.loot_config.GetfilteredLootArray(Range.Longbow.value, multibox_loot=False)
+        return array
+
     @override
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
         PyImGui.bullet_text(f"is_in_loot_cooldown : {self.loot_cooldown_timer.IsInCooldown()}")
         PyImGui.bullet_text(f"loot_cd_remaining_ms: {int(self.loot_cooldown_timer.GetTimeRemaining())}")
-        PyImGui.bullet_text(f"loot_array : {self.loot_config.GetfilteredLootArray(Range.Longbow.value, multibox_loot=False)}")
-        PyImGui.bullet_text(f"loot_array_all_players : {self.loot_config.GetfilteredLootArray(Range.Longbow.value, multibox_loot=True)}")
+        PyImGui.bullet_text(f"loot_array : {self.get_loot_array()}")
         return
