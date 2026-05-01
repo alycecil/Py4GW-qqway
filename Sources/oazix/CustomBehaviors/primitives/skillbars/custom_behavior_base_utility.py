@@ -23,6 +23,7 @@ from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_execution_his
 from Sources.oazix.CustomBehaviors.skills.blessing.take_near_blessing import TakeNearBlessingUtility
 from Sources.oazix.CustomBehaviors.skills.botting.move_if_stuck import MoveIfStuckUtility
 from Sources.oazix.CustomBehaviors.skills.common.auto_attack_utility import AutoAttackUtility
+from Sources.oazix.CustomBehaviors.skills.common.call_priority_target_utility import CallPriorityTargetUtility
 from Sources.oazix.CustomBehaviors.skills.common.scroll_of_resurrection_utility import ScrollOfResurrectionUtility
 from Sources.oazix.CustomBehaviors.skills.deamon.death_detection import DeathDetectionUtility
 from Sources.oazix.CustomBehaviors.skills.deamon.map_changed import MapChangedUtility
@@ -72,6 +73,7 @@ class CustomBehaviorBaseUtility():
         self.__additional_autonomous_skills: list[CustomSkillUtilityBase] = [
             # COMBAT
             AutoAttackUtility(event_bus=self.event_bus, current_build=self.in_game_build),
+            CallPriorityTargetUtility(event_bus=self.event_bus, current_build=self.in_game_build),
 
             # FOLLOWING
             FollowPartyLeaderUtility(event_bus=self.event_bus, current_build=self.in_game_build),
