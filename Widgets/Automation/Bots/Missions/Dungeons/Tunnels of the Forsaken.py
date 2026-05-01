@@ -307,6 +307,7 @@ OUT_OF_LEVEL_ONE = [
     (-8626,5614),
 ]
 
+
 LEVEL_TWO_PART_ONE = [
     (-7838,8691),
     (-7838,8691),
@@ -379,30 +380,19 @@ LEVEL_TWO_PART_ONE = [
     (-7001,21149),
     (-7427,21091),
     (-7903,20875),
-    (-7996,20515),
-    (-7996,20226),
-    (-8098,19923),
-    (-8098,19923),
-    (-8379,19870),
-    (-8633,19713),
-    (-8831,19491),
-    (-8974,19311),
 ]
 
 
 LEVEL_TWO_PART_TWO = [
-    (-8515,19830),
-    (-8140,19859),
-    (-7946,20162),
-    (-7939,20702),
+    (-7903,20875),
     (-7996,21106),
     (-8227,21387),
     (-8688,21531),
     (-9171,21351),
     (-9770,21322),
-    (-10242,21231),
-    (-10659,20955),
-    (-10621,20595),
+    (-10034,21044),
+    (-10392,20792),
+    (-10681,20568),
     (-11072,20451),
     (-11459,20405),
     (-11820,20333),
@@ -412,7 +402,7 @@ LEVEL_TWO_PART_TWO = [
     (-13550,20117),
     (-14072,20009),
     (-14577,19910),
-    (-15046,19838),
+    (-15116,19763),
     (-15649,19504),
     (-16109,19360),
     (-16410,19002),
@@ -441,11 +431,8 @@ LEVEL_TWO_PART_TWO = [
     (-15425,15978),
     (-15425,15978),
     (-14979,16203),
-    (-14532,16428),
-    (-14452,16468),
-    (-14452,16468),
-    (-14452,16468),
-    (-14081,16803),
+    (-14418,16472),
+    (-14007,16773),
     (-13724,17124),
     (-13724,17124),
     (-13724,17124),
@@ -473,10 +460,10 @@ LEVEL_TWO_PART_TWO = [
     (-7584,18048),
     (-7207,17720),
     (-6829,17392),
-    (-6520,17123),
-    (-6441,17017),
-    (-6432,16957),
-    (-6356,16463),
+    (-6431,17234),
+    (-6356,17076),
+    (-6331,16932),
+    (-6271,16508),
     (-6281,15969),
     (-6205,15474),
     (-6130,14980),
@@ -486,33 +473,28 @@ LEVEL_TWO_PART_TWO = [
     (-6472,14556),
     (-6824,14202),
     (-7177,13847),
-    (-7431,13592),
-    (-7431,13592),
-    (-7431,13592),
+    (-7455,13651),
     (-7924,13674),
-    (-8418,13755),
-    (-8865,13830),
-    (-8865,13830),
-    (-8865,13830),
+    (-8288,13753),
+    (-8682,13962),
     (-8772,14321),
     (-8679,14812),
-    (-8586,15303),
+    (-8606,15094),
     (-8548,15502),
     (-8548,15502),
     (-8548,15502),
-    (-8812,15927),
-    (-9076,16351),
+    (-8606,15939),
+    (-8873,16423),
     (-9248,16627),
     (-9248,16627),
     (-9248,16627),
     (-9691,16857),
     (-10134,17088),
     (-10134,17088),
-    (-10480,16973),
-    (-10725,16706),
-    (-11006,16454),
-    (-11006,16454),
-    (-11006,16454),
+    (-10480,17050),
+    (-10679,16745),
+    (-10968,16497),
+    (-11253,16355),
     (-11489,16180),
     (-11833,15891),
     (-12247,15610),
@@ -703,33 +685,19 @@ def pickup_torch(max_scan_dist: float = 5000, attempts: int = 40) -> Generator:
 
         ConsoleLog("TORCH", f"Found the item ({tx}, {ty})")
 
-        # Approche
-        try:
-            Player.Move(tx, ty)
-        except Exception:
-            pass
+        still_there = yield from try_interact_item(target_agent)
 
-        start = time.time() * 1000
-        while True:
-            px, py = Player.GetXY()
-            if _dist(px, py, tx, ty) <= 178:
-                break
-            if (time.time() * 1000) - start > 9000:
-                ConsoleLog("TORCH", "cant reach -> retry")
-                target_agent = 0
-                break
-            yield from Routines.Yield.wait(100)
+        if not still_there:
+            ConsoleLog("TORCH", "Item picked up by first interact")
+            yield
+            return
+
+        target_agent = yield from try_move_to_item(_dist, target_agent, tx, ty)
 
         if not target_agent:
             continue
 
-        # stop-move pour Ã©viter annulation
-        try:
-            px, py = Player.GetXY()
-            Player.Move(px, py)
-        except Exception:
-            pass
-        yield from Routines.Yield.wait(80)
+        yield from stopMovement()
 
         # Ciblage
         Player.ChangeTarget(target_agent)
@@ -739,30 +707,9 @@ def pickup_torch(max_scan_dist: float = 5000, attempts: int = 40) -> Generator:
 
         # Essais : agent_id puis ground_item_id (compat multi-build)
         for _try in range(2):
-            try:
-                inv.PickUpItem(target_agent, True)
-            except Exception:
-                pass
-            yield from Routines.Yield.wait(250)
+            yield from try_pickup_item(ground_item_id, inv, target_agent)
 
-            try:
-                inv.PickUpItem(ground_item_id, True)
-            except Exception:
-                pass
-            yield from Routines.Yield.wait(250)
-
-            # fallback interact
-            try:
-                Player.Interact(target_agent, False)
-            except Exception:
-                pass
-            yield from Routines.Yield.wait(450)
-
-            # check disparition (ramassÃ©)
-            try:
-                still_there = bool(Agent.GetItemAgentByID(target_agent))
-            except Exception:
-                still_there = False
+            still_there = yield from try_interact_item(target_agent)
 
             if not still_there:
                 ConsoleLog("TORCH", "Torch picked up")
@@ -774,6 +721,63 @@ def pickup_torch(max_scan_dist: float = 5000, attempts: int = 40) -> Generator:
 
     ConsoleLog("TORCH", "Torch pickup failed")
     yield
+
+
+def try_pickup_item(ground_item_id, inv, target_agent):
+    try:
+        inv.PickUpItem(target_agent, True)
+    except Exception:
+        pass
+    yield from Routines.Yield.wait(250)
+    try:
+        inv.PickUpItem(ground_item_id, True)
+    except Exception:
+        pass
+    yield from Routines.Yield.wait(250)
+
+
+def stopMovement():
+    # stop-move pour Ã©viter annulation
+    try:
+        px, py = Player.GetXY()
+        Player.Move(px, py)
+    except Exception:
+        pass
+    yield from Routines.Yield.wait(80)
+
+
+def try_move_to_item(_dist, target_agent, tx, ty):
+    # Approche
+    try:
+        Player.Move(tx, ty)
+    except Exception:
+        pass
+    start = time.time() * 1000
+    while True:
+        px, py = Player.GetXY()
+        if _dist(px, py, tx, ty) <= 178:
+            break
+        if (time.time() * 1000) - start > 9000:
+            ConsoleLog("TORCH", "cant reach -> retry")
+            target_agent = 0
+            break
+        yield from Routines.Yield.wait(100)
+    return target_agent
+
+
+def try_interact_item(target_agent):
+    # fallback interact
+    try:
+        Player.Interact(target_agent, False)
+    except Exception:
+        pass
+    yield from Routines.Yield.wait(450)
+    # check disparition (ramassÃ©)
+    try:
+        still_there = bool(Agent.GetItemAgentByID(target_agent))
+    except Exception:
+        still_there = False
+    return still_there
 
 
 def find_item_on_ground(arr, me):
@@ -943,17 +947,17 @@ def bot_routine(bot: Botting) -> None:
     bot.Move.FollowPath(OUT_OF_LEVEL_ONE)
     bot.Wait.ForMapToChange(target_map_name="Tunnels of the Forsaken: Level 2")
 
-    bot.States.AddHeader("level 2 LEVEL_TWO_PART_ONE TO Bridge")
+    bot.States.AddHeader("level 2 PART_ONE TO Bridge")
     ConfigureAggressiveEnv(bot)
     bot.Move.FollowPath(LEVEL_TWO_PART_ONE)
     bot.Wait.UntilOutOfCombat()
 
-    bot.States.AddHeader("level 2 LEVEL_TWO_PART_TWO From Bridge")
+    bot.States.AddHeader("level 2 PART_TWO From Bridge")
     ConfigureAggressiveEnv(bot)
     bot.Move.FollowPath(LEVEL_TWO_PART_TWO)
     bot.Wait.UntilOutOfCombat()
 
-    bot.States.AddHeader("level 2 exit_level_two")
+    bot.States.AddHeader("level 2 exit level")
     ConfigureAggressiveEnv(bot)
     exit_level_two = [
         (-16612,6062),
