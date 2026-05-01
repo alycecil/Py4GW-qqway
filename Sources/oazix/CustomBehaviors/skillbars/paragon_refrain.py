@@ -17,6 +17,7 @@ from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.protective_shout_utility import ProtectiveShoutUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_combot_attack_utility import RawCombotAttackUtility
+from Sources.oazix.CustomBehaviors.skills.generic.shout_at_party_gravity import ShoutAtPartyGravity
 from Sources.oazix.CustomBehaviors.skills.paragon.blazing_finale_utility import BlazingFinaleUtility
 from Sources.oazix.CustomBehaviors.skills.paragon.heroic_refrain_utility import HeroicRefrainUtility
 from Sources.oazix.CustomBehaviors.skills.paragon.hasty_refrain_utility import HastyRefrainUtility
@@ -41,12 +42,10 @@ class ParagonRefrain_UtilitySkillBar(CustomBehaviorBaseUtility):
             event_bus=self.event_bus, current_build=in_game_build,
             score_definition=ScoreStaticDefinition(20),
         )
-        self.theyre_on_fire_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(
+        self.theyre_on_fire_utility: CustomSkillUtilityBase = ShoutAtPartyGravity(
             event_bus=self.event_bus, skill=CustomSkill("Theyre_on_Fire"),
             current_build=in_game_build, score_definition=ScoreStaticDefinition(80),
             allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO, BehaviorState.IDLE],
-            renew_before_expiration_in_milliseconds=0,
-            after_cast_delay=False
         )
         self.theres_nothing_to_fear: CustomSkillUtilityBase = ProtectiveShoutUtility(
             event_bus=self.event_bus, skill=CustomSkill("Theres_Nothing_to_Fear"),
