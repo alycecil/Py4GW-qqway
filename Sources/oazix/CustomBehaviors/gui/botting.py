@@ -20,38 +20,6 @@ _bot_scripts_cache = None
 _last_scan_time = 0
 _show_utility_skills_config = False
 
-default_dialog_string: str = "0x84"
-
-@staticmethod
-def set_dialog_id(dialog_string: str):
-    global default_dialog_string
-    default_dialog_string = dialog_string
-
-def send_dialog():
-    global default_dialog_string
-    try:
-        dialog_id: int = int(default_dialog_string, 0)
-        account = send_dialog_for_all(default_dialog_string, dialog_id)
-    except Exception as e:
-        print(f"Well sending {default_dialog_string} failed {e}")
-        default_dialog_string = "0x84"
-
-@staticmethod
-def send_dialog_for_all(dialog_string: str, dialog_id: int, include_sender: bool = True):
-    print(f"Starting sending {default_dialog_string} as {dialog_id}")
-    target = Player.GetTargetID()
-    if target == 0:
-        print("No target to interact with.")
-    else:
-        sender_email = Player.GetAccountEmail()
-        accounts = GLOBAL_CACHE.ShMem.GetAllAccountData()
-        for account in accounts:
-            if not include_sender and sender_email == account.AccountEmail:
-                continue
-            print(f"Ordering {account.AccountEmail} to send dialog {dialog_id} ({dialog_string}) to target: {target}")
-            GLOBAL_CACHE.ShMem.SendMessage(sender_email, account.AccountEmail, SharedCommandType.SendDialogToTarget,
-                                           (target, dialog_id, 0, 0))
-
 def _scan_bot_scripts():
     """
     Scan the bots folder and return a list of (bot_name, script_path) tuples.
@@ -87,7 +55,7 @@ def _scan_bot_scripts():
     return bot_scripts
 
 def render():
-    global _selected_bot_index, default_dialog_string
+    global _selected_bot_index
 
     if CustomBehaviorLoader()._botting_daemon_fsm is not None and CustomBehaviorLoader().custom_combat_behavior is not None:
         PyImGui.text(f"CustomBehavior FSM Management")
@@ -113,12 +81,6 @@ def render():
         _render_bot_scripts_table()
 
     PyImGui.separator()
-
-    if CustomBehaviorParty().is_ready_for_action():
-        default_dialog_string = ImGui.input_text("Dialog Id", default_dialog_string, 0)
-
-        if PyImGui.button(f"{IconsFontAwesome5.ICON_CROSSHAIRS} Send Dialog"):
-            send_dialog()
 
     if CustomBehaviorParty().is_ready_for_action():
         if PyImGui.button(f"{IconsFontAwesome5.ICON_PERSON_MILITARY_POINTING} Interract"):
