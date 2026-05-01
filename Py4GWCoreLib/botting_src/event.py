@@ -145,7 +145,9 @@ class OnPartyMemberBehind(Event):
         if Routines.Checks.Party.IsPartyWiped() or GLOBAL_CACHE.Party.IsPartyDefeated():
             return False
 
-        party_member_behind = Routines.Checks.Party.IsPartyMemberBehind()
+        #from Py4GWCoreLib.enums_src.GameData_enums import Range
+        #party_member_behind = Routines.Checks.Party.IsPartyMemberBehind(Range.Spirit.value)
+        party_member_behind = Routines.Checks.Party.IsPartyMemberBehind(2500)
         #if party_member_behind:
         #    print("OnPartyMemberBehind triggered")
         return party_member_behind
