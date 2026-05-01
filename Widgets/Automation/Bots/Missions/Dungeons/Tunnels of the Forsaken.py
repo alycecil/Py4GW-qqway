@@ -1126,8 +1126,6 @@ def bot_routine(bot: Botting) -> None:
     bot.Wait.ForTime(5000+random.randint(1,2000))
     bot.States.AddCustomState(lambda x=-7400.00, y=-9462.00, d=0x85B501: _do_dialog_at(bot, x, y, d), "Ghost of Althea Quest Dialog")
     bot.Wait.ForTime(2000+random.randint(1,2000))
-    bot.States.AddCustomState(lambda x=-7400.00, y=-9462.00, d=0x85B501: _do_dialog_at(bot, x, y, d), "Ghost of Althea Quest Dialog")
-    bot.Wait.ForTime(2000+random.randint(1,2000))
 
     bot.States.AddHeader("to_bandits")
     ConfigureAggressiveEnv(bot)
