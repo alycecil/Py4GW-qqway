@@ -23,14 +23,16 @@ class CallPriorityTargetUtility(CustomSkillUtilityBase):
             allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO]
         ) -> None:
 
+        definition = ScoreStaticDefinition(CommonScore.AUTO_ATTACK.value + 0.001)
+
         super().__init__(
             event_bus=event_bus,
             skill=CustomSkill("call_priority_target_utility"),
             in_game_build=current_build,
-            score_definition=ScoreStaticDefinition(CommonScore.AUTO_ATTACK.value + 0.001),
+            score_definition=definition,
             allowed_states=allowed_states)
 
-        self.score_definition: ScoreStaticDefinition = ScoreStaticDefinition(CommonScore.AUTO_ATTACK.value)
+        self.score_definition: ScoreStaticDefinition = definition
         self.throttle_timer = ThrottledTimer(5000+random.randint(1000, 9999))
         
     @override
@@ -48,7 +50,6 @@ class CallPriorityTargetUtility(CustomSkillUtilityBase):
             profession, _ = GLOBAL_CACHE.Skill.GetProfession(skill_id)
             if profession == Profession.Monk:
                 return True
-
 
             return False
 
@@ -74,21 +75,11 @@ class CallPriorityTargetUtility(CustomSkillUtilityBase):
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
-        if self.allowed_states is not None and current_state not in self.allowed_states:
-            return None
-
         if not self.throttle_timer.IsExpired():
-            return None
-
-        if custom_behavior_helpers.Resources.is_player_holding_an_item():
             return None
 
         target_agent_id = self.__get_target_agent_id()
         if target_agent_id == 0: return None
-
-        if Agent.IsAttacking(Player.GetAgentID()) and Player.GetTargetID() == target_agent_id:
-            self.throttle_timer = ThrottledTimer(5000+random.randint(1000, 9999)) # redefine to force jitter in calling
-            return None
 
         return self.score_definition.get_score()
 
