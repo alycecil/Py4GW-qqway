@@ -903,6 +903,7 @@ def bot_routine(bot: Botting) -> None:
         (17593,-1230),
         (17593,-1230),
     ]
+    ConfigureAggressiveEnv(bot)
     bot.Move.FollowPath(path)
     bot.Wait.ForMapToChange(target_map_name="Tunnels of the Forsaken")
 
@@ -921,6 +922,7 @@ def bot_routine(bot: Botting) -> None:
     bot.Wait.ForTime(5000)
 
     bot.States.AddHeader("to_bandits")
+    ConfigureAggressiveEnv(bot)
     bot.Move.FollowPath(to_bandits)
     bot.Wait.UntilOutOfCombat()
     bot.States.AddCustomState(team_loot_items, "Grab loot")
@@ -928,7 +930,7 @@ def bot_routine(bot: Botting) -> None:
     bot.Wait.UntilOutOfCombat()
 
     bot.States.AddHeader("level 1 ROOM_TWO")
-
+    ConfigureAggressiveEnv(bot)
     bot.Move.FollowPath(ROOM_TWO)
     bot.Wait.UntilOutOfCombat()
     bot.States.AddCustomState(team_loot_items, "Grab loot")
@@ -937,21 +939,22 @@ def bot_routine(bot: Botting) -> None:
 
     bot.States.AddHeader("level 1 OUT_OF_LEVEL_ONE")
 
+    ConfigureAggressiveEnv(bot)
     bot.Move.FollowPath(OUT_OF_LEVEL_ONE)
     bot.Wait.ForMapToChange(target_map_name="Tunnels of the Forsaken: Level 2")
 
     bot.States.AddHeader("level 2 LEVEL_TWO_PART_ONE TO Bridge")
-
+    ConfigureAggressiveEnv(bot)
     bot.Move.FollowPath(LEVEL_TWO_PART_ONE)
     bot.Wait.UntilOutOfCombat()
 
     bot.States.AddHeader("level 2 LEVEL_TWO_PART_TWO From Bridge")
-
+    ConfigureAggressiveEnv(bot)
     bot.Move.FollowPath(LEVEL_TWO_PART_TWO)
     bot.Wait.UntilOutOfCombat()
 
     bot.States.AddHeader("level 2 exit_level_two")
-
+    ConfigureAggressiveEnv(bot)
     exit_level_two = [
         (-16612,6062),
         (-16775,5725),
@@ -963,11 +966,12 @@ def bot_routine(bot: Botting) -> None:
     bot.Wait.ForMapToChange(target_map_name="Tunnels of the Forsaken: Level 3")
 
     bot.States.AddHeader("level 3 LEVEL_THREE_PART_ONE TO Boss")
-
+    ConfigureAggressiveEnv(bot)
     bot.Move.FollowPath(LEVEL_THREE_PART_ONE)
     bot.Wait.UntilOutOfCombat()
 
     bot.States.AddHeader("level 3 Grab Boss Key")
+    ConfigureAggressiveEnv(bot)
     bot.States.AddCustomState(pickup_torch, "Pickup Boss Key")
     bot.States.AddCustomState(team_loot_items, "Grab loot")
 
