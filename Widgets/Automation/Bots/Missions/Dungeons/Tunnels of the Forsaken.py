@@ -67,6 +67,7 @@ _SCROLL_MODEL_FILTER = "5594,5595,5611,5853,5975,5976,21233"
 _MERCHANT_MANAGED_WIDGETS = ("InventoryPlus",)
 _PRETRAVEL_DISABLE_WIDGETS = ("InventoryPlus",)
 _RANDOM_DISTRICTS = [6, 7, 8, 9]
+THE_DREAMER_AND_THE_ZEALOT_QUEST_ID = 1461
 
 # Hero config
 _BOT_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else os.getcwd()
@@ -156,6 +157,7 @@ PCON_RESTOCK_MODELS   = [m for m, _ in PCON_ITEMS] + [
 ]
 
 
+# For legacy forks
 def __customBehaviorMode(mode : bool):
     try:
         from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
@@ -184,6 +186,7 @@ def ConfigureAggressiveEnv(bot: Botting) -> None:
 
     bot.States.AddCustomState(lambda: __customBehaviorMode(True), "Custom Behaviours On")
 # endregion
+
 
 to_dungeon = [
     (20307,7240),
@@ -229,6 +232,7 @@ to_dungeon = [
     (18069,-1860),
     (17811,-1513),
 ]
+
 
 to_althena = [
     (-21338,-4975),
@@ -807,13 +811,13 @@ SPECIAL_MODEL_IDS = [
     305,
 ]
 
-def pickup_torch(max_scan_dist: float = 5000, attempts: int = 40) -> Generator:
+def pickup_important_items(max_scan_dist: float = 5000, attempts: int = 40) -> Generator:
     def _dist(ax: float, ay: float, bx: float, by: float) -> float:
         return math.hypot(ax - bx, ay - by)
     inv = PyInventory.PyInventory()
     me = int(Player.GetAgentID())
 
-    ConsoleLog("TORCH", "Scanning for Torch")
+    ConsoleLog("Special Items", "Scanning for Special Items")
 
     for _ in range(attempts):
         arr = AgentArray.GetItemArray()
@@ -823,18 +827,18 @@ def pickup_torch(max_scan_dist: float = 5000, attempts: int = 40) -> Generator:
         ground_item_id, owner, target_agent = find_item_on_ground(arr, me)
 
         if not target_agent:
-            ConsoleLog("TORCH", "Failed to find")
+            ConsoleLog("Special Items", "Failed to find")
             yield from Routines.Yield.wait(150)
             continue
 
         tx, ty = Agent.GetXY(target_agent)
 
-        ConsoleLog("TORCH", f"Found the item ({tx}, {ty})")
+        ConsoleLog("Special Items", f"Found the item ({tx}, {ty})")
 
         still_there = yield from try_interact_item(target_agent)
 
         if not still_there:
-            ConsoleLog("TORCH", "Item picked up by first interact")
+            ConsoleLog("Special Items", "Item picked up by first interact")
             yield
             return
 
@@ -849,7 +853,7 @@ def pickup_torch(max_scan_dist: float = 5000, attempts: int = 40) -> Generator:
         Player.ChangeTarget(target_agent)
         yield from Routines.Yield.wait(120)
 
-        ConsoleLog("TORCH", f"pickup try agent={target_agent} ground_item_id={ground_item_id} owner={owner}")
+        ConsoleLog("Special Items", f"pickup try agent={target_agent} ground_item_id={ground_item_id} owner={owner}")
 
         # Essais : agent_id puis ground_item_id (compat multi-build)
         for _try in range(2):
@@ -858,14 +862,14 @@ def pickup_torch(max_scan_dist: float = 5000, attempts: int = 40) -> Generator:
             still_there = yield from try_interact_item(target_agent)
 
             if not still_there:
-                ConsoleLog("TORCH", "Torch picked up")
+                ConsoleLog("Special Items", "Special Items picked up")
                 yield
                 return
 
-        ConsoleLog("TORCH", "Torch pickup attempt failed -> retry")
+        ConsoleLog("Special Items", "Special Items pickup attempt failed -> retry")
         yield from Routines.Yield.wait(200)
 
-    ConsoleLog("TORCH", "Torch pickup failed")
+    ConsoleLog("Special Items", "Special Items pickup failed")
     yield
 
 
@@ -904,7 +908,7 @@ def try_move_to_item(_dist, target_agent, tx, ty):
         if _dist(px, py, tx, ty) <= 178:
             break
         if (time.time() * 1000) - start > 9000:
-            ConsoleLog("TORCH", "cant reach -> retry")
+            ConsoleLog("Special Items", "cant reach -> retry")
             target_agent = 0
             break
         yield from Routines.Yield.wait(100)
@@ -967,18 +971,18 @@ def find_item_on_ground(arr, me):
             try:
                 owner = int(it.owner)
                 if owner not in (0, me):
-                    ConsoleLog("TORCH", f"Found the item but not for us - agent={agent_name},item={item_name}")
+                    ConsoleLog("Special Items", f"Found the item but not for us - agent={agent_name},item={item_name}")
                     continue
             except Exception:
-                ConsoleLog("TORCH", f"Found the item but unknown owner info - agent={agent_name},item={item_name}")
+                ConsoleLog("Special Items", f"Found the item but unknown owner info - agent={agent_name},item={item_name}")
                 pass
 
-            ConsoleLog("TORCH", f"Found the item - agent={agent_name},item={item_name}")
+            ConsoleLog("Special Items", f"Found the item - agent={agent_name},item={item_name}")
             target_agent = aid
             ground_item_id = gid
             break
         else:
-            ConsoleLog("TORCH", f"Found an item but not the one we wanted - agent={agent_name},item={item_name}")
+            ConsoleLog("Special Items", f"Found an item but not the one we wanted - agent={agent_name},item={item_name}")
 
     return ground_item_id, owner, target_agent
 
@@ -998,8 +1002,6 @@ def team_loot_items():
     sender_email = Player.GetAccountEmail()
     accounts = GLOBAL_CACHE.ShMem.GetAllAccountData()
     for account in accounts:
-        if not account.AccountEmail or sender_email == account.AccountEmail:
-            continue
         GLOBAL_CACHE.ShMem.SendMessage(sender_email, account.AccountEmail, SharedCommandType.PickUpLoot, (0, 0, 0, 0))
         yield from Routines.Yield.wait(1000)
 
@@ -1064,6 +1066,7 @@ def bot_routine(bot: Botting) -> None:
     global to_althena, to_dungeon, to_bandits, ROOM_TWO, OUT_OF_LEVEL_ONE, \
         LEVEL_TWO_PART_ONE, LEVEL_TWO_PART_TWO, LEVEL_TWO_PART_TWO_PASSIVE, LEVEL_TWO_PART_THREE, \
         LEVEL_THREE_PART_ONE, LEVEL_THREE_PART_TWO, LEVEL_THREE_PART_THREE
+    global THE_DREAMER_AND_THE_ZEALOT_QUEST_ID
     _ensure_mode_loaded(bot)
     #events
     condition = lambda: OnPartyWipe(bot)
@@ -1083,6 +1086,7 @@ def bot_routine(bot: Botting) -> None:
     bot.States.AddCustomState(lambda: _coro_travel_random_district(bot, PIKEN_SQUARE), "Travel to PIKEN_SQUARE")
     bot.States.AddCustomState(lambda: _maybe_setup_heroes(bot), "Setup Heroes")
     bot.States.AddCustomState(lambda: _restock_consumables_if_enabled(bot), "Restock Consumables If Enabled")
+    bot.Multibox.AbandonQuest(THE_DREAMER_AND_THE_ZEALOT_QUEST_ID)
 
     bot.Wait.ForTime(11300)
 
@@ -1123,6 +1127,8 @@ def bot_routine(bot: Botting) -> None:
     bot.States.AddHeader("get_quest")
     bot.Move.XY(-7496, -9531, "Ghost of Althea")
     bot.Wait.ForTime(2345)
+    bot.Wait.UntilOutOfCombat()
+    ConfigurePassiveEnv(bot)
     # shes actually at (-7400.00, -9462.00)
     bot.Wait.ForTime(5000+random.randint(1,2000))
     bot.States.AddCustomState(lambda x=-7400.00, y=-9462.00, d=0x85B501: _do_dialog_at(bot, x, y, d), "Ghost of Althea Quest Dialog")
@@ -1135,7 +1141,7 @@ def bot_routine(bot: Botting) -> None:
     bot.Move.FollowPath(to_bandits)
     bot.Wait.UntilOutOfCombat()
     bot.States.AddCustomState(team_loot_items, "Grab loot")
-    bot.States.AddCustomState(pickup_torch, "Pickup Torch")
+    bot.States.AddCustomState(pickup_important_items, "Pickup Special Items")
     bot.Wait.UntilOutOfCombat()
 
     bot.States.AddHeader("level 1 ROOM_TWO")
@@ -1143,7 +1149,7 @@ def bot_routine(bot: Botting) -> None:
     bot.Move.FollowPath(ROOM_TWO)
     bot.Wait.UntilOutOfCombat()
     bot.States.AddCustomState(team_loot_items, "Grab loot")
-    bot.States.AddCustomState(pickup_torch, "Pickup Torch")
+    bot.States.AddCustomState(pickup_important_items, "Pickup Special Items")
     bot.Wait.UntilOutOfCombat()
 
     bot.States.AddHeader("level 1 OUT_OF_LEVEL_ONE")
@@ -1192,7 +1198,7 @@ def bot_routine(bot: Botting) -> None:
 
     bot.States.AddHeader("level 3 Grab Boss Key")
     ConfigureAggressiveEnv(bot)
-    bot.States.AddCustomState(pickup_torch, "Pickup Boss Key")
+    bot.States.AddCustomState(pickup_important_items, "Pickup Boss Key")
     bot.States.AddCustomState(team_loot_items, "Grab loot")
 
     bot.States.AddHeader("level 3 P2 TO Boss Lock")
@@ -2317,58 +2323,6 @@ def _get_title_track_accounts():
     return accounts[:1] if len(accounts) == 1 else []
 
 
-def _draw_title_track():
-    global _session_baselines, _session_start_times
-    import PyImGui
-    title_idx = int(TitleID.Norn)
-    tiers = TITLE_TIERS.get(TitleID.Norn, [])
-    now = time.time()
-    accounts = _get_title_track_accounts()
-    if not accounts:
-        PyImGui.text("No local account statistics available yet.")
-        return
-    for account in accounts:
-        name = account.AgentData.CharacterName
-        pts = account.TitlesData.Titles[title_idx].CurrentPoints
-        if name not in _session_baselines:
-            _session_baselines[name] = pts
-            _session_start_times[name] = now
-        tier_name = "Unranked"
-        tier_rank = 0
-        prev_required = 0
-        next_required = tiers[0].required if tiers else 0
-        for i, tier in enumerate(tiers):
-            if pts >= tier.required:
-                tier_name = tier.name
-                tier_rank = i + 1
-                prev_required = tier.required
-                next_required = tiers[i + 1].required if i + 1 < len(tiers) else tier.required
-            else:
-                next_required = tier.required
-                break
-        is_maxed = tiers and pts >= tiers[-1].required
-        gained = pts - _session_baselines[name]
-        elapsed = now - _session_start_times[name]
-        pts_hr = int(gained / elapsed * 3600) if elapsed > 0 else 0
-        tier_missing = max(next_required - pts, 0)
-        next_rank_progress_current = max(pts, 0)
-        next_rank_progress_total = max(next_required, 1)
-        PyImGui.separator()
-        PyImGui.text(f"{name}  [{tier_name} (Rank {tier_rank})]")
-        PyImGui.text(f"Total Points: {pts:,}")
-        if is_maxed:
-            PyImGui.text("Next Rank: Maxed")
-            PyImGui.text("Points To Go: 0")
-            PyImGui.progress_bar(1.0, -1, 0, "Complete")
-            PyImGui.text_colored("Maximum rank achieved. Title complete.", (0.4, 1.0, 0.4, 1.0))
-        else:
-            PyImGui.text(f"Next Rank: {next_required:,}")
-            PyImGui.text(f"Points To Go: {tier_missing:,}")
-            frac = min(next_rank_progress_current / next_rank_progress_total, 1.0)
-            PyImGui.progress_bar(frac, -1, 0, f"{next_rank_progress_current:,} / {next_rank_progress_total:,}")
-        PyImGui.text(f"+{gained:,}  ({pts_hr:,}/hr)")
-
-
 REFORGED_TEXTURE = os.path.join(Py4GW.Console.get_projects_path(), "Sources", "Wick Divinus bots", "Reforged_Icon.png")
 _EXPANDED_TAB_CHILD_SIZE = (500, 620)
 # endregion
@@ -2380,8 +2334,7 @@ _hero_config_loaded = False
 
 def _draw_statistics_tab() -> None:
     import PyImGui
-    if PyImGui.begin_child("NornStatisticsTabChild", _EXPANDED_TAB_CHILD_SIZE, False):
-        _draw_title_track()
+    # TODO
     PyImGui.end_child()
 
 
