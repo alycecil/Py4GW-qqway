@@ -2,8 +2,9 @@
 import math
 
 from Py4GWCoreLib import Botting, Routines, GLOBAL_CACHE, ModelID, Agent, Player, ConsoleLog, IniManager, HeroType, \
-    AgentArray, SharedCommandType, Item
+    AgentArray, SharedCommandType, Item, AutoPathing
 from Py4GWCoreLib.Map import Map
+from Py4GWCoreLib.enums_src.GameData_enums import Range
 from Py4GWCoreLib.enums_src.Title_enums import TitleID, TITLE_TIERS
 from Py4GWCoreLib.botting_src.property import Property
 from Py4GWCoreLib.ImGui_src.ImGuisrc import ImGui
@@ -15,6 +16,8 @@ import time
 import json
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Generator
+
+from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
 
 BOT_NAME = "Tunnels of the Forsaken"
 TEXTURE = os.path.join(Py4GW.Console.get_projects_path(), "Textures", "Skill_Icons", "[264] - Pacifism.jpg")
@@ -153,6 +156,23 @@ PCON_RESTOCK_MODELS   = [m for m, _ in PCON_ITEMS] + [
 ]
 
 
+def __customBehaviorMode(mode : bool):
+    try:
+        from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
+        CustomBehaviorParty().set_party_is_combat_enabled(mode)
+    except Exception:
+        pass
+
+
+def ConfigurePassiveEnv(bot: Botting) -> None:
+    bot.Templates.PacifistForceAutocombat()
+    bot.Properties.Disable("auto_inventory_management")
+    bot.Properties.Disable("pause_on_danger")
+    bot.Properties.Disable("auto_loot")
+
+    bot.States.AddCustomState(lambda: __customBehaviorMode(False), "Custom Behaviours Off")
+
+
 def ConfigureAggressiveEnv(bot: Botting) -> None:
     if _party_mode == 1:
         bot.Templates.Multibox_Aggressive()
@@ -161,6 +181,8 @@ def ConfigureAggressiveEnv(bot: Botting) -> None:
     bot.Properties.Enable("auto_inventory_management")
     bot.Properties.Enable("pause_on_danger")
     bot.Properties.Enable("auto_loot")
+
+    bot.States.AddCustomState(lambda: __customBehaviorMode(True), "Custom Behaviours On")
 # endregion
 
 to_dungeon = [
@@ -450,13 +472,21 @@ LEVEL_TWO_PART_TWO = [
     (-10759,18603),
     (-10322,18659),
     (-9879,18819),
+]
+
+
+LEVEL_TWO_PART_TWO_PASSIVE = [
     (-9505,18689),
     (-9092,18689),
     (-8577,18692),
     (-7946,18835),
-    (-7210,18637),
-    (-6979,18152),
-    (-6696,17764),
+]
+
+
+LEVEL_TWO_PART_THREE = [
+    (-7619,18729),
+    (-7238,18439),
+    (-6826,17895),
     (-6491,17520),
     (-6431,17234),
     (-6356,17076),
@@ -860,16 +890,69 @@ def team_loot_items():
             yield from Routines.Yield.wait(1000)
 
 
+def _my_on_party_member_in_danger():
+    try:
+        while True:
+            if not Routines.Checks.Map.MapValid():
+                return
+
+            if Routines.Checks.Party.IsPartyWiped() or GLOBAL_CACHE.Party.IsPartyDefeated():
+                return
+
+            if Routines.Checks.Agents.InDanger():
+                return
+
+            party_member_id = Routines.Checks.Party.GetPartyMemberInDangerID()
+            if party_member_id == 0 or not Agent.IsValid(party_member_id) or Agent.IsDead(party_member_id):
+                return
+
+            member_pos = Agent.GetXY(party_member_id)
+            if Utils.Distance(member_pos, Player.GetXY()) <= Range.Spellcast.value:
+                return
+
+            path = yield from AutoPathing().get_path_to(member_pos[0], member_pos[1])
+            if not path:
+                return
+
+            exit_condition = lambda: (
+                    not Routines.Checks.Map.MapValid()
+                    or Routines.Checks.Agents.InDanger()
+                    or Routines.Checks.Party.IsPartyWiped()
+                    or GLOBAL_CACHE.Party.IsPartyDefeated()
+                    or Routines.Checks.Party.GetPartyMemberInDangerID() == 0
+            )
+
+            yield from Routines.Yield.Movement.FollowPath(
+                path_points=path,
+                custom_exit_condition=exit_condition,
+                tolerance=Range.Spellcast.value,
+                timeout=10000,
+            )
+            yield from Routines.Yield.wait(100)
+            return
+    finally:
+        bot.config.FSM.resume()
+        yield
+
+
+def OnPartyMemberBehind():
+    print ("Party Member behind, Triggered")
+    fsm = bot.config.FSM
+    fsm.pause()
+    fsm.AddManagedCoroutine("OnBehind_OPD", _my_on_party_member_in_danger())
+
 # region Bot Routine
 def bot_routine(bot: Botting) -> None:
-    global to_althena, to_dungeon, to_bandits, ROOM_TWO, OUT_OF_LEVEL_ONE, LEVEL_TWO_PART_ONE, LEVEL_TWO_PART_TWO, LEVEL_THREE_PART_ONE
+    global to_althena, to_dungeon, to_bandits, ROOM_TWO, OUT_OF_LEVEL_ONE, \
+        LEVEL_TWO_PART_ONE, LEVEL_TWO_PART_TWO, LEVEL_TWO_PART_TWO_PASSIVE, LEVEL_TWO_PART_THREE, \
+        LEVEL_THREE_PART_ONE
     _ensure_mode_loaded(bot)
     #events
     condition = lambda: OnPartyWipe(bot)
     bot.Events.OnPartyWipeCallback(condition)
-    bot.Events.OnPartyMemberBehindCallback(lambda: bot.Templates.Routines.OnPartyMemberBehind())
+    bot.Events.OnPartyMemberBehindCallback(lambda: OnPartyMemberBehind())
     bot.Events.OnPartyMemberInDangerCallback(lambda: bot.Templates.Routines.OnPartyMemberInDanger())
-    bot.Events.OnPartyMemberDeadBehindCallback(lambda: bot.Templates.Routines.OnPartyMemberDeathBehind())
+    # bot.Events.OnPartyMemberDeadBehindCallback(lambda: bot.Templates.Routines.OnPartyMemberDeathBehind())
     #end events
 
     bot.States.AddHeader("Prepare For Farm")
@@ -955,6 +1038,17 @@ def bot_routine(bot: Botting) -> None:
     bot.Move.FollowPath(LEVEL_TWO_PART_TWO)
     bot.Wait.UntilOutOfCombat()
 
+    bot.States.AddHeader("level 2 Passive Bridge")
+    ConfigurePassiveEnv(bot)
+    bot.Move.FollowPath(LEVEL_TWO_PART_TWO_PASSIVE)
+    bot.Wait.ForTime(4000)
+
+    bot.States.AddHeader("level 2 PART_Three")
+    ConfigureAggressiveEnv(bot)
+    bot.Wait.ForTime(4000)
+    bot.Move.FollowPath(LEVEL_TWO_PART_THREE)
+    bot.Wait.UntilOutOfCombat()
+
     bot.States.AddHeader("level 2 exit level")
     ConfigureAggressiveEnv(bot)
     exit_level_two = [
@@ -1020,6 +1114,10 @@ def _restock_kits_if_enabled(bot: Botting):
 
 
 def _coro_travel_random_district(bot: Botting, target_map_id: int):
+    if target_map_id == Map.GetMapID():
+        yield
+        return
+
     if _randomize_district:
         district = random.choice(_RANDOM_DISTRICTS)
         ConsoleLog(BOT_NAME, f"Traveling to map {target_map_id} with random EU district {district}")
@@ -1027,6 +1125,7 @@ def _coro_travel_random_district(bot: Botting, target_map_id: int):
         yield from Routines.Yield.wait(500)
         yield from bot.Wait._coro_for_map_load(target_map_id=target_map_id)
         return
+
     yield from bot.Map._coro_travel(target_map_id, "")
 
 def _get_leftover_material_item_ids(batch_size: int = 10) -> list[int]:
