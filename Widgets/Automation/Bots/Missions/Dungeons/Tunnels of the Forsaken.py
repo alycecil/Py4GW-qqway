@@ -952,7 +952,7 @@ def bot_routine(bot: Botting) -> None:
     bot.Events.OnPartyWipeCallback(condition)
     bot.Events.OnPartyMemberBehindCallback(lambda: OnPartyMemberBehind())
     bot.Events.OnPartyMemberInDangerCallback(lambda: bot.Templates.Routines.OnPartyMemberInDanger())
-    # bot.Events.OnPartyMemberDeadBehindCallback(lambda: bot.Templates.Routines.OnPartyMemberDeathBehind())
+    bot.Events.OnPartyMemberDeadBehindCallback(lambda: bot.Templates.Routines.OnPartyMemberDeathBehind())
     #end events
 
     bot.States.AddHeader("Prepare For Farm")
