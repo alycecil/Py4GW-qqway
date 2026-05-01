@@ -753,6 +753,55 @@ LEVEL_THREE_PART_TWO = [
     (-6200,-4155),
 ]
 
+LEVEL_THREE_PART_THREE = [
+    (-6441,-4274),
+    (-6053,-4368),
+    (-6405,-4741),
+    (-6747,-5103),
+    (-6921,-5286),
+    (-6921,-5286),
+    (-6921,-5286),
+    (-7255,-5658),
+    (-7590,-6029),
+    (-7906,-6380),
+    (-7906,-6380),
+    (-7906,-6380),
+    (-8395,-6481),
+    (-8885,-6582),
+    (-9375,-6683),
+    (-9683,-6747),
+    (-9683,-6747),
+    (-9683,-6747),
+    (-10154,-6914),
+    (-10625,-7082),
+    (-11044,-7231),
+    (-11044,-7231),
+    (-11044,-7231),
+    (-11522,-7377),
+    (-12000,-7522),
+    (-12112,-7556),
+    (-12112,-7556),
+    (-12037,-8182),
+    (-12037,-8182),
+    (-12037,-8182),
+    (-12461,-8447),
+    (-12813,-8666),
+    (-12813,-8666),
+    (-13384,-8800),
+    (-13474,-9072),
+    (-13693,-9574),
+    (-14163,-9558),
+    (-14633,-9740),
+    (-14174,-9083),
+    (-14257,-8516),
+    (-14399,-8549),
+    (-14916,-8583),
+    (-15143,-8585),
+    (-15434,-8585),
+    (-15666,-8574),
+    (-15871,-8543),
+]
+
 SPECIAL_MODEL_IDS = [
     123,
     305,
@@ -1014,7 +1063,7 @@ def OnPartyMemberBehind():
 def bot_routine(bot: Botting) -> None:
     global to_althena, to_dungeon, to_bandits, ROOM_TWO, OUT_OF_LEVEL_ONE, \
         LEVEL_TWO_PART_ONE, LEVEL_TWO_PART_TWO, LEVEL_TWO_PART_TWO_PASSIVE, LEVEL_TWO_PART_THREE, \
-        LEVEL_THREE_PART_ONE, LEVEL_THREE_PART_TWO
+        LEVEL_THREE_PART_ONE, LEVEL_THREE_PART_TWO, LEVEL_THREE_PART_THREE
     _ensure_mode_loaded(bot)
     #events
     condition = lambda: OnPartyWipe(bot)
@@ -1130,7 +1179,7 @@ def bot_routine(bot: Botting) -> None:
     bot.Move.FollowPath(exit_level_two)
     bot.Wait.ForMapToChange(target_map_name="Tunnels of the Forsaken: Level 3")
 
-    bot.States.AddHeader("level 3 P1 TO Boss")
+    bot.States.AddHeader("level 3 P1 TO Key Boss")
     ConfigureAggressiveEnv(bot)
     bot.Move.FollowPath(LEVEL_THREE_PART_ONE)
     bot.Wait.UntilOutOfCombat()
@@ -1152,10 +1201,37 @@ def bot_routine(bot: Botting) -> None:
     bot.Interact.WithGadgetAtXY(-6471.00, -4283.00)
     bot.Wait.ForTime(2456)
 
+    bot.States.AddHeader("level 3 P1 TO last Boss")
+    ConfigureAggressiveEnv(bot)
+    bot.Move.FollowPath(LEVEL_THREE_PART_THREE)
+    bot.Wait.UntilOutOfCombat()
+    
+    bot.Wait.ForTime(2000+random.randint(1,2000))
+
+    bot.Move.XY(-15838, -8540)
+
+    bot.States.AddHeader("resolve_quest")
+    bot.Move.XY(-16025, -8662, "Ghost of Althea")
+    bot.Wait.ForTime(2345)
+    bot.States.AddCustomState(lambda x=-16025, y=-8662, d=0x85B507: _do_dialog_at(bot, x, y, d), "Ghost of Althea Quest Dialog")
+    bot.Wait.ForTime(3000+random.randint(1,2000))
+
+    bot.Move.XY(-15838, -8540)
+    bot.States.AddCustomState(open_zealots_chest, "Open Chest (All Accounts)")
+    bot.Wait.ForTime(3000+random.randint(1,2000))
+
+    bot.Move.XY(-15838, -8540)
+    bot.Wait.ForTime(3000+random.randint(1,2000))
+    bot.Move.XY(-16078, -8034)
+    bot.Wait.ForTime(3000+random.randint(1,2000))
+    bot.Move.XY(-16422, -8465)
+    bot.Wait.ForTime(3000+random.randint(1,2000))
+
     # bot.Multibox.ResignParty()
-    # bot.Wait.UntilOnOutpost()
+    bot.Wait.UntilOnOutpost()
     # bot.Map.Travel(target_map_id=PIKEN_SQUARE)
     # bot.States.JumpToStepName(ZONING_STEP_NAME)
+    bot.States.JumpToStepName("[H]Prepare For Farm_1")
 
 
 bot.UI.override_draw_config(lambda: _draw_settings(bot))
@@ -1985,6 +2061,102 @@ def _sync_consumable_toggles(bot: Botting) -> None:
 
 
 # endregion
+
+
+CHEST_OPEN_ATTEMPTS = 3  # number of interact attempts per account
+ZEALOTS_CHEST_POSITION = (-16068.00, -8484.00)
+ZEALOTS_GADGET_IDS = [
+    9619, # first time
+    9624, # subsequent
+]
+ZEALOTS_SCAN_RADIUS = 700.0  # un peu plus large que 500 pour Ãªtre safe
+
+
+def _target_zealots_chest_agent_id() -> int:
+    gadgets = AgentArray.GetGadgetArray()
+    gadgets = AgentArray.Filter.ByDistance(gadgets, ZEALOTS_CHEST_POSITION, ZEALOTS_SCAN_RADIUS)
+    gadgets = AgentArray.Sort.ByDistance(gadgets, ZEALOTS_CHEST_POSITION)
+
+    best = 0
+    for a in gadgets:
+        aid = int(a)
+        g = Agent.GetGadgetAgentByID(aid)
+        if not g:
+            continue
+
+        # g.gadget_id est la signature la plus fiable ici
+        try:
+            if int(g.gadget_id) in ZEALOTS_GADGET_IDS:
+                best = aid
+                break
+        except Exception:
+            continue
+
+    if best == 0:
+        for a in gadgets:
+            aid = int(a)
+            g = Agent.GetGadgetAgentByID(aid)
+            if not g:
+                continue
+
+            best = aid
+            break
+
+    return best
+
+
+def open_zealots_chest():
+    """Multibox coordination for opening the final chest"""
+    ConsoleLog(BOT_NAME, "Opening final chest with multibox...")
+
+    target = _target_zealots_chest_agent_id()
+    if target == 0:
+        ConsoleLog(BOT_NAME, "No zealots chest found (gadget_id filter)!")
+        return
+
+    sender_email = Player.GetAccountEmail()
+    accounts = GLOBAL_CACHE.ShMem.GetAllAccountData()
+
+    Player.ChangeTarget(target)
+    yield from Routines.Yield.wait(150)
+
+    # --- LEADER: interact multiple times to ensure chest opens ---
+    for attempt in range(CHEST_OPEN_ATTEMPTS):
+        ConsoleLog(BOT_NAME, f"Leader opening chest (attempt {attempt + 1}/{CHEST_OPEN_ATTEMPTS})")
+        Player.Interact(target, False)
+        yield from Routines.Yield.wait(500)
+
+    # Wait for the leader to finish
+    while command_type_routine_in_message_is_active(sender_email, SharedCommandType.InteractWithTarget):
+        yield from Routines.Yield.wait(250)
+    while command_type_routine_in_message_is_active(sender_email, SharedCommandType.PickUpLoot):
+        yield from Routines.Yield.wait(1000)
+    yield from Routines.Yield.wait(5000)
+
+    # Command opening for all members with multiple attempts
+    for account in accounts:
+        if not account.AccountEmail or sender_email == account.AccountEmail:
+            continue
+        ConsoleLog(BOT_NAME, f"Ordering {account.AccountEmail} to open chest")
+
+        for attempt in range(CHEST_OPEN_ATTEMPTS):
+            ConsoleLog(BOT_NAME, f"{account.AccountEmail} attempt {attempt + 1}/{CHEST_OPEN_ATTEMPTS}")
+            GLOBAL_CACHE.ShMem.SendMessage(
+                sender_email,
+                account.AccountEmail,
+                SharedCommandType.InteractWithTarget,
+                (target, 0, 0, 0),
+            )
+            yield from Routines.Yield.wait(1000)
+
+        while command_type_routine_in_message_is_active(account.AccountEmail, SharedCommandType.InteractWithTarget):
+            yield from Routines.Yield.wait(1000)
+        while command_type_routine_in_message_is_active(account.AccountEmail, SharedCommandType.PickUpLoot):
+            yield from Routines.Yield.wait(1000)
+        yield from Routines.Yield.wait(5000)
+
+    ConsoleLog(BOT_NAME, "ALL accounts opened chest!")
+    yield
 
 
 # region GUI
