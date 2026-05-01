@@ -1077,6 +1077,8 @@ def bot_routine(bot: Botting) -> None:
     _load_consumable_settings(bot)
     _load_kit_restock_settings(bot)
     _sync_consumable_toggles(bot)
+
+    # TODO if quest is in log abandon
     bot.States.AddCustomState(lambda: _gh_merchant_setup_if_enabled(bot, PIKEN_SQUARE), "GH Merchant Setup If Enabled")
     bot.States.AddCustomState(lambda: _coro_travel_random_district(bot, PIKEN_SQUARE), "Travel to PIKEN_SQUARE")
     bot.States.AddCustomState(lambda: _maybe_setup_heroes(bot), "Setup Heroes")
@@ -1122,6 +1124,7 @@ def bot_routine(bot: Botting) -> None:
     bot.Move.XY(-7496, -9531, "Ghost of Althea")
     bot.Wait.ForTime(2345)
     # shes actually at (-7400.00, -9462.00)
+    bot.Wait.ForTime(5000+random.randint(1,2000))
     bot.States.AddCustomState(lambda x=-7400.00, y=-9462.00, d=0x85B501: _do_dialog_at(bot, x, y, d), "Ghost of Althea Quest Dialog")
     bot.Wait.ForTime(5000+random.randint(1,2000))
     bot.States.AddCustomState(lambda x=-7400.00, y=-9462.00, d=0x85B501: _do_dialog_at(bot, x, y, d), "Ghost of Althea Quest Dialog")
@@ -1228,6 +1231,8 @@ def bot_routine(bot: Botting) -> None:
     bot.Move.XY(-16078, -8034)
     bot.Wait.ForTime(3000+random.randint(1,2000))
     bot.Move.XY(-16422, -8465)
+    bot.Wait.ForTime(3000+random.randint(1,2000))
+    bot.States.AddCustomState(lambda x=-16025, y=-8662, d=0x85B507: _do_dialog_at(bot, x, y, d), "Ghost of Althea Quest Dialog")
     bot.Wait.ForTime(3000+random.randint(1,2000))
 
     # bot.Multibox.ResignParty()
