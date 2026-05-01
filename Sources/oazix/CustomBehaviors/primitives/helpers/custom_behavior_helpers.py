@@ -129,6 +129,8 @@ class Resources:
             GadgetModelID.BURIED_TREASURE_NIGHTFALLEN_JAHAI_AND_DOMAIN_OF_PAIN_AND_KODLONU_HAMLET.value,
             # Zealot's Chest
             9619,
+            9624,
+
         ]
 
         gadget_array = AgentArray.GetGadgetArray()
