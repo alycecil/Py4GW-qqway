@@ -46,7 +46,7 @@ class MendBodyAndSoulUtility(CustomSkillUtilityBase):
             
         targets_conditionned: list[custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
             within_range=Range.Spellcast.value * 1.2,
-            condition=lambda agent_id: self.get_plugin_targeting_modifiers_filtering_predicate_any()(agent_id) and Agent.IsConditioned(agent_id),
+            condition=lambda agent_id: self.get_plugin_targeting_modifiers_filtering_predicate_any()(agent_id) and Agent.IsConditioned(agent_id) and Agent.GetHealth(agent_id) < 0.97,
             sort_key=(TargetingOrder.CONDITION_PRIORITY_LEVEL_DESC, TargetingOrder.MELEE_THEN_CASTER, TargetingOrder.HP_ASC))
 
         if len(targets) > 0: return targets[0]
