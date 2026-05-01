@@ -5,6 +5,7 @@ from Py4GWCoreLib import GLOBAL_CACHE, Routines, Range, Agent, Player
 from Py4GWCoreLib.Py4GWcorelib import ThrottledTimer
 from Py4GWCoreLib.enums_src.GameData_enums import Profession
 from Py4GWCoreLib.py4gwcorelib_src.Console import ConsoleLog
+from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
@@ -57,7 +58,8 @@ class CallPriorityTargetUtility(CustomSkillUtilityBase):
 
         party_target_id = Routines.Party.GetPartyTargetID()
         if party_target_id is not None and party_target_id > 0:
-            ConsoleLog("call_priority_target_utility", f"Already have a called target {party_target_id}")
+            if constants.DEBUG:
+                ConsoleLog("call_priority_target_utility", f"Already have a called target {party_target_id}")
             return 0 # Something is already the called target
 
         targets = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
@@ -67,13 +69,14 @@ class CallPriorityTargetUtility(CustomSkillUtilityBase):
 
         if len(targets) != 0: return targets[0].agent_id
 
-        targets = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
-            within_range=Range.Earshot,
-            condition=lambda agent_id: Agent.IsCaster(agent_id),
-            sort_key=(TargetingOrder.DISTANCE_ASC, TargetingOrder.HP_ASC))
-        
-        if len(targets) == 0: return 0
-        return targets[0].agent_id
+        # targets = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
+        #     within_range=Range.Earshot,
+        #     condition=lambda agent_id: Agent.IsCaster(agent_id),
+        #     sort_key=(TargetingOrder.DISTANCE_ASC, TargetingOrder.HP_ASC))
+        #
+        # if len(targets) == 0: return 0
+        # return targets[0].agent_id
+        return 0
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
