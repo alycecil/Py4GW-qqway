@@ -464,8 +464,12 @@ def PixelStack(index: int, message: SharedMessageStruct):
         yield from Routines.Yield.wait(100)
         Player.SendChatCommand("stuck")
         yield from Routines.Yield.wait(250)
+
+        path3d = yield from AutoPathing().get_path_to(message.Params[0], message.Params[1], smooth_by_los=True, margin=100.0, step_dist=322.0)
+        path2d:list[tuple[float, float]]  = [(x, y) for (x, y, *_ ) in path3d]
+
         result = (yield from Routines.Yield.Movement.FollowPath(
-            [(message.Params[0], message.Params[1])],
+            path_points= path2d,
             tolerance=10,
             timeout=10000,
         ))
