@@ -1121,8 +1121,11 @@ def bot_routine(bot: Botting) -> None:
     bot.States.AddHeader("get_quest")
     bot.Move.XY(-7496, -9531, "Ghost of Althea")
     bot.Wait.ForTime(2345)
+    # (-7400.00, -9462.00)
     bot.States.AddCustomState(lambda x=-7496.00, y=-9531.00, d=0x85B501: _do_dialog_at(bot, x, y, d), "Ghost of Althea Quest Dialog")
     bot.Wait.ForTime(5000)
+    bot.States.AddCustomState(lambda x=-7400.00, y=-9462.00, d=0x85B501: _do_dialog_at(bot, x, y, d), "Ghost of Althea Quest Dialog")
+    bot.Wait.ForTime(3100)
 
     bot.States.AddHeader("to_bandits")
     ConfigureAggressiveEnv(bot)
