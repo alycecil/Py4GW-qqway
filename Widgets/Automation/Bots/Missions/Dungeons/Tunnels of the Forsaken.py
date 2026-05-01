@@ -7,6 +7,7 @@ from Py4GWCoreLib.Map import Map
 from Py4GWCoreLib.enums_src.Title_enums import TitleID, TITLE_TIERS
 from Py4GWCoreLib.botting_src.property import Property
 from Py4GWCoreLib.ImGui_src.ImGuisrc import ImGui
+import PyInventory
 import Py4GW
 import os
 import random
@@ -208,9 +209,6 @@ to_dungeon = [
     (18182,-2083),
     (18069,-1860),
     (17811,-1513),
-    (17770,-1456),
-    (17593,-1230),
-    (17593,-1230),
 ]
 
 to_althena = [
@@ -572,10 +570,119 @@ LEVEL_TWO_PART_TWO = [
     (-16165,6422),
     (-16165,6422),
     (-16612,6062),
-    (-16612,6062),
+]
+
+
+LEVEL_THREE_PART_ONE = [
+    (-16351,2364),
+    (-16343,2216),
+    (-16336,2108),
+    (-16307,1609),
+    (-16300,1491),
+    (-16300,1491),
+    (-16300,1491),
+    (-15829,1323),
+    (-15479,1198),
+    (-15479,1198),
+    (-15479,1198),
+    (-15021,1398),
+    (-14563,1599),
+    (-14373,1682),
+    (-14373,1682),
+    (-14373,1682),
+    (-14007,2022),
+    (-13641,2362),
+    (-13274,2703),
+    (-12908,3043),
+    (-12896,3055),
+    (-12896,3055),
+    (-12896,3055),
+    (-12405,3153),
+    (-11915,3250),
+    (-11461,3340),
+    (-11461,3340),
+    (-10943,3228),
+    (-10943,3228),
+    (-10828,3141),
+    (-10494,2813),
+    (-10356,2649),
+    (-10304,2355),
+    (-10390,2131),
+    (-10580,1975),
+    (-10787,1872),
+    (-10986,1716),
+    (-10986,1716),
+    (-11310,1324),
+    (-11629,938),
+    (-11649,913),
+    (-11764,774),
+    (-11945,800),
+    (-12213,740),
+    (-12118,282),
+    (-12429,83),
+    (-12429,83),
+    (-12965,126),
+    (-12965,126),
+    (-12965,126),
+    (-13370,-166),
+    (-13776,-458),
+    (-14182,-750),
+    (-14200,-763),
+    (-14200,-763),
+    (-14425,-452),
+    (-14917,-496),
+    (-15228,-859),
+    (-15401,-1083),
+    (-15799,-1178),
+    (-15980,-945),
+    (-16196,-703),
+    (-16628,-738),
+    (-17008,-746),
+    (-17181,-979),
+    (-17224,-1386),
+    (-17164,-1671),
+    (-17051,-2129),
+    (-17043,-2828),
+    (-16991,-3200),
+    (-16749,-3433),
+    (-16049,-3537),
+    (-15591,-3554),
+    (-14926,-3554),
+    (-14511,-3649),
+    (-14157,-3761),
+    (-13785,-3865),
+    (-13423,-3865),
+    (-13042,-3900),
+    (-12706,-3926),
+    (-12369,-3917),
+    (-11842,-3865),
+    (-11487,-3805),
+    (-11237,-3744),
+    (-10692,-3615),
+    (-10407,-3839),
+    (-10381,-4142),
+    (-10252,-4427),
+    (-10217,-4012),
+    (-10364,-3666),
+    (-10826,-3633),
+    (-11279,-3727),
+    (-11838,-3854),
+    (-12297,-3871),
+    (-12778,-3943),
+    (-13015,-4009),
+    (-13043,-4103),
+    (-13198,-4153),
+    (-13198,-4153),
+    (-13026,-4622),
+    (-12859,-4858),
+    (-12755,-5048),
+    (-12617,-5385),
+    (-12548,-5730),
+    (-12357,-5868),
 ]
 
 SPECIAL_MODEL_IDS = [
+    123,
     305,
 ]
 
@@ -603,13 +710,6 @@ def pickup_torch(max_scan_dist: float = 5000, attempts: int = 40) -> Generator:
                 continue
 
             try:
-                owner = int(it.owner)
-                if owner not in (0, me):
-                    continue
-            except Exception:
-                owner = -1  # si owner illisible, on tente quand mÃªme
-
-            try:
                 gid = int(Agent.GetItemAgentItemID(aid))
             except Exception:
                 continue
@@ -622,16 +722,29 @@ def pickup_torch(max_scan_dist: float = 5000, attempts: int = 40) -> Generator:
                 except Exception:
                     mid = None
 
-            if mid in SPECIAL_MODEL_IDS:
+            item_id = it.item_id
+
+            if mid in SPECIAL_MODEL_IDS or item_id in SPECIAL_MODEL_IDS:
+
+                try:
+                    owner = int(it.owner)
+                    if owner not in (0, me):
+                        ConsoleLog("TORCH", "Found the item")
+                        continue
+                except Exception:
+                    pass
                 target_agent = aid
                 ground_item_id = gid
                 break
 
         if not target_agent:
+            ConsoleLog("TORCH", "Failed to find")
             yield from Routines.Yield.wait(150)
             continue
 
         tx, ty = Agent.GetXY(target_agent)
+
+        ConsoleLog("TORCH", f"Found the item ({tx}, {ty})")
 
         # Approche
         try:
@@ -733,7 +846,7 @@ def team_loot_items():
 
 # region Bot Routine
 def bot_routine(bot: Botting) -> None:
-    global to_althena, to_dungeon, to_bandits, ROOM_TWO, OUT_OF_LEVEL_ONE, LEVEL_TWO_PART_ONE, LEVEL_TWO_PART_TWO
+    global to_althena, to_dungeon, to_bandits, ROOM_TWO, OUT_OF_LEVEL_ONE, LEVEL_TWO_PART_ONE, LEVEL_TWO_PART_TWO, LEVEL_THREE_PART_ONE
     _ensure_mode_loaded(bot)
     #events
     condition = lambda: OnPartyWipe(bot)
@@ -762,27 +875,43 @@ def bot_routine(bot: Botting) -> None:
     ]
     bot.Move.FollowPath(auto_path_list)
     bot.Wait.ForMapLoad(target_map_id=102)
+
+    bot.States.AddHeader("to_dungeon")
     bot.Wait.ForTime(10000)
     ConfigureAggressiveEnv(bot)
-
     bot.Move.FollowPath(to_dungeon)
-    bot.Wait.ForMapLoad(target_map_id=673)
+    bot.Wait.UntilOutOfCombat()
+
+    path = [
+        (17770,-1456),
+        (17593,-1230),
+        (17593,-1230),
+    ]
+    bot.Move.FollowPath(path)
+    bot.Wait.ForMapToChange(target_map_name="Tunnels of the Forsaken")
+
+
+
+    bot.States.AddHeader("to_althena")
     bot.Wait.ForTime(10000)
     ConfigureAggressiveEnv(bot)
-
     bot.States.AddCustomState(lambda: _use_consumables_if_enabled(bot), "Use Consumables If Enabled")
-
     bot.Move.FollowPath(to_althena)
+
+    bot.States.AddHeader("get_quest")
     bot.Move.XY(-7496, -9531, "Ghost of Althea")
     bot.Wait.ForTime(2345)
     bot.States.AddCustomState(lambda x=-7496.00, y=-9531.00, d=0x85B501: _do_dialog_at(bot, x, y, d), "Ghost of Althea Quest Dialog")
     bot.Wait.ForTime(5000)
 
+    bot.States.AddHeader("to_bandits")
     bot.Move.FollowPath(to_bandits)
     bot.Wait.UntilOutOfCombat()
     bot.States.AddCustomState(team_loot_items, "Grab loot")
     bot.States.AddCustomState(pickup_torch, "Pickup Torch")
     bot.Wait.UntilOutOfCombat()
+
+    bot.States.AddHeader("level 1 ROOM_TWO")
 
     bot.Move.FollowPath(ROOM_TWO)
     bot.Wait.UntilOutOfCombat()
@@ -790,19 +919,46 @@ def bot_routine(bot: Botting) -> None:
     bot.States.AddCustomState(pickup_torch, "Pickup Torch")
     bot.Wait.UntilOutOfCombat()
 
+    bot.States.AddHeader("level 1 OUT_OF_LEVEL_ONE")
+
     bot.Move.FollowPath(OUT_OF_LEVEL_ONE)
     bot.Wait.ForMapToChange(target_map_name="Tunnels of the Forsaken: Level 2")
+
+    bot.States.AddHeader("level 2 LEVEL_TWO_PART_ONE TO Bridge")
 
     bot.Move.FollowPath(LEVEL_TWO_PART_ONE)
     bot.Wait.UntilOutOfCombat()
 
+    bot.States.AddHeader("level 2 LEVEL_TWO_PART_TWO From Bridge")
+
     bot.Move.FollowPath(LEVEL_TWO_PART_TWO)
     bot.Wait.UntilOutOfCombat()
 
+    bot.States.AddHeader("level 2 exit_level_two")
+
+    exit_level_two = [
+        (-16612,6062),
+        (-16775,5725),
+        (-16833,5502),
+        (-16602,4817),
+        (-16797,4262),
+    ]
+    bot.Move.FollowPath(exit_level_two)
+    bot.Wait.ForMapToChange(target_map_name="Tunnels of the Forsaken: Level 3")
+
+    bot.States.AddHeader("level 3 LEVEL_THREE_PART_ONE TO Boss")
+
+    bot.Move.FollowPath(LEVEL_THREE_PART_ONE)
+    bot.Wait.UntilOutOfCombat()
+
+    bot.States.AddHeader("level 3 Grab Boss Key")
+    bot.States.AddCustomState(pickup_torch, "Pickup Boss Key")
+    bot.States.AddCustomState(team_loot_items, "Grab loot")
+
     # bot.Multibox.ResignParty()
-    bot.Wait.UntilOnOutpost()
-    bot.Map.Travel(target_map_id=PIKEN_SQUARE)
-    bot.States.JumpToStepName(ZONING_STEP_NAME)
+    # bot.Wait.UntilOnOutpost()
+    # bot.Map.Travel(target_map_id=PIKEN_SQUARE)
+    # bot.States.JumpToStepName(ZONING_STEP_NAME)
 
 
 bot.UI.override_draw_config(lambda: _draw_settings(bot))
