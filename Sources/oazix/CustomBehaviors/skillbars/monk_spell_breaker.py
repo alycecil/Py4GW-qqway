@@ -125,11 +125,7 @@ class MonkSpellBreaker_UtilitySkillBar(CustomBehaviorBaseUtility):
         )
 
         # common
-        self.i_am_unstopabble: CustomSkillUtilityBase = IAmUnstoppableUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(99))
-        self.fall_back_utility: CustomSkillUtilityBase = FallBackUtility(event_bus=self.event_bus, current_build=in_game_build)
         self.signet_of_lost_souls_utility: CustomSkillUtilityBase = SignetOfLostSoulsUtility(event_bus=self.event_bus, current_build=in_game_build)
-        self.by_urals_hammer_utility: CustomSkillUtilityBase = ByUralsHammerUtility(event_bus=self.event_bus, current_build=in_game_build)
-        self.finish_him_utility: CustomSkillUtilityBase = FinishHimUtility(event_bus=self.event_bus, current_build=in_game_build)
 
         # we have an additionnal utility to drop the buff that we could have aquired from mimicry
         self.unyielding_aura_drop_utility: CustomSkillUtilityBase = UnyieldingAuraDropUtility(event_bus=self.event_bus, current_build=in_game_build)
@@ -154,12 +150,8 @@ class MonkSpellBreaker_UtilitySkillBar(CustomBehaviorBaseUtility):
     @override
     def custom_skills_in_behavior(self) -> list[CustomSkillUtilityBase]:
         return [
-            self.i_am_unstopabble,
-            self.fall_back_utility,
             self.signet_of_lost_souls_utility,
-            self.by_urals_hammer_utility,
             self.breath_of_the_great_dwarf_utility,
-            self.finish_him_utility,
 
             self.Jameis_Gaze_utility,
             self.dwaynas_kiss_utility,

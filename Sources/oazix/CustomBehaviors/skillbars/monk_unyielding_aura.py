@@ -79,11 +79,7 @@ class MonkUnyieldingAura_UtilitySkillBar(CustomBehaviorBaseUtility):
             allowed_states=[BehaviorState.IN_AGGRO]
         )
         # common
-        self.i_am_unstopabble: CustomSkillUtilityBase = IAmUnstoppableUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(99))
-        self.fall_back_utility: CustomSkillUtilityBase = FallBackUtility(event_bus=self.event_bus, current_build=in_game_build)
         self.signet_of_lost_souls_utility: CustomSkillUtilityBase = SignetOfLostSoulsUtility(event_bus=self.event_bus, current_build=in_game_build)
-        self.by_urals_hammer_utility: CustomSkillUtilityBase = ByUralsHammerUtility(event_bus=self.event_bus, current_build=in_game_build)
-        self.finish_him_utility: CustomSkillUtilityBase = FinishHimUtility(event_bus=self.event_bus, current_build=in_game_build)
 
         healers_boon = CustomSkill("Healers_Boon")
         self.arcane_mimicry_utility: CustomSkillUtilityBase = (
@@ -98,11 +94,7 @@ class MonkUnyieldingAura_UtilitySkillBar(CustomBehaviorBaseUtility):
     @override
     def custom_skills_in_behavior(self) -> list[CustomSkillUtilityBase]:
         return [
-            self.i_am_unstopabble,
-            self.fall_back_utility,
             self.signet_of_lost_souls_utility,
-            self.by_urals_hammer_utility,
-            self.finish_him_utility,
 
             self.blessed_signet_utility,
 

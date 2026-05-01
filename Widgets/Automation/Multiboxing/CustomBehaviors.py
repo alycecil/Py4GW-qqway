@@ -38,75 +38,9 @@ MODULE_ICON = "Textures/Module_Icons/Custom Behaviors.png"
 
 to_hex : str = "?"
 dialog_int : int = 0
-def draw_dialog_overlay():
-    global frame_coords, dialog_open, dialog_coords, to_hex, dialog_int
 
-    account_email = Player.GetAccountEmail()
-    own_data = GLOBAL_CACHE.ShMem.GetAccountDataFromEmail(account_email)
-    if own_data is None:
-        # print("no cache data")
-        return
-
-    dialog_open = UIManager.IsNPCDialogVisible()
-    frame_coords = UIManager.GetDialogButtonFrames() if dialog_open else []
-
-    if not frame_coords or not dialog_open:
-        # print("no dialog data")
-        return
-
-    pyimgui_io = PyImGui.get_io()
-    mouse_pos = (pyimgui_io.mouse_pos_x, pyimgui_io.mouse_pos_y)
-
-    sorted_frames = sorted(frame_coords, key=lambda x: (x[1][1], x[1][0]))  # Sort by Y, then X
-
-    # print("dialog open")
-    for i, (frame_id, frame) in enumerate(sorted_frames):
-        from HeroAI.ui import is_left_mouse_clicked, gray_color
-        if ImGui.is_mouse_in_rect((frame[0], frame[1], frame[2] - frame[0], frame[3] - frame[1]), mouse_pos):
-
-            frame_obj = PyUIManager.UIFrame(frame_id)
-            if frame_obj is not None:
-                dialog_int = frame_obj.field105_0x1c4
-                to_hex = f"0x{dialog_int:X}"
-
-                from Sources.oazix.CustomBehaviors.gui.botting import set_dialog_id
-                set_dialog_id(to_hex)
-
-            if is_left_mouse_clicked():
-                if pyimgui_io.key_ctrl:
-
-                    # hero ai does this...
-                    # accounts = [acc for acc in GLOBAL_CACHE.ShMem.GetAllAccountData() if acc.AccountEmail != account_email]
-                    # print(f"sending dialog {i + 1}")
-                    # commands.send_dialog(accounts, i + 1)
-
-                    # this is the field in toolbox:
-                    # PyUIManager.UIFrame(frame_id).field105_0x1c4
-                    from Sources.oazix.CustomBehaviors.gui.botting import send_dialog_for_all
-                    send_dialog_for_all(to_hex, dialog_int, include_sender = False)
-
-                    return
-                else:
-                    print("clicked without ctrl")
-            else:
-
-                if pyimgui_io.key_ctrl:
-                    ImGui.begin_tooltip()
-                    ImGui.text_colored(f"(Ctrl) + Click to send dialog {to_hex} ({dialog_int}) on all accounts.", gray_color.color_tuple, 12)
-                    ImGui.end_tooltip()
-                else:
-                    ImGui.begin_tooltip()
-                    ImGui.text_colored(f"Ctrl + Click to send dialog {to_hex} ({dialog_int}) on all accounts.", gray_color.color_tuple, 12)
-                    ImGui.end_tooltip()
-
-        else:
-            # print("no dialog")
-            pass
-
-    pass
 
 def gui():
-    draw_dialog_overlay()
 
     # PyImGui.set_next_window_size(260, 650)
     # PyImGui.set_next_window_size(460, 800)

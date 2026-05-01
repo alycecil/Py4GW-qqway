@@ -8,16 +8,13 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition imp
 from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_utility import CustomBehaviorBaseUtility
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
-
-from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_attack_utility import RawSimpleAttackUtility
+from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
 from Sources.oazix.CustomBehaviors.skills.generic.simple_sequence_utility import SimpleSequenceUtility
 from Sources.oazix.CustomBehaviors.skills.generic.stub_utility import StubUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.auspicious_incantation_utility import AuspiciousIncantationUtility
-
-from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.panic_utility import PanicUtility
 from Sources.oazix.CustomBehaviors.skills.plugins.preconditions.should_wait_for_effect import ShouldWaitForEffect
-from Sources.oazix.CustomBehaviors.skills.plugins.preconditions.should_wait_for_skill_ready import ShouldWaitForSkillReady
+
 
 class MesmerPanic_UtilitySkillBar(CustomBehaviorBaseUtility):
 
@@ -28,7 +25,6 @@ class MesmerPanic_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.panic_utility: CustomSkillUtilityBase = PanicUtility(event_bus=self.event_bus,current_build=in_game_build,score_definition=ScoreStaticDefinition(88),mana_required_to_cast=0)
 
         # Optional damage utilities
-        self.you_move_like_a_dwarf_utility: CustomSkillUtilityBase = RawSimpleAttackUtility(event_bus=self.event_bus,skill=CustomSkill("You_Move_Like_A_Dwarf"),current_build=in_game_build,score_definition=ScoreStaticDefinition(82),mana_required_to_cast=0)
         self.shatter_delusions_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus,skill=CustomSkill("Shatter_Delusions"),current_build=in_game_build,score_definition=ScorePerAgentQuantityDefinition(lambda q: 85 if q >= 2 else 40),mana_required_to_cast=0)
         self.wastrels_worry_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus,skill=CustomSkill("Wastrels_Worry"),current_build=in_game_build,mana_required_to_cast=15)
         self.chaos_storm_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Chaos_Storm"), current_build=in_game_build, mana_required_to_cast=15)
@@ -44,7 +40,7 @@ class MesmerPanic_UtilitySkillBar(CustomBehaviorBaseUtility):
         
         auspicious_incantation_utility: CustomSkillUtilityBase = (AuspiciousIncantationUtility(event_bus=self.event_bus,current_build=in_game_build,original_skill_to_cast=deep_freeze_utility,score_definition=ScoreStaticDefinition(87), 
                                                                                                allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]))
-        
+
         self.stub_auspicious_incantation_utility: CustomSkillUtilityBase = StubUtility(event_bus=self.event_bus,skill=CustomSkill("Auspicious_Incantation"),current_build=in_game_build)
         self.stub_deep_freeze_utility: CustomSkillUtilityBase = StubUtility(event_bus=self.event_bus,skill=CustomSkill("Deep_Freeze"),current_build=in_game_build)
         self.sequence_utility = SimpleSequenceUtility(event_bus=self.event_bus, utility_1=auspicious_incantation_utility, utility_2=deep_freeze_utility, current_build=in_game_build, score_definition=ScoreStaticDefinition(89))
@@ -52,7 +48,7 @@ class MesmerPanic_UtilitySkillBar(CustomBehaviorBaseUtility):
         # -- AUTONOMOUS SKILLS (OUT OF THE GW SKILLBAR) --
 
         self.add_additional_autonomous_skills(self.sequence_utility)
-    
+
     @property
     @override
     def custom_skills_in_behavior(self) -> list[CustomSkillUtilityBase]:
@@ -69,7 +65,6 @@ class MesmerPanic_UtilitySkillBar(CustomBehaviorBaseUtility):
             # nukes
             self.wastrels_worry_utility,
             self.chaos_storm_utility,
-            self.you_move_like_a_dwarf_utility,
 
             # energy management / combos
             self.guilt_utility,

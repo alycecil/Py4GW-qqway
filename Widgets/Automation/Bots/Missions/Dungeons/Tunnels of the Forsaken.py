@@ -1091,7 +1091,7 @@ def bot_routine(bot: Botting) -> None:
     bot.Wait.ForTime(11300)
 
     bot.States.AddHeader("Zoning into explorable area")
-    bot.Party.SetHardMode(True)
+    # bot.Party.SetHardMode(True)
     auto_path_list = [
         (20274,8384),
         (20285,7969),

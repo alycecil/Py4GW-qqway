@@ -66,23 +66,6 @@ class WarriorSevenWeaponsAxe_UtilitySkillBar(CustomBehaviorBaseUtility):
             allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
         )
 
-        # Common PvE optionals
-        self.ebon_battle_standard_of_honor_utility: CustomSkillUtilityBase = EbonBattleStandardOfHonorUtility(
-            event_bus=self.event_bus,
-            score_definition=ScorePerAgentQuantityDefinition(lambda agent_qte: 45 if agent_qte >= 3 else 35 if agent_qte <= 2 else 25),
-            current_build=in_game_build,
-            mana_required_to_cast=15,
-        )
-        self.i_am_unstopabble: CustomSkillUtilityBase = IAmUnstoppableUtility(
-            event_bus=self.event_bus,
-            current_build=in_game_build,
-            score_definition=ScoreStaticDefinition(99),
-        )
-        self.by_urals_hammer_utility: CustomSkillUtilityBase = ByUralsHammerUtility(
-            event_bus=self.event_bus,
-            current_build=in_game_build,
-        )
-
     @property
     @override
     def custom_skills_in_behavior(self) -> list[CustomSkillUtilityBase]:
@@ -93,9 +76,6 @@ class WarriorSevenWeaponsAxe_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.yeti_smash_utility,
             self.comfort_animal_utility,
             self.call_of_protection_utility,
-            self.ebon_battle_standard_of_honor_utility,
-            self.i_am_unstopabble,
-            self.by_urals_hammer_utility,
         ]
 
     @property

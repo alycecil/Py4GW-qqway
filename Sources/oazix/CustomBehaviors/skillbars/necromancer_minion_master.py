@@ -29,9 +29,6 @@ class NecromancerMinionMaster_UtilitySkillBar(CustomBehaviorBaseUtility):
         # optional
         self.breath_of_the_great_dwarf_utility: CustomSkillUtilityBase = BreathOfTheGreatDwarfUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScorePerHealthGravityDefinition(9))
 
-        # common
-        self.ebon_battle_standard_of_honor_utility: CustomSkillUtilityBase = EbonBattleStandardOfHonorUtility(event_bus=self.event_bus, score_definition=ScorePerAgentQuantityDefinition(lambda agent_qte: 45 if agent_qte >= 3 else 35 if agent_qte <= 2 else 25), current_build=in_game_build,  mana_required_to_cast=15)
-
     @property
     @override
     def custom_skills_in_behavior(self) -> list[CustomSkillUtilityBase]:
@@ -42,7 +39,6 @@ class NecromancerMinionMaster_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.blood_of_the_master_utility,
             
             self.breath_of_the_great_dwarf_utility,
-            self.ebon_battle_standard_of_wisdom,
         ]
 
     @property

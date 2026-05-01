@@ -48,7 +48,6 @@ class ElementalistInvokeLightning_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.elemental_lord_kurzick_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus,skill=CustomSkill("Elemental_Lord_kurzick"),current_build=in_game_build,score_definition=ScoreStaticDefinition(70),mana_required_to_cast=10,allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO])
         self.elemental_lord_luxon_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus,skill=CustomSkill("Elemental_Lord_luxon"),current_build=in_game_build,score_definition=ScoreStaticDefinition(70),mana_required_to_cast=10,allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO])
         self.air_attunement_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus,skill=CustomSkill("Air_Attunement"),current_build=in_game_build,score_definition=ScoreStaticDefinition(70),mana_required_to_cast=10,renew_before_expiration_in_milliseconds=1000,allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO])
-        self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(event_bus=self.event_bus, score_definition=ScoreStaticDefinition(71), current_build=in_game_build, mana_required_to_cast=15)
 
         # -- AUTONOMOUS SKILLS (OUT OF THE GW SKILLBAR) --
 

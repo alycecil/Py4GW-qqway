@@ -62,24 +62,6 @@ class RitualistSpiritChanneling_UtilitySkillBar(CustomBehaviorBaseUtility):
             allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
         )
 
-        # pve skills
-        self.air_of_superiority_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(
-            event_bus=self.event_bus,
-            skill=CustomSkill("Air_of_Superiority"),
-            current_build=in_game_build,
-            score_definition=ScoreStaticDefinition(30),
-            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
-        )
-            event_bus=self.event_bus,
-            current_build=in_game_build,
-            score_definition=ScoreStaticDefinition(71),
-            mana_required_to_cast=15,
-        )
-        self.by_urals_hammer_utility: CustomSkillUtilityBase = ByUralsHammerUtility(
-            event_bus=self.event_bus,
-            current_build=in_game_build,
-        )
-
     @property
     @override
     def custom_skills_in_behavior(self) -> list[CustomSkillUtilityBase]:
@@ -90,8 +72,6 @@ class RitualistSpiritChanneling_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.life_utility,
             self.rejuvenation_utility,
             self.recovery_utility,
-            self.air_of_superiority_utility,
-            self.by_urals_hammer_utility,
         ]
 
     @property
