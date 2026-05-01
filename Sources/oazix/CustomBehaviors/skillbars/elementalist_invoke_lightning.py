@@ -11,7 +11,6 @@ from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_uti
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.skills.assassin import deadly_paradox_utility
-from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.elementalist.arc_lightning_utility import ArcLightningUtility
 from Sources.oazix.CustomBehaviors.skills.elementalist.glimmering_mark_utility import GlimmeringMarkUtility
 from Sources.oazix.CustomBehaviors.skills.elementalist.chain_lightning_utility import ChainLightningUtility

@@ -8,7 +8,6 @@ from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_uti
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_wisdom_utility import EbonBattleStandardOfWisdom
-from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.arcane_echo_utility import ArcaneEchoUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.auspicious_incantation_utility import AuspiciousIncantationUtility
@@ -62,7 +61,6 @@ class MesmerESurgery_UtilitySkillBar(CustomBehaviorBaseUtility):
             arcane_echo_score_definition=ScoreStaticDefinition(82))
 
         #common
-        self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(event_bus=self.event_bus, score_definition=ScoreStaticDefinition(95), current_build=in_game_build, mana_required_to_cast=15)
         self.ebon_battle_standard_of_wisdom: CustomSkillUtilityBase = EbonBattleStandardOfWisdom(event_bus=self.event_bus, score_definition= ScorePerAgentQuantityDefinition(lambda agent_qte: 80 if agent_qte >= 3 else 60 if agent_qte <= 2 else 40), current_build=in_game_build, mana_required_to_cast=18)
 
     @property
@@ -87,7 +85,6 @@ class MesmerESurgery_UtilitySkillBar(CustomBehaviorBaseUtility):
 
             self.arcane_echo_utility,
 
-            self.ebon_vanguard_assassin_support,
             self.ebon_battle_standard_of_wisdom,
         ]
 

@@ -14,7 +14,6 @@ from Sources.oazix.CustomBehaviors.skills.generic.simple_sequence_utility import
 from Sources.oazix.CustomBehaviors.skills.generic.stub_utility import StubUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.auspicious_incantation_utility import AuspiciousIncantationUtility
 
-from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.panic_utility import PanicUtility
 from Sources.oazix.CustomBehaviors.skills.plugins.preconditions.should_wait_for_effect import ShouldWaitForEffect
@@ -29,7 +28,6 @@ class MesmerPanic_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.panic_utility: CustomSkillUtilityBase = PanicUtility(event_bus=self.event_bus,current_build=in_game_build,score_definition=ScoreStaticDefinition(88),mana_required_to_cast=0)
 
         # Optional damage utilities
-        self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(event_bus=self.event_bus,score_definition=ScoreStaticDefinition(84),current_build=in_game_build,mana_required_to_cast=15)
         self.you_move_like_a_dwarf_utility: CustomSkillUtilityBase = RawSimpleAttackUtility(event_bus=self.event_bus,skill=CustomSkill("You_Move_Like_A_Dwarf"),current_build=in_game_build,score_definition=ScoreStaticDefinition(82),mana_required_to_cast=0)
         self.shatter_delusions_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus,skill=CustomSkill("Shatter_Delusions"),current_build=in_game_build,score_definition=ScorePerAgentQuantityDefinition(lambda q: 85 if q >= 2 else 40),mana_required_to_cast=0)
         self.wastrels_worry_utility: CustomSkillUtilityBase = RawAoeAttackUtility(event_bus=self.event_bus,skill=CustomSkill("Wastrels_Worry"),current_build=in_game_build,mana_required_to_cast=15)
@@ -66,7 +64,6 @@ class MesmerPanic_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.panic_utility,
 
             # high priority damage / interrupts
-            self.ebon_vanguard_assassin_support,
             self.shatter_delusions_utility,
 
             # nukes

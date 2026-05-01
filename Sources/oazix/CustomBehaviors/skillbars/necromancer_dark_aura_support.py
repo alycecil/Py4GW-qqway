@@ -9,7 +9,6 @@ from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_uti
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.skills.common.breath_of_the_great_dwarf_utility import BreathOfTheGreatDwarfUtility
-from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.common.great_dwarf_weapon_utility import GreatDwarfWeaponUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.blood_bond_utility import BloodBondUtility
@@ -44,7 +43,6 @@ class NecromancerDarkAuraSupport_UtilitySkillBar(CustomBehaviorBaseUtility):
 
         # common
         self.signet_of_lost_souls_utility: CustomSkillUtilityBase = SignetOfLostSoulsUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreBoostedDefinition(23, 70), mana_required_to_cast=0)
-        self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(event_bus=self.event_bus, score_definition=ScoreStaticDefinition(20), current_build=in_game_build, mana_required_to_cast=15)
 
     @property
     @override
@@ -55,7 +53,6 @@ class NecromancerDarkAuraSupport_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.breath_of_the_great_dwarf_utility,
             self.blood_bond_utility,
             self.foul_feast_utility,
-            self.ebon_vanguard_assassin_support,
             self.soul_taker_utility,
             self.masochism_utility,
             self.dark_aura,

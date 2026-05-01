@@ -8,8 +8,6 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition imp
 from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_utility import CustomBehaviorBaseUtility
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
-from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import \
-    EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.preparation_utility import PreparationUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.aura_of_the_lich_utility import Aura_of_the_Lich_Utility
@@ -27,13 +25,6 @@ class Aura_of_the_Lich_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.elite_skill_utility: CustomSkillUtilityBase = Aura_of_the_Lich_Utility(
             event_bus=self.event_bus,
             current_build=in_game_build
-        )
-
-        self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(
-            event_bus=self.event_bus,
-            score_definition=ScoreStaticDefinition(71),
-            current_build=in_game_build,
-            mana_required_to_cast=15
         )
 
         self.necrosis_utility: CustomSkillUtilityBase = NecrosisUtility(
@@ -74,7 +65,6 @@ class Aura_of_the_Lich_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.necrosis_utility,
             self.serpents_quickness_prep_utility,
             self.dwarven_stability_utility,
-            self.ebon_vanguard_assassin_support,
             self.masochism_utility,
             self.dark_aura
         ]

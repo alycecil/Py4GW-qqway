@@ -15,7 +15,6 @@ from Sources.oazix.CustomBehaviors.skills.assassin.disrupting_dagger_utility imp
 from Sources.oazix.CustomBehaviors.skills.assassin.shadow_form_utility import ShadowFormUtility
 from Sources.oazix.CustomBehaviors.skills.assassin.shroud_of_distress_utility import ShroudOfDistressUtility
 from Sources.oazix.CustomBehaviors.skills.common.by_urals_hammer_utility import ByUralsHammerUtility
-from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.common.i_am_unstoppable_utility import IAmUnstoppableUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_combot_attack_utility import RawCombotAttackUtility
@@ -44,8 +43,6 @@ class AssassinTank_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.fox_fangs_utility: CustomSkillUtilityBase = RawCombotAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Fox_Fangs"), current_build=in_game_build, score_definition=ScoreCombotDefinition(40), mana_required_to_cast=15)
         self.death_blossom_utility: CustomSkillUtilityBase = RawCombotAttackUtility(event_bus=self.event_bus, skill=CustomSkill("Death_Blossom"), current_build=in_game_build, score_definition=ScoreCombotDefinition(40), mana_required_to_cast=15)
 
-        #common
-        self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(event_bus=self.event_bus, score_definition=ScoreStaticDefinition(40), current_build=in_game_build, mana_required_to_cast=24)
 
     @property
     @override
@@ -56,7 +53,6 @@ class AssassinTank_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.shadow_form_utility,
             self.armor_of_earth_utility,
             self.critical_agility_utility,
-            self.ebon_vanguard_assassin_support,
             self.stoneflesh_aura_utility,
             self.silver_armor_utility,
             self.disrupting_dagger_utility,

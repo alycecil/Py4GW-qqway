@@ -13,7 +13,6 @@ from Sources.oazix.CustomBehaviors.skills.assassin.shroud_of_distress_utility im
 from Sources.oazix.CustomBehaviors.skills.common.by_urals_hammer_utility import ByUralsHammerUtility
 from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_honor_utility import EbonBattleStandardOfHonorUtility
 from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_wisdom_utility import EbonBattleStandardOfWisdom
-from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.common.i_am_unstoppable_utility import IAmUnstoppableUtility
 from Sources.oazix.CustomBehaviors.skills.dervich.eremites_attack_utility import EremitesAttack_Utility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
@@ -49,8 +48,6 @@ class VowOfStrength_UtilitySkillBar(CustomBehaviorBaseUtility):
         #common
         self.ebon_battle_standard_of_honor_utility: CustomSkillUtilityBase = EbonBattleStandardOfHonorUtility(event_bus=self.event_bus, score_definition=ScorePerAgentQuantityDefinition(lambda agent_qte: 45 if agent_qte >= 3 else 35 if agent_qte <= 2 else 25), current_build=in_game_build,  mana_required_to_cast=15)
         self.ebon_battle_standard_of_wisdom: CustomSkillUtilityBase = EbonBattleStandardOfWisdom(event_bus=self.event_bus, score_definition=ScorePerAgentQuantityDefinition(lambda agent_qte: 45 if agent_qte >= 3 else 35 if agent_qte <= 2 else 25), current_build=in_game_build, mana_required_to_cast=18)
-        # lower priority sin, as we are the baller!
-        self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(event_bus=self.event_bus, score_definition=ScoreStaticDefinition(20), current_build=in_game_build, mana_required_to_cast=10)
 
     @property
     @override
@@ -65,7 +62,6 @@ class VowOfStrength_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.critical_eye_utility,
             self.critical_agility_utility,
             self.way_of_the_master_utility,
-            self.ebon_vanguard_assassin_support,
             self.ebon_battle_standard_of_honor_utility,
             self.ebon_battle_standard_of_wisdom,
             self.critical_defenses_utility,

@@ -8,7 +8,6 @@ from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_uti
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_wisdom_utility import EbonBattleStandardOfWisdom
-from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.arcane_conundrum_utility import ArcaneConundrumUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.cry_of_pain_utility import CryOfPainUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.drain_enchantment_utility import DrainEnchantmentUtility
@@ -42,7 +41,6 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.judges_insight_utility: CustomSkillUtilityBase = JudgesInsightUtility(event_bus=self.event_bus, current_build=in_game_build, score_definition=ScoreStaticDefinition(91))
 
         #common
-        self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(event_bus=self.event_bus, score_definition=ScoreStaticDefinition(71), current_build=in_game_build, mana_required_to_cast=15)
         self.ebon_battle_standard_of_wisdom: CustomSkillUtilityBase = EbonBattleStandardOfWisdom(event_bus=self.event_bus, score_definition= ScorePerAgentQuantityDefinition(lambda agent_qte: 80 if agent_qte >= 3 else 60 if agent_qte <= 2 else 40), current_build=in_game_build, mana_required_to_cast=18)
 
     @property
@@ -50,7 +48,6 @@ class MesmerIneptitude_UtilitySkillBar(CustomBehaviorBaseUtility):
     def custom_skills_in_behavior(self) -> list[CustomSkillUtilityBase]:
         return [
             self.signet_of_clumsiness_utility,
-            self.ebon_vanguard_assassin_support,
             self.ebon_battle_standard_of_wisdom,
             self.fall_back_utility,
             self.ineptitude_utility,

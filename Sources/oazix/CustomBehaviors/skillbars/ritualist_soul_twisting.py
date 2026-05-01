@@ -14,8 +14,6 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base i
 from Sources.oazix.CustomBehaviors.skills.common.breath_of_the_great_dwarf_utility import BreathOfTheGreatDwarfUtility
 from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_wisdom_utility import \
     EbonBattleStandardOfWisdom
-from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import \
-    EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.protective_spirit_utility import ProtectiveSpiritUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_spirit_utility import RawSpiritUtility
@@ -41,7 +39,6 @@ class RitualistSoulTwisting_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.earthbind_utility: CustomSkillUtilityBase = RawSpiritUtility(event_bus=self.event_bus, skill=CustomSkill("Earthbind"), current_build=in_game_build, owned_spirit_model_id=SpiritModelID.EARTHBIND, score_definition=ScoreStaticDefinition(55))
 
         # common
-        self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(event_bus=self.event_bus, score_definition=ScoreStaticDefinition(71), current_build=in_game_build, mana_required_to_cast=15)
         self.ebon_battle_standard_of_wisdom: CustomSkillUtilityBase = EbonBattleStandardOfWisdom(event_bus=self.event_bus, score_definition= ScorePerAgentQuantityDefinition(lambda agent_qte: 80 if agent_qte >= 3 else 60 if agent_qte <= 2 else 40), current_build=in_game_build, mana_required_to_cast=18)
         self.spirits_gift_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(event_bus=self.event_bus, skill=CustomSkill("Spirits_Gift"), current_build=in_game_build, score_definition=ScoreStaticDefinition(75), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO])
     
@@ -57,7 +54,6 @@ class RitualistSoulTwisting_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.armor_of_unfeeling_utility,
             self.breath_of_the_great_dwarf_utility,
             self.earthbind_utility,
-            self.ebon_vanguard_assassin_support,
             self.ebon_battle_standard_of_wisdom,
             self.spirits_gift_utility,
         ]

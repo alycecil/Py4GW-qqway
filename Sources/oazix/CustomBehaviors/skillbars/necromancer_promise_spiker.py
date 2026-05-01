@@ -17,9 +17,6 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base i
 from Sources.oazix.CustomBehaviors.skills.assassin.assassins_promise_utility import (
     AssassinsPromiseUtility,
 )
-from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import (
-    EbonVanguardAssassinSupportUtility,
-)
 from Sources.oazix.CustomBehaviors.skills.common.finish_him_utility import FinishHimUtility
 from Sources.oazix.CustomBehaviors.skills.dervich.eremites_attack_utility import EremitesAttack_Utility
 from Sources.oazix.CustomBehaviors.skills.dervich.twin_moon_sweep_utility import TwinMoonSweep_Utility
@@ -86,14 +83,6 @@ class NecromancerPromiseSpiker_UtilitySkillBar(CustomBehaviorBaseUtility):
             current_build=in_game_build,
             score_definition=ScoreStaticDefinition(87),
         )
-        self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = (
-            EbonVanguardAssassinSupportUtility(
-                event_bus=self.event_bus,
-                current_build=in_game_build,
-                score_definition=ScoreStaticDefinition(89),
-                mana_required_to_cast=15,
-            )
-        )
         self.pain_inverter_utility: CustomSkillUtilityBase = RawSimpleAttackUtility(
             event_bus=self.event_bus,
             skill=CustomSkill("Pain_Inverter"),
@@ -119,7 +108,6 @@ class NecromancerPromiseSpiker_UtilitySkillBar(CustomBehaviorBaseUtility):
         return [
             self.masochism_utility,
             self.assassins_promise_utility,
-            self.ebon_vanguard_assassin_support,
             self.putrid_bile_utility,
             self.finish_him_utility,
             self.putrid_explosion_utility,

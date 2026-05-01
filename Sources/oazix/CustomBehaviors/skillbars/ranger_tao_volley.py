@@ -8,7 +8,6 @@ from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_uti
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_honor_utility import EbonBattleStandardOfHonorUtility
-from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_combot_attack_utility import RawCombotAttackUtility
@@ -48,7 +47,6 @@ class RangerTaoVolley_UtilitySkillBar(CustomBehaviorBaseUtility):
 
         #common
         self.ebon_battle_standard_of_honor_utility: CustomSkillUtilityBase = EbonBattleStandardOfHonorUtility(event_bus=self.event_bus, score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 68 if enemy_qte >= 3 else 50 if enemy_qte <= 2 else 25), current_build=in_game_build,  mana_required_to_cast=15)
-        self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(event_bus=self.event_bus, score_definition=ScoreStaticDefinition(71), current_build=in_game_build, mana_required_to_cast=15)
         self.call_of_protection_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility( event_bus=self.event_bus, skill=CustomSkill("Call_of_Protection"), current_build=in_game_build, score_definition=ScoreStaticDefinition(65), allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO])
     
     @property
@@ -61,7 +59,6 @@ class RangerTaoVolley_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.volley_utility,
             self.never_rampage_alone_utility,
             self.ebon_battle_standard_of_honor_utility,
-            self.ebon_vanguard_assassin_support,
             self.triple_shot_utility,
             self.sundering_attack_utility,
             self.lightning_reflexes_utility,

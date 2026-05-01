@@ -9,7 +9,6 @@ from Sources.oazix.CustomBehaviors.primitives.skillbars.custom_behavior_base_uti
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.skills.common.by_urals_hammer_utility import ByUralsHammerUtility
-from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_spirit_utility import RawSpiritUtility
 from Sources.oazix.CustomBehaviors.skills.ritualist.life_utility import LifeUtility
@@ -71,7 +70,6 @@ class RitualistSpiritChanneling_UtilitySkillBar(CustomBehaviorBaseUtility):
             score_definition=ScoreStaticDefinition(30),
             allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
         )
-        self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(
             event_bus=self.event_bus,
             current_build=in_game_build,
             score_definition=ScoreStaticDefinition(71),
@@ -93,7 +91,6 @@ class RitualistSpiritChanneling_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.rejuvenation_utility,
             self.recovery_utility,
             self.air_of_superiority_utility,
-            self.ebon_vanguard_assassin_support,
             self.by_urals_hammer_utility,
         ]
 

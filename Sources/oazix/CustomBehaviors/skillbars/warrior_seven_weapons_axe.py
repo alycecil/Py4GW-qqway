@@ -9,7 +9,6 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomS
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.skills.common.by_urals_hammer_utility import ByUralsHammerUtility
 from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_honor_utility import EbonBattleStandardOfHonorUtility
-from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.common.i_am_unstoppable_utility import IAmUnstoppableUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
@@ -96,12 +95,6 @@ class WarriorSevenWeaponsAxe_UtilitySkillBar(CustomBehaviorBaseUtility):
         )
 
         # Common PvE optionals
-        self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(
-            event_bus=self.event_bus,
-            score_definition=ScoreStaticDefinition(66),
-            current_build=in_game_build,
-            mana_required_to_cast=15,
-        )
         self.ebon_battle_standard_of_honor_utility: CustomSkillUtilityBase = EbonBattleStandardOfHonorUtility(
             event_bus=self.event_bus,
             score_definition=ScorePerAgentQuantityDefinition(lambda agent_qte: 45 if agent_qte >= 3 else 35 if agent_qte <= 2 else 25),
@@ -132,7 +125,6 @@ class WarriorSevenWeaponsAxe_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.cyclone_axe_utility,
             self.comfort_animal_utility,
             self.call_of_protection_utility,
-            self.ebon_vanguard_assassin_support,
             self.ebon_battle_standard_of_honor_utility,
             self.i_am_unstopabble,
             self.by_urals_hammer_utility,

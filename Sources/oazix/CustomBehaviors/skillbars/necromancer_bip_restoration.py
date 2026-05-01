@@ -9,7 +9,6 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomS
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.skills.common.breath_of_the_great_dwarf_utility import BreathOfTheGreatDwarfUtility
 from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_wisdom_utility import EbonBattleStandardOfWisdom
-from Sources.oazix.CustomBehaviors.skills.common.ebon_vanguard_assassin_support_utility import EbonVanguardAssassinSupportUtility
 from Sources.oazix.CustomBehaviors.skills.common.great_dwarf_weapon_utility import GreatDwarfWeaponUtility
 from Sources.oazix.CustomBehaviors.skills.common.you_are_all_weaklings_utility import YouAreAllWeaklingsUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.blood_bond_utility import BloodBondUtility
@@ -49,7 +48,6 @@ class NecromancerBipRestoration_UtilitySkillBar(CustomBehaviorBaseUtility):
         self.mending_grip_utility: CustomSkillUtilityBase = MendingGripUtility(event_bus=self.event_bus, current_build=in_game_build)
 
         # common
-        self.ebon_vanguard_assassin_support: CustomSkillUtilityBase = EbonVanguardAssassinSupportUtility(event_bus=self.event_bus, score_definition=ScoreStaticDefinition(71), current_build=in_game_build, mana_required_to_cast=15)
         self.ebon_battle_standard_of_wisdom: CustomSkillUtilityBase = EbonBattleStandardOfWisdom(event_bus=self.event_bus, score_definition= ScorePerAgentQuantityDefinition(lambda agent_qte: 80 if agent_qte >= 3 else 60 if agent_qte <= 2 else 40), current_build=in_game_build, mana_required_to_cast=18)
         self.you_are_all_weaklings_utility: CustomSkillUtilityBase = YouAreAllWeaklingsUtility(event_bus=self.event_bus, current_build=in_game_build)
 
@@ -71,7 +69,6 @@ class NecromancerBipRestoration_UtilitySkillBar(CustomBehaviorBaseUtility):
             self.wielders_boon_utility,
             self.resilient_weapon_utility,
             self.mending_grip_utility,
-            self.ebon_vanguard_assassin_support,
             self.ebon_battle_standard_of_wisdom,
             self.you_are_all_weaklings_utility,
         ]
