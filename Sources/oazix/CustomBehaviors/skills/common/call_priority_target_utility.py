@@ -110,5 +110,5 @@ class CallPriorityTargetUtility(CustomSkillUtilityBase):
                 Player.Interact(target_agent_id, True)
                 yield from custom_behavior_helpers.Helpers.wait_for(300)
 
-        self.throttle_timer.Reset()
+        self.throttle_timer = ThrottledTimer(5000+random.randint(1000, 9999)) # redefine to force jitter in calling
         return BehaviorResult.ACTION_PERFORMED
