@@ -684,6 +684,75 @@ LEVEL_THREE_PART_ONE = [
     (-12357,-5868),
 ]
 
+LEVEL_THREE_PART_TWO = [
+    (-12522,-5625),
+    (-12522,-5625),
+    (-12684,-5151),
+    (-12845,-4678),
+    (-13057,-4361),
+    (-13079,-3998),
+    (-12385,-3908),
+    (-11779,-3854),
+    (-11291,-3748),
+    (-10573,-3591),
+    (-10231,-3517),
+    (-10231,-3517),
+    (-10231,-3517),
+    (-10333,-3028),
+    (-10436,-2539),
+    (-10538,-2186),
+    (-10737,-1781),
+    (-10396,-1295),
+    (-10396,-1295),
+    (-10396,-1295),
+    (-9927,-1122),
+    (-9457,-949),
+    (-9359,-913),
+    (-9005,-709),
+    (-8929,-370),
+    (-8552,-98),
+    (-8552,-98),
+    (-8329,350),
+    (-8107,798),
+    (-7927,1161),
+    (-7927,1161),
+    (-7927,1161),
+    (-7431,1093),
+    (-7035,1129),
+    (-6811,1135),
+    (-6407,978),
+    (-6129,839),
+    (-5543,579),
+    (-5293,455),
+    (-4957,259),
+    (-4957,259),
+    (-4623,-113),
+    (-4289,-485),
+    (-3955,-857),
+    (-3893,-927),
+    (-3893,-927),
+    (-3744,-1440),
+    (-3744,-1536),
+    (-3760,-2003),
+    (-3760,-2003),
+    (-3760,-2003),
+    (-4260,-1996),
+    (-4734,-1989),
+    (-4734,-1989),
+    (-4734,-1989),
+    (-4950,-2439),
+    (-5166,-2890),
+    (-5264,-3095),
+    (-5264,-3095),
+    (-5264,-3095),
+    (-5694,-3350),
+    (-6124,-3605),
+    (-6208,-3655),
+    (-6208,-3655),
+    (-6208,-3655),
+    (-6200,-4155),
+]
+
 SPECIAL_MODEL_IDS = [
     123,
     305,
@@ -945,7 +1014,7 @@ def OnPartyMemberBehind():
 def bot_routine(bot: Botting) -> None:
     global to_althena, to_dungeon, to_bandits, ROOM_TWO, OUT_OF_LEVEL_ONE, \
         LEVEL_TWO_PART_ONE, LEVEL_TWO_PART_TWO, LEVEL_TWO_PART_TWO_PASSIVE, LEVEL_TWO_PART_THREE, \
-        LEVEL_THREE_PART_ONE
+        LEVEL_THREE_PART_ONE, LEVEL_THREE_PART_TWO
     _ensure_mode_loaded(bot)
     #events
     condition = lambda: OnPartyWipe(bot)
@@ -1061,7 +1130,7 @@ def bot_routine(bot: Botting) -> None:
     bot.Move.FollowPath(exit_level_two)
     bot.Wait.ForMapToChange(target_map_name="Tunnels of the Forsaken: Level 3")
 
-    bot.States.AddHeader("level 3 LEVEL_THREE_PART_ONE TO Boss")
+    bot.States.AddHeader("level 3 P1 TO Boss")
     ConfigureAggressiveEnv(bot)
     bot.Move.FollowPath(LEVEL_THREE_PART_ONE)
     bot.Wait.UntilOutOfCombat()
@@ -1070,6 +1139,18 @@ def bot_routine(bot: Botting) -> None:
     ConfigureAggressiveEnv(bot)
     bot.States.AddCustomState(pickup_torch, "Pickup Boss Key")
     bot.States.AddCustomState(team_loot_items, "Grab loot")
+
+    bot.States.AddHeader("level 3 P2 TO Boss Lock")
+    ConfigureAggressiveEnv(bot)
+    bot.Move.FollowPath(LEVEL_THREE_PART_TWO)
+    bot.Wait.UntilOutOfCombat()
+
+    bot.States.AddHeader("OPEN_BOSS_LOCK")
+    bot.Move.XY(-6391.78, -4228.98, "go to the boss lock")  # GadgetId=8730 IsGadget=true
+    bot.Interact.WithGadgetAtXY(-6471.00, -4283.00)
+    bot.Wait.ForTime(2000+random.randint(1,2000))
+    bot.Interact.WithGadgetAtXY(-6471.00, -4283.00)
+    bot.Wait.ForTime(2456)
 
     # bot.Multibox.ResignParty()
     # bot.Wait.UntilOnOutpost()
