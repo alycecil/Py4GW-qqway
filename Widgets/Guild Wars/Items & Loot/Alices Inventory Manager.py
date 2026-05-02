@@ -12,9 +12,11 @@ from Py4GWCoreLib import PyImGui, Color, ImGui
 from Py4GWCoreLib import Routines
 from Py4GWCoreLib import Timer, Player
 from Py4GWCoreLib.enums_src.Multiboxing_enums import SharedCommandType
+from Py4GWCoreLib.py4gwcorelib_src.BehaviorTree import BehaviorTree
 from Sources.inventory_managment import constants
 from Sources.inventory_managment.ui_manipulators.deposit_materials import DepositMaterials
 from Sources.inventory_managment.ui_manipulators.identify_all import IdentifyAllItems
+from Sources.inventory_managment.util.yield_as_behavior_tree import YieldAsBehaviorTree, as_behavior_tree
 
 script_directory = os.path.dirname(os.path.abspath(__file__))
 project_root = Py4GW.Console.get_projects_path()
@@ -48,9 +50,9 @@ default_dialog_string: str = "0x84"
 
 dialog_open : bool = False
 
-ticker: Generator | None = None
+ticker: BehaviorTree | None = None
 
-# Allow the user to override the dialog id manually if they so choose as well as display current dialog id and button to send
+
 def draw_widget():
     global window_x, window_y, window_collapsed, first_run
     global default_dialog_string
@@ -61,30 +63,41 @@ def draw_widget():
         return
 
     if ticker is not None:
-        PyImGui.text("Working")
-        PyImGui.end()
-        return
+        PyImGui.text("Working, clicking a button will replace the current run")
 
-    PyImGui.same_line(0,-1)
+        PyImGui.same_line(0,-1)
+        if PyImGui.button(f"{IconsFontAwesome5.ICON_STOP} Stop"):
+            ticker = None
+    else:
+        PyImGui.text("Manually trigger an action")
+    PyImGui.separator()
+
+    # PyImGui.same_line(0,-1)
     if GLOBAL_CACHE.Inventory.IsStorageOpen():
         if PyImGui.button(f"{IconsFontAwesome5.ICON_BOX_OPEN} Xunlai Opened"):
-            pass
+            ticker = None
     else:
         if PyImGui.button(f"{IconsFontAwesome5.ICON_BOX} Open Xunlai"):
             GLOBAL_CACHE.Inventory.OpenXunlaiWindow()
+            ticker = None
 
     PyImGui.same_line(0,-1)
     if PyImGui.button(f"{IconsFontAwesome5.ICON_MAGNIFYING_GLASS} Identify All"):
-        ticker=IdentifyAllItems().IdentifyAll()
+        ticker = as_behavior_tree("IdentifyAllItems", IdentifyAllItems().IdentifyAll())
 
     PyImGui.same_line(0,-1)
     if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Deposit Materials"):
-        ticker=DepositMaterials().DepositMaterials()
+        ticker = as_behavior_tree("DepositMaterials",DepositMaterials().DepositMaterials())
 
     PyImGui.separator()
+    if ImGui.begin_tab_item("Bags"):
+        PyImGui.text("Settings")
 
-    #default_dialog_string = ImGui.input_text("Dialog Id", default_dialog_string, 0)
+        #default_dialog_string = ImGui.input_text("Dialog Id", default_dialog_string, 0)
+        if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Save"):
+            pass
 
+        ImGui.end_tab_item()
 
     PyImGui.end()
 
@@ -108,14 +121,18 @@ def tooltip():
     PyImGui.end_tooltip()
 
 
+def assign_auto_ticker() -> BehaviorTree | None:
+    return None
+
+
 def main():
     global cached_data
     global ticker
 
-    try:
-        if not Routines.Checks.Map.MapValid():
-            return
+    if not Routines.Checks.Map.MapValid():
+        return
 
+    try:
         draw_widget()
 
     except ImportError as e:
@@ -136,19 +153,23 @@ def main():
 
     try:
         if ticker is not None:
-            string = None
-            try:
-                string = next(ticker)
-                if constants.DEBUG: Py4GW.Console.Log(MODULE_NAME, f"Tick: {string}", Py4GW.Console.MessageType.Info)
-            except StopIteration:
+            state = ticker.tick()
+            if state != BehaviorTree.NodeState.RUNNING:
+                Py4GW.Console.Log(MODULE_NAME, f"Behavior tree '{ticker.root.name}' finished with state: {state.name}", Py4GW.Console.MessageType.Success if state == BehaviorTree.NodeState.SUCCESS else Py4GW.Console.MessageType.Warning)
                 ticker = None
-                Py4GW.Console.Log(MODULE_NAME, f"Ticker done", Py4GW.Console.MessageType.Info)
+        else:
+            ticker = assign_auto_ticker()
+    except StopIteration:
+        ticker = None
+        Py4GW.Console.Log(MODULE_NAME, f"Ticker done", Py4GW.Console.MessageType.Info)
     except Exception as e:
+        ticker = None
         # Catch-all for any other unexpected exceptions
         Py4GW.Console.Log(MODULE_NAME, f"Unexpected error encountered: {str(e)}", Py4GW.Console.MessageType.Error)
         Py4GW.Console.Log(MODULE_NAME, f"Stack trace: {traceback.format_exc()}", Py4GW.Console.MessageType.Error)
     finally:
         pass
+
 
 if __name__ == "__main__":
     main()
