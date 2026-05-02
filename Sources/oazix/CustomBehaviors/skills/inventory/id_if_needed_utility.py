@@ -8,6 +8,7 @@ from Py4GWCoreLib.py4gwcorelib_src.Console import ConsoleLog
 from Py4GWCoreLib.py4gwcorelib_src.Timer import ThrottledTimer
 from Sources.inventory_managment.inventory_utils import InventoryUtils
 from Sources.inventory_managment.config.inventory_utils_config import InventoryMode, InventoryUtilsConfig
+from Sources.inventory_managment.ui_manipulators.identify_all import IdentifyAllItems
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_message import EventMessage
@@ -125,7 +126,7 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
 
         if constants.DEBUG: ConsoleLog("IdIfNeededUtility", "Got lock")
 
-        yield from self.IdentifyAll()
+        yield from IdentifyAllItems().IdentifyAll()
         self.clicked_recently = True
         self.movement_check_timer.Reset()
         self.movement_check_timer = ThrottledTimer(3000+random.randint(100, 365000))
@@ -219,56 +220,5 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
         name_parts.append(parsed_modifiers.summary())
 
         return "\r\n".join(name_parts)
-
-    def IdentifyAll(self):
-        from Py4GWCoreLib import Map, Console, UIManager
-        FRAME_ALIAS_FILE = ".\\Py4GWCoreLib\\frame_aliases.json"  # JSON file mapping human-readable frame labels
-
-        def GetIdentifyAllFrameId() -> int | None:
-            _frame_id = 0
-
-            try:
-                _frame_id = UIManager.GetFrameIDByCustomLabel(FRAME_ALIAS_FILE, "IdentifyAllItems")
-            except Exception:
-                return None
-
-            return None
-
-        def IsWindowOpen() -> bool:
-            from Py4GWCoreLib.enums_src.UI_enums import WindowID
-            return UIManager.IsWindowVisible(WindowID.WindowID_InventoryBags)
-
-        def OpenWindow() -> None:
-            """Open the mini map window."""
-            from Py4GWCoreLib.enums_src.UI_enums import WindowID
-            if IsWindowOpen():
-                return
-            UIManager.SetWindowVisible(WindowID.WindowID_Inventory, True)
-
-        if Map.IsOutpost():
-            from Py4GWCoreLib import Routines
-            from Py4GWCoreLib import GLOBAL_CACHE
-
-            if not IsWindowOpen():
-                OpenWindow()
-                yield from Routines.Yield.wait(150)
-            else:
-                Console.Log("IdentifyAll", f"Chest already open", Console.MessageType.Info)
-
-            yield from Routines.Yield.wait(350)
-            if  IsWindowOpen():
-                yield from Routines.Yield.wait(150)
-
-                frame_id = GetIdentifyAllFrameId()
-
-                if frame_id is not None:
-                    Console.Log("IdentifyAll", f"Clicked on frame {frame_id} to Identify All items", Console.MessageType.Info)
-                    print ()
-                    UIManager.FrameClick(frame_id)
-                else:
-                    Console.Log("IdentifyAll", f"{frame_id} - could not Identify All", Console.MessageType.Info)
-        else:
-            Console.Log("IdentifyAll", f"Wrong location type", Console.MessageType.Info)
-        pass
 
 
