@@ -3,18 +3,14 @@ from typing import Any, Generator, override
 
 import PyImGui
 
-from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, ItemArray, Routines, Range, Map
+from Py4GWCoreLib import Routines, Map
 from Py4GWCoreLib.py4gwcorelib_src.Timer import ThrottledTimer
-from Sources.inventory_managment.json_helper import string_to_dict, dict_to_string
-from Sources.inventory_managment.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
-from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
+from Sources.inventory_managment.inventory_utils import InventoryUtils
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_message import EventMessage
 from Sources.oazix.CustomBehaviors.primitives.bus.event_type import EventType
-from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
-from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
 from Sources.oazix.CustomBehaviors.primitives.scores.comon_score import CommonScore
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
@@ -118,7 +114,7 @@ class DepositIfNeededUtility(CustomSkillUtilityBase):
             current_state = inventory_handler.module_active
             inventory_handler.module_active = False
 
-            yield from inventory_handler.DepositMaterials()
+            # yield from inventory_handler.DepositMaterials()
             yield from inventory_handler.IdentifyItems()
             yield from inventory_handler.DepositItemsAuto()
             yield from Routines.Yield.Items.DepositGold(inventory_handler.keep_gold, log =False)

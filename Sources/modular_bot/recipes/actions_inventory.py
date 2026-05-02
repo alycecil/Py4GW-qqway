@@ -342,8 +342,10 @@ def _get_nonsalvageable_gold_item_ids() -> list[int]:
 
 def get_crap_to_sell() -> list[int]:
     from Py4GWCoreLib import GLOBAL_CACHE
-    from Sources.inventory_managment.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
-    from Sources.inventory_managment.inventory_util_config_loader import inventory_util_config_load_json
+    from Sources.inventory_managment.inventory_utils import InventoryUtils
+    from Sources.inventory_managment.config.inventory_utils_config import InventoryUtilsConfig
+    from Sources.inventory_managment.config.inventory_utils_config import InventoryMode
+    from Sources.inventory_managment.config.inventory_util_config_loader import inventory_util_config_load_json
     inventory_utils_config: InventoryUtilsConfig = inventory_util_config_load_json()
 
     inventory_utils = InventoryUtils()

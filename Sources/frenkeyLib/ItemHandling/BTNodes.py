@@ -47,29 +47,26 @@ Docstring parsing rules
 from __future__ import annotations
 
 import time
-from enum import IntEnum
-from typing import Any, Callable, Optional, cast
+from typing import Optional, cast
 
 import Py4GW
 import PyInventory
 from PyItem import DyeColor
 
-from Py4GWCoreLib import GLOBAL_CACHE, traceback
+from Py4GWCoreLib import traceback
 from Py4GWCoreLib.Inventory import Inventory
 from Py4GWCoreLib.Item import Bag, Item
 from Py4GWCoreLib.Merchant import Trading
-from Py4GWCoreLib.UIManager import UIManager
 from Py4GWCoreLib.enums_src.GameData_enums import Attribute
-from Py4GWCoreLib.enums_src.Item_enums import MAX_STACK_SIZE, ItemType, Rarity
+from Py4GWCoreLib.enums_src.Item_enums import ItemType, Rarity
 from Py4GWCoreLib.enums_src.Item_enums import MAX_STACK_SIZE
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
-from Py4GWCoreLib.enums_src.Region_enums import ServerLanguage
 from Py4GWCoreLib.py4gwcorelib_src.BehaviorTree import BehaviorTree
 from Sources.frenkeyLib.ItemHandling.Items.item_snapshot import ItemSnapshot
 from Sources.frenkeyLib.ItemHandling.Items.types import INVENTORY_BAGS, STORAGE_BAGS
 from Sources.frenkeyLib.ItemHandling.Rules.types import MATERIAL_SLOTS, SalvageMode
 from Sources.frenkeyLib.ItemHandling.UIManagerExtensions import UIManagerExtensions
-from Sources.frenkeyLib.ItemHandling.utility import GetDestinationSlots, GetItemsLocations, HasSpaceForItem
+from Sources.frenkeyLib.ItemHandling.utility import GetItemsLocations, HasSpaceForItem
 
 SALVAGE_WINDOW_HASH = 684387150
 LESSER_CONFIRM_HASH = 140452905
@@ -1445,7 +1442,8 @@ class BTNodes:
               Notes: The sort configuration is still marked as provisional in the implementation comments.
             """
             from Sources.inventory_managment.json_helper import string_to_dict
-            from Sources.inventory_managment.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
+            from Sources.inventory_managment.inventory_utils import InventoryUtils
+            from Sources.inventory_managment.config.inventory_utils_config import InventoryUtilsConfig
             inventory_utils_config: InventoryUtilsConfig = InventoryUtilsConfig()
             from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
             data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")

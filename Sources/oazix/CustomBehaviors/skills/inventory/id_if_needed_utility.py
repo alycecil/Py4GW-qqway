@@ -1,28 +1,16 @@
-import json
-from enum import Enum
 import random
-from re import DEBUG
-from types import SimpleNamespace
 from typing import Any, Generator, override
 
 import PyImGui
 
-from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, ItemArray, Routines, Range, Map, Agent, Player, Inventory, Item
-from Py4GWCoreLib.Pathing import AutoPathing
-from Py4GWCoreLib.Py4GWcorelib import Utils
-from Py4GWCoreLib.enums_src.Item_enums import Bags, Rarity
-from Py4GWCoreLib.enums_src.Model_enums import ModelID
-from Py4GWCoreLib.py4gwcorelib_src.ActionQueue import ActionQueueManager
+from Py4GWCoreLib import GLOBAL_CACHE, Routines, Map, Agent, Player, Item
 from Py4GWCoreLib.py4gwcorelib_src.Console import ConsoleLog
 from Py4GWCoreLib.py4gwcorelib_src.Timer import ThrottledTimer
-from Sources.inventory_managment.json_helper import string_to_dict, dict_to_string
-from Sources.inventory_managment.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
-from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
+from Sources.inventory_managment.inventory_utils import InventoryUtils
+from Sources.inventory_managment.config.inventory_utils_config import InventoryMode, InventoryUtilsConfig
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_message import EventMessage
-from Sources.oazix.CustomBehaviors.primitives.bus.event_type import EventType
-from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
 from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
 from Sources.oazix.CustomBehaviors.primitives.scores.comon_score import CommonScore
@@ -51,7 +39,7 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
 
         self.score_definition: ScoreStaticDefinition = ScoreStaticDefinition(CommonScore.INVENTORY.value)
 
-        from Sources.inventory_managment.inventory_util_config_loader import inventory_util_config_load_json
+        from Sources.inventory_managment.config.inventory_util_config_loader import inventory_util_config_load_json
         self.inventory_utils_config: InventoryUtilsConfig = inventory_util_config_load_json()
 
         self.inventory_utils: InventoryUtils = InventoryUtils()
@@ -61,7 +49,7 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
 
     def map_changed(self, message: EventMessage) -> Generator[Any, Any, Any]:
 
-        from Sources.inventory_managment.inventory_util_config_loader import inventory_util_config_load_json
+        from Sources.inventory_managment.config.inventory_util_config_loader import inventory_util_config_load_json
         self.inventory_utils_config: InventoryUtilsConfig = inventory_util_config_load_json()
 
         self.clicked_recently = False
@@ -119,17 +107,17 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
 
     @override
     def persist_configuration_for_account(self):
-        from Sources.inventory_managment.inventory_util_config_loader import persist_configuration_for_account
+        from Sources.inventory_managment.config.inventory_util_config_loader import persist_configuration_for_account
         persist_configuration_for_account(self.inventory_utils_config)
 
     @override
     def persist_configuration_as_global(self):
-        from Sources.inventory_managment.inventory_util_config_loader import persist_configuration_as_global
+        from Sources.inventory_managment.config.inventory_util_config_loader import persist_configuration_as_global
         persist_configuration_as_global(self.inventory_utils_config)
 
     @override
     def delete_persisted_configuration(self):
-        from Sources.inventory_managment.inventory_util_config_loader import delete_persisted_configuration
+        from Sources.inventory_managment.config.inventory_util_config_loader import delete_persisted_configuration
         delete_persisted_configuration()
 
     @override
@@ -240,7 +228,7 @@ class IdIfNeededUtility(CustomSkillUtilityBase):
             _frame_id = 0
 
             try:
-                _frame_id = UIManager.GetFrameIDByCustomLabel(FRAME_ALIAS_FILE, "IntentifyAllItems")
+                _frame_id = UIManager.GetFrameIDByCustomLabel(FRAME_ALIAS_FILE, "IdentifyAllItems")
             except Exception:
                 return None
 

@@ -1,17 +1,16 @@
 
 from enum import Enum
 import random
-from re import DEBUG
 from typing import Any, Generator, override
 
 import PyImGui
 
-from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, ItemArray, Routines, Range, Map, Agent, Player, Inventory, Item, \
-    PyUIManager
+from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, Routines, Range, Map, Agent, Player, Inventory, Item
 from Py4GWCoreLib.Pathing import AutoPathing
 from Py4GWCoreLib.Py4GWcorelib import Utils
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
-from Sources.inventory_managment.inventory_utils import InventoryUtilsConfig, InventoryUtils, InventoryMode
+from Sources.inventory_managment.inventory_utils import InventoryUtils
+from Sources.inventory_managment.config.inventory_utils_config import InventoryMode, InventoryUtilsConfig
 from Sources.inventory_managment.json_helper import string_to_dict
 from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives import constants
@@ -235,7 +234,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         return len(self.get_items_to_sell(self.include_salvage_items())) > 0
 
     def get_items_to_deposit(self):
-        from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
+        from Py4GWCoreLib import ConsoleLog, Console
         my_items = []
         inventory_item_ids = self.inventory_utils.get_inventory_items(self.inventory_utils_config)
         if constants.DEBUG: ConsoleLog("get_items_to_deposit", f"Inventory List filtered = {inventory_item_ids}", Console.MessageType.Info)
@@ -273,7 +272,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         return my_items
 
     def _needsToVisit(self, merchant_type: MerchantType) -> bool:
-        from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
+        from Py4GWCoreLib import ConsoleLog, Console
         if merchant_type == MerchantType.MERCHANT:
             if (self.GetExpertSalvageKitsToBuy() > 0
                     or self.GetSalvageKitsToBuy() > 0
@@ -339,7 +338,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
 
     def _visit(self, merchant_type: MerchantType) -> Generator[Any, None, None]:
 
-        from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
+        from Py4GWCoreLib import ConsoleLog, Console
 
         if not self.should_visit_npc_config[merchant_type]: return
         if self.npc_visited[merchant_type]: return
@@ -466,23 +465,23 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
 
     @override
     def persist_configuration_for_account(self):
-        from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
-        from Sources.inventory_managment.json_helper import string_to_dict, dict_to_string
+        from Py4GWCoreLib import ConsoleLog, Console
+        from Sources.inventory_managment.json_helper import dict_to_string
         # PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "should_visit_npc_config", dict_to_string(self.should_visit_npc_config))
         PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "inventory_config", dict_to_string(self.inventory_config.__dict__))
         ConsoleLog("MerchantRefillIfNeededUtility", "configuration saved for account", Console.MessageType.Info)
 
     @override
     def persist_configuration_as_global(self):
-        from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
-        from Sources.inventory_managment.json_helper import string_to_dict, dict_to_string
+        from Py4GWCoreLib import ConsoleLog, Console
+        from Sources.inventory_managment.json_helper import dict_to_string
         # PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "should_visit_npc_config", dict_to_string(self.should_visit_npc_config))
         PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "inventory_config", dict_to_string(self.inventory_config.__dict__))
         ConsoleLog("MerchantRefillIfNeededUtility", "configuration saved as global", Console.MessageType.Info)
 
     @override
     def delete_persisted_configuration(self):
-        from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
+        from Py4GWCoreLib import ConsoleLog, Console
         PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "should_visit_npc_config")
         PersistenceLocator().skills.delete(str(self.custom_skill.skill_name), "inventory_config")
         ConsoleLog("MerchantRefillIfNeededUtility", "configuration deleted", Console.MessageType.Info)

@@ -1,19 +1,5 @@
-import os
 import random
-import Py4GW
-from Py4GW_widget_manager import get_widget_handler
-from Py4GWCoreLib import GLOBAL_CACHE
-from Py4GWCoreLib import AgentArray
-from Py4GWCoreLib import Botting
-from Py4GWCoreLib import ConsoleLog
-from Py4GWCoreLib import Range
-from Py4GWCoreLib import Routines
-from Py4GWCoreLib import Utils
-from Py4GWCoreLib import Map, Agent, Player
-import os
-from typing import Generator, Optional, Tuple, List
-import time, math
-import inspect
+from typing import Generator
 import PyInventory
 from Py4GWCoreLib import *
 import Py4GW
@@ -21,7 +7,6 @@ from Py4GWCoreLib import (
     Agent,
     Botting,
     ConsoleLog,
-    Effects,
     GLOBAL_CACHE,
     Map,
     Player,
@@ -31,11 +16,10 @@ from Py4GWCoreLib import (
     AgentArray,
     IniHandler,
 )
-from Py4GWCoreLib.botting_src.helpers import BottingHelpers
 from Py4GW_widget_manager import get_widget_handler
 
-from Sources.inventory_managment.json_helper import string_to_dict, dict_to_string
-from Sources.inventory_managment.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
+from Sources.inventory_managment.inventory_utils import InventoryUtils
+from Sources.inventory_managment.config.inventory_utils_config import InventoryMode
 
 BOT_NAME = "Asterius Scythe Farm"
 MODULE_ICON = "Textures\\Module_Icons\\Asterius' Scythe.png"
@@ -106,8 +90,8 @@ bot = Botting(BOT_NAME,
 def get_items_to_deposit():
     global inventory_utils_config
     global inventory_utils
-    from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
-    from Sources.inventory_managment.inventory_util_config_loader import inventory_util_config_load_json
+    from Py4GWCoreLib import ConsoleLog, Console
+    from Sources.inventory_managment.config.inventory_util_config_loader import inventory_util_config_load_json
     inventory_utils_config = inventory_util_config_load_json()
 
     inventory_utils = InventoryUtils()

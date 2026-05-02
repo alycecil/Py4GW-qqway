@@ -7,7 +7,7 @@ import Py4GW
 import PyImGui
 from PyItem import PyItem
 
-from Py4GWCoreLib import Item, ItemMod
+from Py4GWCoreLib import ItemMod
 from Py4GWCoreLib.ImGui_src.ImGuisrc import ImGui
 from Py4GWCoreLib.ImGui_src.types import Alignment
 from Py4GWCoreLib.IniManager import IniManager
@@ -25,7 +25,6 @@ from Sources.frenkeyLib.ItemHandling.Items.item_snapshot import ItemSnapshot
 
 Utils.ClearSubModules("ItemHandling")
 Utils.ClearSubModules("frenkeyLib.Core")
-from Sources.frenkeyLib.Core.encoded_names import ItemName
 from Sources.frenkeyLib.ItemHandling.BTNodes import STORAGE_BAGS, BTNodes
 from Sources.frenkeyLib.ItemHandling.Rules.types import SalvageMode
 from Sources.frenkeyLib.ItemHandling.Items.item_collecting import ItemCollector
@@ -252,7 +251,9 @@ def main():
             try:
                 from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
                 from Sources.inventory_managment.json_helper import string_to_dict
-                from Sources.inventory_managment.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
+                from Sources.inventory_managment.inventory_utils import InventoryUtils
+                from Sources.inventory_managment.config.inventory_utils_config import InventoryUtilsConfig
+                from Sources.inventory_managment.config.inventory_utils_config import InventoryMode
 
                 inventory_config: InventoryUtilsConfig = InventoryUtilsConfig()
                 data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")
