@@ -3,9 +3,7 @@ from Py4GWCoreLib.enums_src.Item_enums import ItemType
 from Py4GWCoreLib.py4gwcorelib_src.Console import ConsoleLog
 from Sources.inventory_managment import constants
 from Sources.inventory_managment.config.inventory_utils_config import WeaponConfig, InventoryMode, InventoryUtilsConfig
-from Sources.inventory_managment.inventory_utils import InventoryUtils
-from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import InventoryConfig
-
+from Sources.inventory_managment.properties.mods.get_mods_from_item import GetMods
 
 class WeaponHandler:
 
@@ -30,7 +28,6 @@ class WeaponHandler:
     def _apply_action_for_weapon(
             self,
             weapon_config: WeaponConfig,
-            inventory_utils: InventoryUtils,
             item_id: int,
             item_type: ItemType
     ) -> InventoryMode:
@@ -39,7 +36,7 @@ class WeaponHandler:
             return InventoryMode.KEEP_DONT_IDENTIFY
 
         default_action = self._default_apply_action_for_weapon(weapon_config, item_id)
-        prefix, suffix, inherent, parsed_modifiers = inventory_utils.get_mods_from_item(item_id)
+        prefix, suffix, inherent, parsed_modifiers = GetMods().get_mods_from_item(item_id)
 
         if parsed_modifiers.is_highly_salvageable:  # todo make configure-able
             if constants.DEBUG: ConsoleLog("InvUtil", f"is_highly_salvageable #{item_id}")

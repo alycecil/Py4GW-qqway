@@ -1,23 +1,18 @@
-import os
-
+import PyImGui
 import PyImGui
 
 import Py4GW  # type: ignore
-from Py4GWCoreLib import ConsoleLog
 from Py4GWCoreLib import GLOBAL_CACHE
 from Py4GWCoreLib import ItemArray, Item, Inventory
 from Py4GWCoreLib.enums import Bags
 from Py4GWCoreLib.enums_src.Item_enums import ItemType
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
-from Sources.inventory_managment.config.inventory_utils_config import InventoryMode, SalvageConfig, WeaponConfig, \
-    InventoryUtilsConfig
+from Sources.inventory_managment.config.inventory_utils_config import InventoryMode, InventoryUtilsConfig
 from Sources.inventory_managment.properties.is_maxed.is_maxed import IsMaxed
 from Sources.inventory_managment.properties.mods.get_mods_from_item import GetMods
 from Sources.inventory_managment.properties.salvage_handler import SalvageHandler
 from Sources.inventory_managment.properties.weapon_handler import WeaponHandler
-from Sources.marks_sources.mods_parser import MatchedWeaponModInfo, MatchedRuneInfo, parse_modifiers, ModDatabase
 from Sources.marks_sources.mods_parser import ParsedModifierResult
-from Sources.oazix.CustomBehaviors.primitives import constants
 
 
 # Create an enumeration

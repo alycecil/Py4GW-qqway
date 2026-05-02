@@ -1,7 +1,7 @@
+from Py4GWCoreLib import ConsoleLog, Console
 from Py4GWCoreLib import IniManager
 from Sources.inventory_managment.config.inventory_utils_config import InventoryUtilsConfig
 from Sources.inventory_managment.json_helper import string_to_dict, dict_to_string
-from Py4GWCoreLib import ConsoleLog, Console
 
 INVENTORY_UTILS_CONFIG = "my_inventory_utils_config"
 DEFAULT_JSON = "inventory_utils_config"

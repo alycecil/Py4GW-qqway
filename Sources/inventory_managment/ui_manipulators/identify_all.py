@@ -1,6 +1,5 @@
-from Py4GWCoreLib.py4gwcorelib_src.Console import Console
-from Py4GWCoreLib import Map
 from Py4GWCoreLib import UIManager
+from Py4GWCoreLib.py4gwcorelib_src.Console import Console
 from Sources.inventory_managment.ui_manipulators.generic_ui_frame_clicker import UIManagerHelpers
 
 FRAME_ALIAS_FILE = ".\\Py4GWCoreLib\\frame_aliases.json"  # JSON file mapping human-readable frame labels
@@ -54,7 +53,6 @@ class IdentifyAllItems:
     def IdentifyAll(self):
 
         from Py4GWCoreLib import Routines
-        from Py4GWCoreLib import GLOBAL_CACHE
 
         if not self.IsWindowOpen():
             self.OpenWindow()
