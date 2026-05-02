@@ -1,4 +1,4 @@
-from Py4GWCoreLib import Agent, Player
+from Py4GWCoreLib import Agent, Player, GLOBAL_CACHE
 from Py4GWCoreLib.enums_src.GameData_enums import Range
 from Py4GWCoreLib.enums_src.Model_enums import SpiritModelID
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
@@ -304,6 +304,14 @@ class GenericUtilitySkillsList:
         skills.append(KeepSelfEffectUpUtility(event_bus=event_bus, current_build=in_game_build,
                                               skill=CustomSkill("Mantra_of_Frost"),
                                               score_definition=ScoreStaticDefinition(60)))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Signet_of_Disruption"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 80),
+            custom_agent_targeting_predicate=lambda agent_id: Agent.IsCasting(agent_id) and GLOBAL_CACHE.Skill.Data.GetActivation(Agent.GetCastingSkillID(agent_id)) >= 0.33, # only skills that are longer than 1s. too much changes to fail otherwise
+            distance_factor=DistanceFactors_Short()
+        ))
 
     @staticmethod
     def intentionalStubs(event_bus, in_game_build, skills):
