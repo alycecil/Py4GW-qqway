@@ -119,11 +119,6 @@ class LootUtility(CustomSkillUtilityBase):
                 except Exception as e:
                     Py4GW.Console.Log("LootManager", f"Failed to parse {self.CONFIG_FILE}: {e}", Console.MessageType.Error)
 
-            # 2) Clear the whitelist, blacklist, and dye whitelist
-            self.loot_config.ClearWhitelist()
-            self.loot_config.ClearBlacklist()
-            self.loot_config.ClearDyeWhitelist()
-
             # 3) Load blacklist
             for model_id in saved_blacklist:
                 self.loot_config.AddToBlacklist(model_id)
@@ -167,7 +162,6 @@ class LootUtility(CustomSkillUtilityBase):
                 self.loot_config.AddToWhitelist(ModelID.Gold_Coins.value)
 
             # Rebuild singleton whitelist
-            self.loot_config.ClearWhitelist()
             for item in loot_items:
                 if item.get("enabled", False) and item.get("group") != "Dyes":  # ← guard out dyes
                     model_id = item.get("model_id")
@@ -176,6 +170,40 @@ class LootUtility(CustomSkillUtilityBase):
                         if hasattr(ModelID, model_id_name):
                             model_id = getattr(ModelID, model_id_name)
                     self.loot_config.AddToWhitelist(_normalize_model_id(model_id))
+
+            AlwaysLootItems_Array = [
+                (ModelID.Champagne_Popper), (ModelID.Krytan_Brandy), (ModelID.Hunters_Ale),
+                (ModelID.Bottle_Rocket), (ModelID.Hard_Apple_Cider), (ModelID.Birthday_Cupcake), (ModelID.Shamrock_Ale),
+                (ModelID.Four_Leaf_Clover), (ModelID.Bottle_Of_Grog),  (ModelID.Sugary_Blue_Drink), (ModelID.Wintergreen_Candy_Cane),
+                (ModelID.Victory_Token), (ModelID.Snowman_Summoner), (ModelID.Ghost_In_The_Box),
+                (ModelID.Vial_Of_Absinthe), (ModelID.Squash_Serum), (ModelID.Eggnog), (ModelID.Spiked_Eggnog),
+                (ModelID.Candy_Corn), (ModelID.Candy_Apple),  (ModelID.Pumpkin_Cookie), (ModelID.Trick_Or_Treat_Bag),
+                (ModelID.Fruitcake), (ModelID.Peppermint_Candy_Cane), (ModelID.Rainbow_Candy_Cane), (ModelID.Honeycomb),
+                (ModelID.Wintersday_Gift), (ModelID.Yuletide_Tonic), (ModelID.Lunar_Token), (ModelID.Candy_Cane_Shard),
+                (ModelID.Golden_Egg), (ModelID.Slice_Of_Pumpkin_Pie), (ModelID.Lunar_Fortune_2007_Pig),
+                (ModelID.Lunar_Fortune_2008_Rat), (ModelID.Lunar_Fortune_2009_Ox), (ModelID.Lunar_Fortune_2010_Tiger),
+                (ModelID.Lunar_Fortune_2011_Rabbit), (ModelID.Lunar_Fortune_2012_Dragon), (ModelID.Lunar_Fortune_2013_Snake),
+                (ModelID.Lunar_Fortune_2014_Horse), (ModelID.Lunar_Fortune_2015_Sheep), (ModelID.Lunar_Fortune_2016_Monkey),
+                (ModelID.Lunar_Fortune_2017_Rooster), (ModelID.Lunar_Fortune_2018_Dog),
+                (ModelID.Vial_Of_Dye),
+
+            ]
+
+            from Sources.frenkeyLib.LootEx.enum import RARE_MATERIALS
+            AlwaysLootItems_Array.extend(RARE_MATERIALS)
+            AlwaysLootItems_Array.extend([
+                ModelID.Bone,
+                ModelID.Iron_Ingot,
+                ModelID.Scale,
+                ModelID.Chitin_Fragment,
+                ModelID.Granite_Slab,
+                ModelID.Pile_Of_Glittering_Dust,
+                ModelID.Plant_Fiber,
+                ModelID.Feather,
+            ])
+
+            for eventItem in AlwaysLootItems_Array:
+                self.loot_config.AddToWhitelist(_normalize_model_id(eventItem))
 
             # ——— KEEP GOLD COINS WHITELISTED ———
             if self.loot_config.loot_gold_coins:
