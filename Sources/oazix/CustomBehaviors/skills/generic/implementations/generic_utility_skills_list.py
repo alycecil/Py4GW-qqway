@@ -225,7 +225,12 @@ class GenericUtilitySkillsList:
         )
         skills.append(
             RawSimpleHealUtility(event_bus=event_bus, skill=CustomSkill("Orison_of_Healing"), current_build=in_game_build,
-                                 score_definition=ScorePerHealthGravityDefinition(2))
+                                 score_definition=ScorePerHealthGravityDefinition(3))
+        )
+        skills.append(
+            RawSimpleHealUtility(event_bus=event_bus, skill=CustomSkill("Balthazars_Pendulum"), current_build=in_game_build,
+                                 mana_required_to_cast=20,
+                                 score_definition=ScorePerHealthGravityDefinition(0.75))
         )
 
     @staticmethod
@@ -421,7 +426,7 @@ class GenericUtilitySkillsList:
             skill=CustomSkill("Yeti_Smash"),
             current_build=in_game_build,
             score_definition=ScorePerAgentQuantityDefinition(
-                lambda enemy_qte: 19.1 if enemy_qte >= 3 else 13.1 if enemy_qte == 2 else 10),
+                lambda enemy_qte: 6 if enemy_qte >= 3 else 1 if enemy_qte == 2 else 0),
             mana_required_to_cast=0,
             ignore_spirits=True,
             custom_agent_targeting_predicate=lambda agent_id: Agent.IsConditioned(agent_id),
