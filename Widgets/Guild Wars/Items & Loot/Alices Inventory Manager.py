@@ -6,13 +6,16 @@ from typing import Generator
 
 import Py4GW
 from HeroAI.cache_data import CacheData
-from Py4GWCoreLib import GLOBAL_CACHE, PyUIManager, UIManager, IconsFontAwesome5
+from Py4GWCoreLib import GLOBAL_CACHE, PyUIManager, UIManager, IconsFontAwesome5, Map
+from Py4GWCoreLib import ThrottledTimer
 from Py4GWCoreLib import IniHandler
 from Py4GWCoreLib import PyImGui, Color, ImGui
 from Py4GWCoreLib import Routines
 from Py4GWCoreLib import Timer, Player
 from Py4GWCoreLib.enums_src.Multiboxing_enums import SharedCommandType
 from Py4GWCoreLib.py4gwcorelib_src.BehaviorTree import BehaviorTree
+from Py4GWCoreLib.routines_src.Checks import Checks
+from Sources.ApoSource.ApoBottingLib.wrappers import LogMessage
 from Sources.inventory_managment import constants
 from Sources.inventory_managment.ui_manipulators.deposit_materials import DepositMaterials
 from Sources.inventory_managment.ui_manipulators.identify_all import IdentifyAllItems
@@ -46,11 +49,13 @@ window_x = ini_window.read_int(MODULE_NAME, X_POS, 100)
 window_y = ini_window.read_int(MODULE_NAME, Y_POS, 100)
 window_collapsed = ini_window.read_bool(MODULE_NAME, COLLAPSED, False)
 
-default_dialog_string: str = "0x84"
-
-dialog_open : bool = False
 
 ticker: BehaviorTree | None = None
+
+new_map: bool = True
+action_after_new_map: bool = False
+NEW_MAP_THROTTLE = ThrottledTimer(13601)
+ACTION_AFTER_NEW_MAP_THROTTLE = ThrottledTimer(9427)
 
 
 def draw_widget():
@@ -69,7 +74,12 @@ def draw_widget():
         if PyImGui.button(f"{IconsFontAwesome5.ICON_STOP} Stop"):
             ticker = None
     else:
-        PyImGui.text("Manually trigger an action")
+        if new_map:
+            PyImGui.text("New Map Detected")
+        elif action_after_new_map:
+            PyImGui.text("Awaiting new map triggers")
+        else:
+            PyImGui.text("Manually trigger an action")
     PyImGui.separator()
 
     # PyImGui.same_line(0,-1)
@@ -83,23 +93,47 @@ def draw_widget():
 
     PyImGui.same_line(0,-1)
     if PyImGui.button(f"{IconsFontAwesome5.ICON_MAGNIFYING_GLASS} Identify All"):
-        ticker = as_behavior_tree("IdentifyAllItems", IdentifyAllItems().IdentifyAll())
+        ticker = bt_identify_all()
 
     PyImGui.same_line(0,-1)
     if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Deposit Materials"):
-        ticker = as_behavior_tree("DepositMaterials",DepositMaterials().DepositMaterials())
+        ticker = bt_deposit_mats()
 
     PyImGui.separator()
-    if ImGui.begin_tab_item("Bags"):
-        PyImGui.text("Settings")
 
-        #default_dialog_string = ImGui.input_text("Dialog Id", default_dialog_string, 0)
-        if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Save"):
-            pass
+    if PyImGui.begin_tab_bar("top_level_tabs"):
+        if ImGui.begin_tab_item("Minimal"):
+            ImGui.end_tab_item()
 
-        ImGui.end_tab_item()
+        if ImGui.begin_tab_item("Settings"):
+            settings()
+
+        if ImGui.begin_tab_item("Debug"):
+            debug()
+
+        PyImGui.end_tab_bar()
 
     PyImGui.end()
+
+
+def bt_deposit_mats():
+    return as_behavior_tree("DepositMaterials", DepositMaterials().DepositMaterials())
+
+
+def bt_identify_all():
+    return as_behavior_tree("IdentifyAllItems", IdentifyAllItems().IdentifyAll())
+
+
+def settings():
+    PyImGui.text("Settings")
+    if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Save"):
+        pass
+    ImGui.end_tab_item()
+
+
+def debug():
+    constants.DEBUG = PyImGui.checkbox("with_debugging_logs", constants.DEBUG)
+    ImGui.end_tab_item()
 
 
 # Module tooltip, not the dialog tooltip
@@ -121,15 +155,79 @@ def tooltip():
     PyImGui.end_tooltip()
 
 
+def arrived_guild_hall() -> BehaviorTree | None:
+    on_map_entry = [
+        BehaviorTree.ConditionNode(name="IsOutpost", condition_fn=lambda: Checks.Map.IsOutpost()),
+        LogMessage("IsOutpost GH On Map Entry"),
+    ]
+
+    on_map_entry.append(bt_identify_all())
+    on_map_entry.append(bt_deposit_mats())
+
+    return as_btt(on_map_entry)
+
+
+def arrived_outpost() -> BehaviorTree | None:
+    on_map_entry = [
+        BehaviorTree.ConditionNode(name="IsOutpost", condition_fn=lambda: Checks.Map.IsOutpost()),
+        LogMessage("IsOutpost On Map Entry"),
+    ]
+
+    on_map_entry.append(bt_identify_all())
+    on_map_entry.append(bt_deposit_mats())
+
+    return as_btt(on_map_entry)
+
+
+def arrived_random_map() -> BehaviorTree | None:
+    on_map_entry = [
+        BehaviorTree.ConditionNode(name="InExplorable", condition_fn=lambda: Checks.Map.IsExplorable()),
+        LogMessage("InExplorable On Map Entry"),
+    ]
+
+    on_map_entry.append(bt_identify_all())
+
+    return as_btt(on_map_entry)
+
+
+def as_btt(on_map_entry):
+    tree = BehaviorTree.SequenceNode(children=on_map_entry)
+    bt = BehaviorTree(root=tree)
+    return bt
+
+
 def assign_auto_ticker() -> BehaviorTree | None:
+    global NEW_MAP_THROTTLE, ACTION_AFTER_NEW_MAP_THROTTLE, new_map, action_after_new_map
+
+    if new_map:
+        new_map = False
+        action_after_new_map = True
+        ACTION_AFTER_NEW_MAP_THROTTLE.Reset()
+
+    if action_after_new_map and ACTION_AFTER_NEW_MAP_THROTTLE.IsExpired():
+        new_map = False
+        action_after_new_map = False
+        NEW_MAP_THROTTLE.Reset()
+
+        # todo
+        if Map.IsGuildHall():
+            return arrived_guild_hall()
+        elif Map.IsOutpost():
+            return arrived_outpost()
+        elif Map.IsExplorable():
+            return arrived_random_map()
+
     return None
 
 
 def main():
     global cached_data
     global ticker
+    global NEW_MAP_THROTTLE, new_map
 
     if not Routines.Checks.Map.MapValid():
+        if NEW_MAP_THROTTLE.IsExpired():
+            new_map = True
         return
 
     try:
@@ -159,9 +257,6 @@ def main():
                 ticker = None
         else:
             ticker = assign_auto_ticker()
-    except StopIteration:
-        ticker = None
-        Py4GW.Console.Log(MODULE_NAME, f"Ticker done", Py4GW.Console.MessageType.Info)
     except Exception as e:
         ticker = None
         # Catch-all for any other unexpected exceptions
