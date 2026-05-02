@@ -3,7 +3,9 @@ from Py4GWCoreLib.enums_src.Item_enums import ItemType
 from Py4GWCoreLib.py4gwcorelib_src.Console import ConsoleLog
 from Sources.inventory_managment import constants
 from Sources.inventory_managment.config.inventory_utils_config import WeaponConfig, InventoryMode, InventoryUtilsConfig
+from Sources.inventory_managment.properties.is_maxed.is_maxed import IsMaxed
 from Sources.inventory_managment.properties.mods.get_mods_from_item import GetMods
+
 
 class WeaponHandler:
 
@@ -61,7 +63,7 @@ class WeaponHandler:
             # todo result.attribute
         if not Item.Rarity.IsWhite(item_id) and parsed_modifiers.requirements is not None:
 
-            if inventory_utils.is_maxed(item_id, parsed_modifiers, item_type):
+            if IsMaxed().is_maxed(item_id, parsed_modifiers, item_type):
                 if constants.DEBUG: ConsoleLog("InvUtil", f"Item {item_id} is maxed")
 
                 if parsed_modifiers.requirements == 0 and weapon_config.q0 is not None:

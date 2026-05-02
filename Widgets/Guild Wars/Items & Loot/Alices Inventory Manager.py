@@ -4,25 +4,26 @@ import traceback
 from enum import IntEnum
 from typing import Generator
 
-import Py4GW
 from HeroAI.cache_data import CacheData
 from Py4GWCoreLib import GLOBAL_CACHE, PyUIManager, UIManager, IconsFontAwesome5, Map
 from Py4GWCoreLib import ThrottledTimer
 from Py4GWCoreLib import IniHandler
 from Py4GWCoreLib import PyImGui, Color, ImGui
 from Py4GWCoreLib import Routines
-from Py4GWCoreLib import Timer, Player
+from Py4GWCoreLib import Timer, Player, Console, ConsoleLog
+from Py4GWCoreLib.enums_src.Item_enums import STORAGE_BAGS, INVENTORY_BAGS
 from Py4GWCoreLib.enums_src.Multiboxing_enums import SharedCommandType
 from Py4GWCoreLib.py4gwcorelib_src.BehaviorTree import BehaviorTree
 from Py4GWCoreLib.routines_src.Checks import Checks
 from Sources.ApoSource.ApoBottingLib.wrappers import LogMessage
+from Sources.frenkeyLib.ItemHandling.BTNodes import BTNodes
 from Sources.inventory_managment import constants
 from Sources.inventory_managment.ui_manipulators.deposit_materials import DepositMaterials
 from Sources.inventory_managment.ui_manipulators.identify_all import IdentifyAllItems
 from Sources.inventory_managment.util.yield_as_behavior_tree import YieldAsBehaviorTree, as_behavior_tree
 
 script_directory = os.path.dirname(os.path.abspath(__file__))
-project_root = Py4GW.Console.get_projects_path()
+project_root = Console.get_projects_path()
 
 first_run = True
 
@@ -99,6 +100,17 @@ def draw_widget():
     if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Deposit Materials"):
         ticker = bt_deposit_mats()
 
+    if PyImGui.button(f"{IconsFontAwesome5.ICON_SHOPPING_BAG} Compact Bags"):
+        ticker = merge_stacks_bags()
+
+    PyImGui.same_line(0,-1)
+    if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Compact Storage"):
+        ticker = merge_stacks_storage()
+
+    PyImGui.same_line(0,-1)
+    if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Sort Storage"):
+        ticker = sort_storage()
+
     PyImGui.separator()
 
     if PyImGui.begin_tab_bar("top_level_tabs"):
@@ -114,6 +126,18 @@ def draw_widget():
         PyImGui.end_tab_bar()
 
     PyImGui.end()
+
+
+def merge_stacks_bags():
+    return BehaviorTree(BTNodes.Bags.CompactBags(bags=INVENTORY_BAGS, result=True))
+
+
+def merge_stacks_storage():
+    return BehaviorTree(BTNodes.Bags.CompactBags(bags=STORAGE_BAGS, result=True))
+
+
+def sort_storage():
+    return BehaviorTree(BTNodes.Bags.SortBags(bags=STORAGE_BAGS))
 
 
 def bt_deposit_mats():
@@ -164,6 +188,10 @@ def arrived_guild_hall() -> BehaviorTree | None:
     on_map_entry.append(bt_identify_all())
     on_map_entry.append(bt_deposit_mats())
 
+    # on_map_entry.append(merge_stacks_storage())
+    # on_map_entry.append(merge_stacks_bags())
+    # on_map_entry.append(sort_storage())
+
     return as_btt(on_map_entry)
 
 
@@ -176,6 +204,10 @@ def arrived_outpost() -> BehaviorTree | None:
     on_map_entry.append(bt_identify_all())
     on_map_entry.append(bt_deposit_mats())
 
+    # on_map_entry.append(merge_stacks_storage())
+    # on_map_entry.append(merge_stacks_bags())
+    # on_map_entry.append(sort_storage())
+
     return as_btt(on_map_entry)
 
 
@@ -186,6 +218,8 @@ def arrived_random_map() -> BehaviorTree | None:
     ]
 
     on_map_entry.append(bt_identify_all())
+
+    # on_map_entry.append(merge_stacks_bags())
 
     return as_btt(on_map_entry)
 
@@ -234,18 +268,18 @@ def main():
         draw_widget()
 
     except ImportError as e:
-        Py4GW.Console.Log(MODULE_NAME, f"ImportError encountered: {str(e)}", Py4GW.Console.MessageType.Error)
-        Py4GW.Console.Log(MODULE_NAME, f"Stack trace: {traceback.format_exc()}", Py4GW.Console.MessageType.Error)
+        Console.Log(MODULE_NAME, f"ImportError encountered: {str(e)}", Console.MessageType.Error)
+        Console.Log(MODULE_NAME, f"Stack trace: {traceback.format_exc()}", Console.MessageType.Error)
     except ValueError as e:
-        Py4GW.Console.Log(MODULE_NAME, f"ValueError encountered: {str(e)}", Py4GW.Console.MessageType.Error)
-        Py4GW.Console.Log(MODULE_NAME, f"Stack trace: {traceback.format_exc()}", Py4GW.Console.MessageType.Error)
+        Console.Log(MODULE_NAME, f"ValueError encountered: {str(e)}", Console.MessageType.Error)
+        Console.Log(MODULE_NAME, f"Stack trace: {traceback.format_exc()}", Console.MessageType.Error)
     except TypeError as e:
-        Py4GW.Console.Log(MODULE_NAME, f"TypeError encountered: {str(e)}", Py4GW.Console.MessageType.Error)
-        Py4GW.Console.Log(MODULE_NAME, f"Stack trace: {traceback.format_exc()}", Py4GW.Console.MessageType.Error)
+        Console.Log(MODULE_NAME, f"TypeError encountered: {str(e)}", Console.MessageType.Error)
+        Console.Log(MODULE_NAME, f"Stack trace: {traceback.format_exc()}", Console.MessageType.Error)
     except Exception as e:
         # Catch-all for any other unexpected exceptions
-        Py4GW.Console.Log(MODULE_NAME, f"Unexpected error encountered: {str(e)}", Py4GW.Console.MessageType.Error)
-        Py4GW.Console.Log(MODULE_NAME, f"Stack trace: {traceback.format_exc()}", Py4GW.Console.MessageType.Error)
+        Console.Log(MODULE_NAME, f"Unexpected error encountered: {str(e)}", Console.MessageType.Error)
+        Console.Log(MODULE_NAME, f"Stack trace: {traceback.format_exc()}", Console.MessageType.Error)
     finally:
         pass
 
@@ -253,15 +287,19 @@ def main():
         if ticker is not None:
             state = ticker.tick()
             if state != BehaviorTree.NodeState.RUNNING:
-                Py4GW.Console.Log(MODULE_NAME, f"Behavior tree '{ticker.root.name}' finished with state: {state.name}", Py4GW.Console.MessageType.Success if state == BehaviorTree.NodeState.SUCCESS else Py4GW.Console.MessageType.Warning)
+                Console.Log(
+                    MODULE_NAME,
+                    f"Behavior tree '{ticker.root.name}' finished with state: {state.name}",
+                    Console.MessageType.Success if state == BehaviorTree.NodeState.SUCCESS else Console.MessageType.Warning
+                )
                 ticker = None
         else:
             ticker = assign_auto_ticker()
     except Exception as e:
         ticker = None
         # Catch-all for any other unexpected exceptions
-        Py4GW.Console.Log(MODULE_NAME, f"Unexpected error encountered: {str(e)}", Py4GW.Console.MessageType.Error)
-        Py4GW.Console.Log(MODULE_NAME, f"Stack trace: {traceback.format_exc()}", Py4GW.Console.MessageType.Error)
+        Console.Log(MODULE_NAME, f"Unexpected error encountered: {str(e)}", Console.MessageType.Error)
+        Console.Log(MODULE_NAME, f"Stack trace: {traceback.format_exc()}", Console.MessageType.Error)
     finally:
         pass
 

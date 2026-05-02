@@ -1,8 +1,7 @@
 from typing import Generator
 
-import Py4GW
 
-from Py4GWCoreLib import traceback, IconsFontAwesome5
+from Py4GWCoreLib import traceback, IconsFontAwesome5, Console, ConsoleLog
 from Py4GWCoreLib.py4gwcorelib_src.BehaviorTree import BehaviorTree
 from Py4GWCoreLib.py4gwcorelib_src.Color import ColorPalette
 from Sources.inventory_managment import constants
@@ -35,18 +34,18 @@ class YieldAsBehaviorTree(BehaviorTree.Node):
                 string = next(self.ticker)
 
                 # if constants.DEBUG:
-                #     Py4GW.Console.Log(f"YieldAsBehaviorTree {self.name}", f"Tick: {string}", Py4GW.Console.MessageType.Info)
+                #     Console.Log(f"YieldAsBehaviorTree {self.name}", f"Tick: {string}", Console.MessageType.Info)
 
                 return BehaviorTree.NodeState.RUNNING
             else:
                 return BehaviorTree.NodeState.SUCCESS
         except StopIteration:
             self.ticker = None
-            Py4GW.Console.Log(f"YieldAsBehaviorTree {self.name}", f"Ticker done", Py4GW.Console.MessageType.Info)
+            Console.Log(f"YieldAsBehaviorTree {self.name}", f"Ticker done", Console.MessageType.Info)
             return BehaviorTree.NodeState.SUCCESS
         except Exception as e:
             self.ticker = None
             # Catch-all for any other unexpected exceptions
-            Py4GW.Console.Log(f"YieldAsBehaviorTree {self.name}", f"Unexpected error encountered: {str(e)}", Py4GW.Console.MessageType.Error)
-            Py4GW.Console.Log(f"YieldAsBehaviorTree {self.name}", f"Stack trace: {traceback.format_exc()}", Py4GW.Console.MessageType.Error)
+            Console.Log(f"YieldAsBehaviorTree {self.name}", f"Unexpected error encountered: {str(e)}", Console.MessageType.Error)
+            Console.Log(f"YieldAsBehaviorTree {self.name}", f"Stack trace: {traceback.format_exc()}", Console.MessageType.Error)
             return BehaviorTree.NodeState.FAILURE

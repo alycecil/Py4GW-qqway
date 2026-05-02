@@ -1377,6 +1377,7 @@ class BTNodes:
         def CompactBags(
             bags : list[Bag] = INVENTORY_BAGS,         
             aftercast_ms: int = 150,
+            result: bool = True,
         ):
             """
             Build an action node that merges partial stacks across bags.
@@ -1420,9 +1421,8 @@ class BTNodes:
                         moved_any = True
                         target_item.quantity += qty_to_move
                         source_item.quantity -= qty_to_move
-                
-                
-                return BTNodes._success_if(moved_any)
+
+                return BTNodes._success_if(moved_any or result)
             return BehaviorTree.ActionNode(name="Inventory.CompactBags", action_fn=_compact, aftercast_ms=aftercast_ms)
 
         @staticmethod

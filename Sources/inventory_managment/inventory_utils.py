@@ -1,7 +1,5 @@
 import PyImGui
-import PyImGui
 
-import Py4GW  # type: ignore
 from Py4GWCoreLib import GLOBAL_CACHE
 from Py4GWCoreLib import ItemArray, Item, Inventory
 from Py4GWCoreLib.enums import Bags

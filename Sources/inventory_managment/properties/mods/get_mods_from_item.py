@@ -1,8 +1,10 @@
 import os
 
+from Py4GWCoreLib import ConsoleLog, Console
 from Py4GWCoreLib import GLOBAL_CACHE, Item
 from Sources.marks_sources.mods_parser import ParsedModifierResult, parse_modifiers, MatchedWeaponModInfo, \
     MatchedRuneInfo, ModDatabase
+
 
 
 class GetMods:
@@ -10,7 +12,7 @@ class GetMods:
     def __init__(
             self,
     ):
-        project_root = Py4GW.Console.get_projects_path()
+        project_root = Console.get_projects_path()
         self.MOD_DB = ModDatabase.load(os.path.join(project_root, "Sources/marks_sources/mods_data"))
 
     def get_mods_from_item(self, item_id) -> tuple[str | None, str | None, str | None, ParsedModifierResult]:
