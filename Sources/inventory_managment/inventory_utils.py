@@ -1,38 +1,17 @@
-from enum import Enum
-import json
 import os
-import re
-import shutil
-import traceback
-from collections import OrderedDict
-from pathlib import Path
+from enum import Enum
+
+import PyImGui
 
 import Py4GW  # type: ignore
-from Py4GWCoreLib import GLOBAL_CACHE
-from Py4GWCoreLib import Color
 from Py4GWCoreLib import ConsoleLog
-from Py4GWCoreLib import DyeColor
-from Py4GWCoreLib import ImGui
-from Py4GWCoreLib import IniHandler
-import PyImGui
-from Py4GWCoreLib import Routines
-from Py4GWCoreLib import ThrottledTimer
-from Py4GWCoreLib import Timer
-from Py4GWCoreLib import Map, Player
-from Py4GWCoreLib import get_texture_for_model
-from Py4GWCoreLib.enums import Bags
-from Py4GWCoreLib.enums import ModelID
-from Sources.marks_sources.mods_parser import ModDatabase, ParsedModifierResult
-from Sources.marks_sources.mods_parser import MatchedRuneInfo
-from Sources.marks_sources.mods_parser import MatchedWeaponModInfo
-from Sources.marks_sources.mods_parser import parse_modifiers
-
+from Py4GWCoreLib import GLOBAL_CACHE
 from Py4GWCoreLib import ItemArray, Item, Inventory
 from Py4GWCoreLib.enums import Bags
 from Py4GWCoreLib.enums_src.Item_enums import ItemType
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
-from Sources.Sasemoi.utils.rune_quality_checker import item_has_valuable_rune
 from Sources.marks_sources.mods_parser import MatchedWeaponModInfo, MatchedRuneInfo, parse_modifiers, ModDatabase
+from Sources.marks_sources.mods_parser import ParsedModifierResult
 from Sources.oazix.CustomBehaviors.primitives import constants
 
 DEFAULT_ITEM_TYPE_BLOCK_LIST = [7, 17, 6, 3, 4, 44, 45, 10, 13, 20, 16, 29, 19, 34, 11, 33, 21, 8, 31, 43, 30, 255, 9]
@@ -47,6 +26,7 @@ DEFAULT_MODEL_ID_BLOCK_LIST = [
     36669, 36677, 36679, 27047]
 
 
+
 # Create an enumeration
 class InventoryMode(Enum):
     KEEP_DONT_IDENTIFY = 0
@@ -55,6 +35,7 @@ class InventoryMode(Enum):
     SALVAGE = 10
     SELL = 20
     SELL_DONT_IDENTIFY = 21
+
 
 # class PrefixConfig:
 #     def __init__(self,
@@ -85,6 +66,7 @@ class SalvageConfig:
         self.gold: InventoryMode = gold
         self.specials: InventoryMode = specials
 
+
 # colors determine default action,
 #
 # qualities are overrides to color default action
@@ -109,7 +91,7 @@ class WeaponConfig:
                  q12: InventoryMode = InventoryMode.SELL,
                  q13: InventoryMode = InventoryMode.SELL,
                  specials: InventoryMode = InventoryMode.DEPOSIT,
-    ):
+                 ):
         self.white: InventoryMode = white
         self.blue: InventoryMode = blue
         self.purple: InventoryMode = purple
@@ -193,27 +175,26 @@ class InventoryUtilsConfig:
 class InventoryUtils:
 
     def __init__(
-        self,
+            self,
     ):
         project_root = Py4GW.Console.get_projects_path()
         self.MOD_DB = ModDatabase.load(os.path.join(project_root, "Sources/marks_sources/mods_data"))
 
-
     @staticmethod
     def GetIDKits():
-        count_of_id_kits = (Inventory.GetModelCount(ModelID.Superior_Identification_Kit) + #5899 model for ID kit
-            Inventory.GetModelCount(ModelID.Identification_Kit)
-        )
+        count_of_id_kits = (Inventory.GetModelCount(ModelID.Superior_Identification_Kit) +  # 5899 model for ID kit
+                            Inventory.GetModelCount(ModelID.Identification_Kit)
+                            )
         return count_of_id_kits
 
     @staticmethod
     def GetSalvageKits():
-        count_of_salvage_kits = Inventory.GetModelCount(ModelID.Salvage_Kit)  #2992 model for salvage kit
+        count_of_salvage_kits = Inventory.GetModelCount(ModelID.Salvage_Kit)  # 2992 model for salvage kit
         return count_of_salvage_kits
 
     @staticmethod
     def GetExpertSalvageKits():
-        count_of_salvage_kits = Inventory.GetModelCount(ModelID.Expert_Salvage_Kit)  #2991 model for expert salvage kit
+        count_of_salvage_kits = Inventory.GetModelCount(ModelID.Expert_Salvage_Kit)  # 2991 model for expert salvage kit
         return count_of_salvage_kits
 
     def has_salvage_kits(self):
@@ -223,7 +204,7 @@ class InventoryUtils:
             self,
             inventory_config: InventoryUtilsConfig,
             slot_blacklist: list[tuple[int, int]] = [],
-            bags=range(Bags.Backpack, Bags.Bag2+1)
+            bags=range(Bags.Backpack, Bags.Bag2 + 1)
     ) -> list[int]:
         '''
         Returns a list of all item IDs in the player's inventory excluding banlist items
@@ -290,7 +271,7 @@ class InventoryUtils:
                     filter_valuable_rune_type(item_id) or
                     filter_valuable_inscription_type(item_id)
             ):
-                if constants.DEBUG: ConsoleLog("InvUtil","Special")
+                if constants.DEBUG: ConsoleLog("InvUtil", "Special")
                 return salvage_config.specials
 
         return default_salvage_item
@@ -373,24 +354,25 @@ class InventoryUtils:
         if requirements is not None and requirements < 9:
             offset = 9 - requirements
 
-        res : bool | None = None
+        res: bool | None = None
 
         if item_type == ItemType.Shield:
             max_armor, min_armor = parsed_modifiers.shield_armor
-            if constants.DEBUG: ConsoleLog("InvUtil",f"Shield {item_id} q{requirements} Damage {max_armor} {min_armor}")
+            if constants.DEBUG: ConsoleLog("InvUtil",
+                                           f"Shield {item_id} q{requirements} Damage {max_armor} {min_armor}")
             res = (max_armor >= 16 - offset or min_armor >= 16 - offset)
 
         elif item_type == ItemType.Offhand:
-            if constants.DEBUG: ConsoleLog("InvUtil",f"Offhand {item_id} q{requirements} : {parsed_modifiers}")
+            if constants.DEBUG: ConsoleLog("InvUtil", f"Offhand {item_id} q{requirements} : {parsed_modifiers}")
             return True
 
         else:
             min_dmg, max_dmg = parsed_modifiers.damage
 
-            if constants.DEBUG: ConsoleLog("InvUtil",f"Weapon {item_id} q{requirements} Damage {min_dmg} {max_dmg}")
+            if constants.DEBUG: ConsoleLog("InvUtil", f"Weapon {item_id} q{requirements} Damage {min_dmg} {max_dmg}")
 
             if item_type == ItemType.Wand or item_type == ItemType.Staff:
-                res = min_dmg >= 11 - offset and max_dmg >= 21 - offset # i like 21 wands too
+                res = min_dmg >= 11 - offset and max_dmg >= 21 - offset  # i like 21 wands too
 
             if item_type == ItemType.Axe:
                 res = min_dmg >= 6 - offset and max_dmg >= 28 - offset
@@ -399,7 +381,7 @@ class InventoryUtils:
                 res = min_dmg >= 15 - offset and max_dmg >= 28 - offset
 
             if item_type == ItemType.Daggers:
-                res = min_dmg >= 7- offset and max_dmg >= 17 - offset
+                res = min_dmg >= 7 - offset and max_dmg >= 17 - offset
 
             if item_type == ItemType.Hammer:
                 res = min_dmg >= 19 - offset and max_dmg >= 35 - offset
@@ -418,14 +400,15 @@ class InventoryUtils:
         if res is None or res:
             res2 = len(parsed_modifiers.max_runes) > 0 or len(parsed_modifiers.max_weapon_mods) > 0
             if res2:
-                if constants.DEBUG: ConsoleLog("InvUtil",f"Item {item_id} is not normal max of {item_type} but has max mods {parsed_modifiers.max_runes} and {parsed_modifiers.max_weapon_mods}, marking true.")
+                if constants.DEBUG: ConsoleLog("InvUtil",
+                                               f"Item {item_id} is not normal max of {item_type} but has max mods {parsed_modifiers.max_runes} and {parsed_modifiers.max_weapon_mods}, marking true.")
                 return True
 
         if res is not None and res:
             return res
 
         if res is None:
-            if constants.DEBUG: ConsoleLog("InvUtil",f"Item {item_id} is of unknown item type: {item_type}")
+            if constants.DEBUG: ConsoleLog("InvUtil", f"Item {item_id} is of unknown item type: {item_type}")
             return True
 
         return False
@@ -443,15 +426,16 @@ class InventoryUtils:
         prefix, suffix, inherent, parsed_modifiers = self.get_mods_from_item(item_id)
 
         if parsed_modifiers.is_highly_salvageable:  # todo make configure-able
-            if constants.DEBUG: ConsoleLog("InvUtil",f"is_highly_salvageable #{item_id}")
+            if constants.DEBUG: ConsoleLog("InvUtil", f"is_highly_salvageable #{item_id}")
             default_action = InventoryMode.SALVAGE
         if parsed_modifiers.has_increased_value:  # todo make configure-able
-            if constants.DEBUG: ConsoleLog("InvUtil",f"has_increased_value #{item_id}")
+            if constants.DEBUG: ConsoleLog("InvUtil", f"has_increased_value #{item_id}")
             default_action = InventoryMode.SELL
 
         item_instance = Item.item_instance(item_id)
         if item_instance is None:
-            if constants.DEBUG: ConsoleLog("InvUtil",f"no item instance, the item is probably already gone but lets not freak out #{item_id}")
+            if constants.DEBUG: ConsoleLog("InvUtil",
+                                           f"no item instance, the item is probably already gone but lets not freak out #{item_id}")
             return InventoryMode.KEEP_DONT_IDENTIFY
         for mod in item_instance.modifiers:
             # Forget Me Not max value identifier
@@ -465,7 +449,7 @@ class InventoryUtils:
         if not Item.Rarity.IsWhite(item_id) and parsed_modifiers.requirements is not None:
 
             if self.is_maxed(item_id, parsed_modifiers, item_type):
-                if constants.DEBUG: ConsoleLog("InvUtil",f"Item {item_id} is maxed")
+                if constants.DEBUG: ConsoleLog("InvUtil", f"Item {item_id} is maxed")
 
                 if parsed_modifiers.requirements == 0:
                     default_action = weapon_config.q0
@@ -488,7 +472,7 @@ class InventoryUtils:
                 if parsed_modifiers.requirements == 13:
                     default_action = weapon_config.q13
         else:
-            if constants.DEBUG: ConsoleLog("InvUtil","No item requirements known")
+            if constants.DEBUG: ConsoleLog("InvUtil", "No item requirements known")
 
         # default rules
 
@@ -500,7 +484,7 @@ class InventoryUtils:
                     filter_valuable_rune_type(item_id) or
                     filter_valuable_inscription_type(item_id)
             ):
-                if constants.DEBUG: ConsoleLog("InvUtil","!Special!")
+                if constants.DEBUG: ConsoleLog("InvUtil", "!Special!")
                 return weapon_config.specials
 
         return default_action

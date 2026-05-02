@@ -302,7 +302,8 @@ class AutoInventoryHandler():
 
         def default_reasons(item):
             try:
-                from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryMode
+                from Sources.inventory_managment.json_helper import string_to_dict, dict_to_string
+                from Sources.inventory_managment.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
                 action_for_item = self.action_for_item(item.item_id)
                 inventory_mode_salvage_ = [InventoryMode.SALVAGE]
                 from Py4GWCoreLib import Inventory
@@ -586,7 +587,8 @@ class AutoInventoryHandler():
                     yield from Routines.Yield.wait(350)
                     deposited = True
 
-                from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryMode
+                from Sources.inventory_managment.json_helper import string_to_dict, dict_to_string
+                from Sources.inventory_managment.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
                 if not deposited and self.action_for_item(item_id) in [InventoryMode.DEPOSIT]:
                     GLOBAL_CACHE.Inventory.DepositItemToStorage(item_id)
                     yield from Routines.Yield.wait(350)
@@ -637,8 +639,8 @@ class AutoInventoryHandler():
 
     def action_for_item(self, item_id):
         from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
-        from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import string_to_dict
-        from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
+        from Sources.inventory_managment.json_helper import string_to_dict
+        from Sources.inventory_managment.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
         data: str | None = PersistenceLocator().skills.read("my_inventory_utils_config", "inventory_utils_config")
         if data is not None:
             inventory_utils_config = string_to_dict(data)

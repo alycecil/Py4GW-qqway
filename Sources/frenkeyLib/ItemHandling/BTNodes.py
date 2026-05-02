@@ -1444,7 +1444,8 @@ class BTNodes:
               UserDescription: Use this when you want a BT step that applies the current default bag sort order.
               Notes: The sort configuration is still marked as provisional in the implementation comments.
             """
-            from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryUtils, InventoryUtilsConfig
+            from Sources.inventory_managment.json_helper import string_to_dict
+            from Sources.inventory_managment.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
             inventory_utils_config: InventoryUtilsConfig = InventoryUtilsConfig()
             from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
             data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")

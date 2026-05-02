@@ -251,13 +251,12 @@ def main():
 
             try:
                 from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
-                from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryUtilsConfig
-                from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryUtils
+                from Sources.inventory_managment.json_helper import string_to_dict
+                from Sources.inventory_managment.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
 
                 inventory_config: InventoryUtilsConfig = InventoryUtilsConfig()
                 data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")
                 if data is not None:
-                    from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import string_to_dict
                     inventory_config: InventoryUtilsConfig = string_to_dict(data)
 
                 action = InventoryUtils().get_action_for_item(inventory_config, hovered_item_id)

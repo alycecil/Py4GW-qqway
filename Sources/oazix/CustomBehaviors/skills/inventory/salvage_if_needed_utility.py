@@ -14,7 +14,8 @@ from Py4GWCoreLib.enums_src.Item_enums import Bags, Rarity
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
 from Py4GWCoreLib.py4gwcorelib_src.ActionQueue import ActionQueueManager
 from Py4GWCoreLib.py4gwcorelib_src.Console import ConsoleLog
-from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryUtilsConfig, InventoryUtils, InventoryMode
+from Sources.inventory_managment.json_helper import string_to_dict, dict_to_string
+from Sources.inventory_managment.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
 from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
@@ -49,23 +50,15 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
 
         self.score_definition: ScoreStaticDefinition = ScoreStaticDefinition(CommonScore.INVENTORY.value)
 
-        data: str | None = PersistenceLocator().skills.read("my_inventory_utils_config", "inventory_utils_config")
-        if data is not None:
-            from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import string_to_dict
-            self.inventory_utils_config: InventoryUtilsConfig = string_to_dict(data)
-        else:
-            self.inventory_utils_config: InventoryUtilsConfig = InventoryUtilsConfig()
+        from Sources.inventory_managment.inventory_util_config_loader import inventory_util_config_load_json
+        self.inventory_utils_config: InventoryUtilsConfig = inventory_util_config_load_json()
 
         self.inventory_utils: InventoryUtils = InventoryUtils()
 
     def map_changed(self, message: EventMessage) -> Generator[Any, Any, Any]:
 
-        data: str | None = PersistenceLocator().skills.read("my_inventory_utils_config", "inventory_utils_config")
-        if data is not None:
-            from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import string_to_dict
-            self.inventory_utils_config: InventoryUtilsConfig = string_to_dict(data)
-        else:
-            self.inventory_utils_config: InventoryUtilsConfig = InventoryUtilsConfig()
+        from Sources.inventory_managment.inventory_util_config_loader import inventory_util_config_load_json
+        self.inventory_utils_config: InventoryUtilsConfig = inventory_util_config_load_json()
 
         yield
 
@@ -127,23 +120,18 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
 
     @override
     def persist_configuration_for_account(self):
-        from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
-        from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import dict_to_string
-        PersistenceLocator().skills.write_for_account("my_inventory_utils_config", "inventory_utils_config", dict_to_string(self.inventory_utils_config.__dict__))
-        ConsoleLog("SalvageIfNeededUtility", "configuration saved for account", Console.MessageType.Info)
+        from Sources.inventory_managment.inventory_util_config_loader import persist_configuration_for_account
+        persist_configuration_for_account(self.inventory_utils_config)
 
     @override
     def persist_configuration_as_global(self):
-        from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
-        from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import dict_to_string
-        PersistenceLocator().skills.write_global("my_inventory_utils_config", "inventory_utils_config", dict_to_string(self.inventory_utils_config.__dict__))
-        ConsoleLog("SalvageIfNeededUtility", "configuration saved as global", Console.MessageType.Info)
+        from Sources.inventory_managment.inventory_util_config_loader import persist_configuration_as_global
+        persist_configuration_as_global(self.inventory_utils_config)
 
     @override
     def delete_persisted_configuration(self):
-        from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
-        PersistenceLocator().skills.delete("my_inventory_utils_config", "inventory_utils_config")
-        ConsoleLog("SalvageIfNeededUtility", "configuration deleted", Console.MessageType.Info)
+        from Sources.inventory_managment.inventory_util_config_loader import delete_persisted_configuration
+        delete_persisted_configuration()
 
     @override
     def _execute(self, state: BehaviorState) -> Generator[Any, None, BehaviorResult]:

@@ -5,7 +5,8 @@ import PyImGui
 
 from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, ItemArray, Routines, Range, Map
 from Py4GWCoreLib.py4gwcorelib_src.Timer import ThrottledTimer
-from .inventory_utils import InventoryUtilsConfig, InventoryUtils, InventoryMode
+from Sources.inventory_managment.json_helper import string_to_dict, dict_to_string
+from Sources.inventory_managment.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
 from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState

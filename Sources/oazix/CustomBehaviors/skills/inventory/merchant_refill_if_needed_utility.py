@@ -1,8 +1,7 @@
-import json
+
 from enum import Enum
 import random
 from re import DEBUG
-from types import SimpleNamespace
 from typing import Any, Generator, override
 
 import PyImGui
@@ -12,7 +11,8 @@ from Py4GWCoreLib import GLOBAL_CACHE, AgentArray, ItemArray, Routines, Range, M
 from Py4GWCoreLib.Pathing import AutoPathing
 from Py4GWCoreLib.Py4GWcorelib import Utils
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
-from .inventory_utils import InventoryUtilsConfig, InventoryUtils, InventoryMode
+from Sources.inventory_managment.inventory_utils import InventoryUtilsConfig, InventoryUtils, InventoryMode
+from Sources.inventory_managment.json_helper import string_to_dict
 from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
@@ -467,6 +467,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
     @override
     def persist_configuration_for_account(self):
         from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
+        from Sources.inventory_managment.json_helper import string_to_dict, dict_to_string
         # PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "should_visit_npc_config", dict_to_string(self.should_visit_npc_config))
         PersistenceLocator().skills.write_for_account(str(self.custom_skill.skill_name), "inventory_config", dict_to_string(self.inventory_config.__dict__))
         ConsoleLog("MerchantRefillIfNeededUtility", "configuration saved for account", Console.MessageType.Info)
@@ -474,6 +475,7 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
     @override
     def persist_configuration_as_global(self):
         from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
+        from Sources.inventory_managment.json_helper import string_to_dict, dict_to_string
         # PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "should_visit_npc_config", dict_to_string(self.should_visit_npc_config))
         PersistenceLocator().skills.write_global(str(self.custom_skill.skill_name), "inventory_config", dict_to_string(self.inventory_config.__dict__))
         ConsoleLog("MerchantRefillIfNeededUtility", "configuration saved as global", Console.MessageType.Info)
@@ -718,29 +720,3 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         CustomBehaviorParty().get_shared_lock_manager().release_lock(lock_key)
 
         return
-
-
-
-# TODO move to common lib
-def dict_to_string(data):
-    """
-    Convert to a JSON string.
-    Ensures non-ASCII characters are preserved.
-    """
-    return json.dumps(data, ensure_ascii=False)
-
-
-def string_to_dict(data_str, default_value=None, object_hook=lambda d: SimpleNamespace(**d)):
-    """
-    Convert a JSON string back
-    Includes error handling for invalid JSON.
-    """
-    if not isinstance(data_str, str):
-        print("Input must be a string.")
-        return default_value
-    try:
-        result = json.loads(data_str, object_hook=object_hook)
-        return result
-    except json.JSONDecodeError as e:
-        print(f"Invalid JSON string: {e}")
-        return default_value

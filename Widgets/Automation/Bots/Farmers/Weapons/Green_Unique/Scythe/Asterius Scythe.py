@@ -33,9 +33,9 @@ from Py4GWCoreLib import (
 )
 from Py4GWCoreLib.botting_src.helpers import BottingHelpers
 from Py4GW_widget_manager import get_widget_handler
-from Sources.oazix.CustomBehaviors.primitives.botting.botting_helpers import BottingHelpers
-from Sources.oazix.CustomBehaviors.primitives.custom_behavior_loader import CustomBehaviorLoader
-from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryMode
+
+from Sources.inventory_managment.json_helper import string_to_dict, dict_to_string
+from Sources.inventory_managment.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
 
 BOT_NAME = "Asterius Scythe Farm"
 MODULE_ICON = "Textures\\Module_Icons\\Asterius' Scythe.png"
@@ -107,14 +107,8 @@ def get_items_to_deposit():
     global inventory_utils_config
     global inventory_utils
     from Py4GWCoreLib import ActionQueueManager, ConsoleLog, Console
-    from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
-    from Sources.oazix.CustomBehaviors.skills.inventory.merchant_refill_if_needed_utility import string_to_dict
-    from Sources.oazix.CustomBehaviors.skills.inventory.inventory_utils import InventoryMode, InventoryUtils, InventoryUtilsConfig
-    data: str | None = PersistenceLocator().skills.read("my_inventory_utils_config", "inventory_utils_config")
-    if data is not None:
-        inventory_utils_config = string_to_dict(data)
-    else:
-        inventory_utils_config = InventoryUtilsConfig()
+    from Sources.inventory_managment.inventory_util_config_loader import inventory_util_config_load_json
+    inventory_utils_config = inventory_util_config_load_json()
 
     inventory_utils = InventoryUtils()
     my_items = []
