@@ -175,10 +175,58 @@ def _coro_sell_scrolls(mx: float, my: float) -> Generator:
     yield from Routines.Yield.Merchant.SellItems(sell_ids, log=True)
     yield from Routines.Yield.wait(300)
 
+
+def get_crap_to_sell() -> list[int]:
+    from Py4GWCoreLib import GLOBAL_CACHE
+    from Sources.inventory_managment.inventory_utils import InventoryUtils
+    from Sources.inventory_managment.config.inventory_utils_config import InventoryUtilsConfig
+    from Sources.inventory_managment.config.inventory_utils_config import InventoryMode
+    from Sources.inventory_managment.config.inventory_util_config_loader import inventory_util_config_load_json
+    inventory_utils_config: InventoryUtilsConfig = inventory_util_config_load_json()
+
+    inventory_utils = InventoryUtils()
+
+    include_salvage_items = GLOBAL_CACHE.Inventory.GetFreeSlotCount() < 7
+
+    my_items = []
+    inventory_item_ids = inventory_utils.get_inventory_items(inventory_utils_config)
+    for item_id in inventory_item_ids:
+
+        from Py4GWCoreLib import Item
+        if Item.Rarity.IsGreen(item_id):
+            continue
+
+        is_white = Item.Rarity.IsWhite(item_id)
+        is_blue = Item.Rarity.IsBlue(item_id)
+        is_purple = Item.Rarity.IsPurple(item_id)
+
+        if is_white or is_blue or is_purple:
+            if GLOBAL_CACHE.Item.Properties.GetValue(item_id) > 0:
+                action_for_item: InventoryMode = inventory_utils.get_action_for_item(inventory_utils_config, item_id)
+                if action_for_item == InventoryMode.SELL_DONT_IDENTIFY:
+                    my_items.append(item_id)
+                if action_for_item == InventoryMode.SELL:
+                    my_items.append(item_id)
+                elif include_salvage_items and (action_for_item == InventoryMode.SALVAGE):
+                    my_items.append(item_id)
+
+        _, rarity = GLOBAL_CACHE.Item.Rarity.GetRarity(item_id)
+        if rarity != "Gold":
+            continue
+        if not GLOBAL_CACHE.Item.Usage.IsIdentified(item_id):
+            continue
+        if GLOBAL_CACHE.Item.Usage.IsSalvageable(item_id):
+            continue
+
+        action = inventory_utils.get_action_for_item(inventory_utils_config, item_id)
+        if action in [InventoryMode.SELL, InventoryMode.SELL_DONT_IDENTIFY, InventoryMode.SALVAGE]:
+            my_items.append(int(item_id))
+    return my_items
+
+
 def _coro_handle_sell_inventoryutil(mx: float, my: float) -> Generator:
     """Sell all identified, non-salvageable gold items (e.g. anniversary weapons) to the GH merchant."""
 
-    from Sources.modular_bot.recipes.actions_inventory import get_crap_to_sell
     sell_ids = get_crap_to_sell()
     if not sell_ids:
         ConsoleLog(BOT_NAME, "[Merchant] No items to sell")

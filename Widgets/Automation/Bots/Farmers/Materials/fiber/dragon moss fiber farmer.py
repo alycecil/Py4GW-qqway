@@ -230,7 +230,6 @@ bot = Botting(
     custom_build=build,
     config_movement_timeout=MOVEMENT_TIMEOUT_MS,
     config_movement_tolerance=MOVE_TOLERANCE,
-    upkeep_hero_ai_active=True,
     upkeep_auto_inventory_management_active=False,
     upkeep_auto_loot_active=False,
     upkeep_identify_kits_active=True,
