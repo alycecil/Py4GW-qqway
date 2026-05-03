@@ -408,7 +408,17 @@ class GenericUtilitySkillsList:
             event_bus=event_bus,
             skill=CustomSkill("Chilling_Victory"),
             current_build=in_game_build,
-            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 10),
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 21 if enemy_qte >= 2 else 13 if enemy_qte == 1 else 10),
+            mana_required_to_cast=10,
+            ignore_spirits=True,
+            custom_agent_targeting_predicate=lambda agent_id: Agent.GetHealth(agent_id) < Agent.GetHealth(Player.GetAgentID()),
+            override_skill_range=Range.Touch.value,
+        ))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Crippling_Victory"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 21 if enemy_qte >= 2 else 13 if enemy_qte == 1 else 10),
             mana_required_to_cast=10,
             ignore_spirits=True,
             custom_agent_targeting_predicate=lambda agent_id: Agent.GetHealth(agent_id) < Agent.GetHealth(Player.GetAgentID()),
@@ -423,6 +433,15 @@ class GenericUtilitySkillsList:
             ignore_spirits=True,
             custom_agent_targeting_predicate=lambda agent_id: not Agent.IsConditioned(agent_id),
             override_skill_range=Range.Touch.value,
+        ))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Zealous_Sweep"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 21 if enemy_qte >= 2 else 13 if enemy_qte == 1 else 10),
+            mana_required_to_cast=10,
+            ignore_spirits=True,
+            override_skill_range=Range.Adjacent.value,
         ))
 
     @staticmethod
