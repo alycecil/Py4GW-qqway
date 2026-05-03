@@ -279,7 +279,8 @@ class GenericUtilitySkillsList:
             distance_factor=spear_distance_factor,
             within_range=Range.Earshot,
             ignore_spirits=True,
-            custom_agent_targeting_predicate=lambda agent_id: not Agent.IsBleeding(agent_id)
+            custom_agent_targeting_predicate=lambda agent_id: not Agent.IsBleeding(agent_id),
+            override_skill_range=Range.Touch.value,
         ))
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
@@ -288,7 +289,8 @@ class GenericUtilitySkillsList:
             score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 12 if enemy_qte >= 3 else 10),
             distance_factor=spear_distance_factor,
             within_range=Range.Earshot,
-            ignore_spirits=True
+            ignore_spirits=True,
+            override_skill_range=Range.Touch.value,
         ))
 
     @staticmethod
@@ -399,7 +401,18 @@ class GenericUtilitySkillsList:
             score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 12 if enemy_qte >= 3 else 10),
             distance_factor=DistanceFactors_Short(),
             condition_factor=condition_factor_crippled(crippled_already_max=10, not_crippled_already_offset=10),
-            target_type_factor=target_type_moving_factor(not_moving_factor=-10)
+            target_type_factor=target_type_moving_factor(not_moving_factor=-10),
+            override_skill_range=Range.Touch.value,
+        ))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Chilling_Victory"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 10),
+            mana_required_to_cast=10,
+            ignore_spirits=True,
+            custom_agent_targeting_predicate=lambda agent_id: Agent.GetHealth(agent_id) < Agent.GetHealth(Player.GetAgentID()),
+            override_skill_range=Range.Touch.value,
         ))
 
     @staticmethod
@@ -418,7 +431,8 @@ class GenericUtilitySkillsList:
             skill=CustomSkill("Soldiers_Strike"),
             current_build=in_game_build,
             score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 12 if enemy_qte >= 3 else 10),
-            distance_factor=DistanceFactors_Short()
+            distance_factor=DistanceFactors_Short(),
+            override_skill_range=Range.Touch.value,
         ))
         # Warrior # AOE
         skills.append(RawAoeAttackUtility(
@@ -429,6 +443,7 @@ class GenericUtilitySkillsList:
                 lambda enemy_qte: 69 if enemy_qte >= 3 else 63 if enemy_qte == 2 else 10),
             mana_required_to_cast=0,
             ignore_spirits=True,
+            override_skill_range=Range.Adjacent.value,
         ))
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
@@ -438,6 +453,7 @@ class GenericUtilitySkillsList:
                 lambda enemy_qte: 68 if enemy_qte >= 3 else 62 if enemy_qte == 2 else 10),
             mana_required_to_cast=0,
             ignore_spirits=True,
+            override_skill_range=Range.Touch.value,
         ))
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
@@ -447,6 +463,7 @@ class GenericUtilitySkillsList:
                 lambda enemy_qte: 71 if enemy_qte >= 3 else 70 if enemy_qte == 2 else 50),
             mana_required_to_cast=0,
             ignore_spirits=True,
+            override_skill_range=Range.Adjacent.value,
         ))
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
@@ -468,7 +485,8 @@ class GenericUtilitySkillsList:
             mana_required_to_cast=0,
             ignore_spirits=True,
             custom_agent_targeting_predicate=lambda agent_id: Agent.IsConditioned(agent_id),
-            within_range=Range.Adjacent
+            within_range=Range.Adjacent,
+            override_skill_range=Range.Adjacent.value,
         ))
         skills.append(KeepSelfEffectUpUtility(
             event_bus=event_bus, skill=CustomSkill("For_Great_Justice"), current_build=in_game_build,
@@ -498,7 +516,8 @@ class GenericUtilitySkillsList:
             mana_required_to_cast=10,
             ignore_spirits=True,
             custom_agent_targeting_predicate=lambda agent_id: Agent.GetHealth(agent_id) < 0.89,
-            within_range=Range.Adjacent
+            within_range=Range.Adjacent,
+            override_skill_range=Range.Adjacent.value,
         ))
         # TODO if we're hurt
         skills.append(KeepSelfEffectUpUtility(
@@ -730,6 +749,7 @@ class GenericUtilitySkillsList:
             target_type_factor=target_type_factor_DefaultScoreFactors(caster_factor=3.0, non_caster_factor=-10),
             distance_factor=DistanceFactors_Short(touch=10, adjacent=0, nearby=0, area=0, twice_area=20, earshot=7),
             custom_agent_targeting_predicate=lambda agent_id: (Agent.GetHealth(Player.GetAgentID()) < 0.5),
+            override_skill_range=Range.Touch.value,
         ))
 
         pass

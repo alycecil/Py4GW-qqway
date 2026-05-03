@@ -51,6 +51,8 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
                  spirit_factor: spirit_factor_DefaultScoreFactors = spirit_factor_DefaultScoreFactors(),
                  distance_factor: DistanceFactors = DistanceFactors(),
                  health_factor: Health_Factors = Health_Factors(),
+
+                 override_skill_range: float | None = None,
                  ) -> None:
 
         super().__init__(
@@ -76,6 +78,7 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
         self.within_range = within_range
         self.ignore_spirits = ignore_spirits
         self.custom_agent_targeting_predicate: Callable[[int], bool] | None = custom_agent_targeting_predicate
+        self.override_skill_range = override_skill_range
 
     def _get_target_score(self, target: custom_behavior_helpers.SortableAgentData) -> float:
         try:
@@ -97,7 +100,7 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
             ),
             within_range=self.within_range,
             sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_DESC),
-            range_to_count_enemies=GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id))
+            range_to_count_enemies=self.skill_range())
 
         by_priority_raw.sort(key=lambda target: (
             -self._get_target_score(target),
@@ -111,6 +114,11 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
                 print(f"item: {self._get_target_score(item)} : {item}")
 
         return by_priority_raw
+
+    def skill_range(self):
+        if self.override_skill_range is not None:
+            return self.override_skill_range
+        return GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id)
 
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
