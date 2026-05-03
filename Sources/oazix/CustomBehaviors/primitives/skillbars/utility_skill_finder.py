@@ -74,7 +74,7 @@ class UtilitySkillFinder:
                     if utility.custom_skill.skill_id not in utilities_by_skill_id:
                         utilities_by_skill_id[utility.custom_skill.skill_id] = utility
             except Exception as e:
-                if debug or constants.DEBUG: print(f"Failed to load utilities from {package_name}: {e}")
+                print(f"Failed to load utilities from {package_name}: {e}")
 
         # Gather skills from GenericUtilitySkillsList (pre-configured generic utilities)
         try:
@@ -84,7 +84,7 @@ class UtilitySkillFinder:
                 if utility.custom_skill.skill_id not in utilities_by_skill_id:
                     utilities_by_skill_id[utility.custom_skill.skill_id] = utility
         except Exception as e:
-            if debug or constants.DEBUG: print(f"Failed to load utilities from GenericUtilitySkillsList: {e}")
+            print(f"Failed to load utilities from GenericUtilitySkillsList: {e}")
 
         if debug or constants.DEBUG:
             override_count = len(custom_overrides) if custom_overrides else 0

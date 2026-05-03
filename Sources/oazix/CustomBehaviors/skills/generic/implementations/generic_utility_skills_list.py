@@ -7,10 +7,11 @@ from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorStat
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.scores.comon_score import CommonScore
 from Sources.oazix.CustomBehaviors.primitives.scores.score_combot_definition import ScoreCombotDefinition
+from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.condition_factors import condition_factor_crippled
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.distance_factors import DistanceFactors_Short
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.hex_factors import Simple_Hex_Factors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.target_type_factors import \
-    target_type_factor_DefaultScoreFactors
+    target_type_factor_DefaultScoreFactors, target_type_moving_factor
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_health_gravity_definition import ScorePerHealthGravityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
@@ -18,6 +19,7 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomS
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.skills.dervich.dervich_enchantment_utility import DervichEnchantmentUtility
 from Sources.oazix.CustomBehaviors.skills.dervich.imbue_health_utility import ImbueHealthUtility
+from Sources.oazix.CustomBehaviors.skills.dervich.pious_assault_utility import PiousAssault_Utility
 from Sources.oazix.CustomBehaviors.skills.dervich.vow_of_revolution_utility import \
     Vow_of_Revolution_KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.apply_hex_simple_utility import ApplyHexCommonUtility
@@ -328,6 +330,22 @@ class GenericUtilitySkillsList:
             target_self=False, # no need
             allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]
         ))
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, current_build=in_game_build,
+            skill=CustomSkill("Mystic_Vigor"),
+            score_definition=ScoreStaticDefinition(15),
+            renew_before_expiration_in_milliseconds=0,
+            target_self=False, # no need
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]
+        ))
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, current_build=in_game_build,
+            skill=CustomSkill("Zealous_Renewal"),
+            score_definition=ScoreStaticDefinition(15),
+            renew_before_expiration_in_milliseconds=0,
+            target_self=False, # no need
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO]
+        ))
         skills.append(Vow_of_Revolution_KeepSelfEffectUpUtility(
             event_bus=event_bus, current_build=in_game_build,
             score_definition=ScoreStaticDefinition(15),
@@ -370,6 +388,18 @@ class GenericUtilitySkillsList:
             event_bus=event_bus, skill=CustomSkill("Rending_Aura"), current_build=in_game_build,
             score_definition=ScoreStaticDefinition(10),
             renew_before_expiration_in_milliseconds=0
+        ))
+        skills.append(PiousAssault_Utility(
+            event_bus=event_bus, current_build=in_game_build,
+        ))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Crippling_Sweep"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 12 if enemy_qte >= 3 else 10),
+            distance_factor=DistanceFactors_Short(),
+            condition_factor=condition_factor_crippled(crippled_already_max=10, not_crippled_already_offset=10),
+            target_type_factor=target_type_moving_factor(not_moving_factor=-10)
         ))
 
     @staticmethod
@@ -452,6 +482,41 @@ class GenericUtilitySkillsList:
         skills.append(WatchYourselfPowerbatteryUtility(
             event_bus=event_bus,
             current_build=in_game_build))
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, skill=CustomSkill("Sprint"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(10), mana_required_to_cast=12,
+            renew_before_expiration_in_milliseconds=0,
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
+            target_self=False,
+            after_cast_delay=False,
+        ))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("You_Will_Die"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 10),
+            mana_required_to_cast=10,
+            ignore_spirits=True,
+            custom_agent_targeting_predicate=lambda agent_id: Agent.GetHealth(agent_id) < 0.89,
+            within_range=Range.Adjacent
+        ))
+        # TODO if we're hurt
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, skill=CustomSkill("Endure_Pain"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(10), mana_required_to_cast=12,
+            renew_before_expiration_in_milliseconds=0,
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
+            target_self=False,
+            after_cast_delay=False,
+        ))
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, skill=CustomSkill("Signet_of_Strength"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(10), mana_required_to_cast=0,
+            renew_before_expiration_in_milliseconds=0,
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
+            target_self=False,
+            after_cast_delay=False,
+        ))
 
     @staticmethod
     def dhuumSkele(event_bus, in_game_build, skills):
@@ -646,6 +711,27 @@ class GenericUtilitySkillsList:
         skills.append(jagged_strike_utility)
         skills.append(fox_fangs_utility)
         skills.append(death_blossom_utility)
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, skill=CustomSkill("Dash"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(10), mana_required_to_cast=10,
+            renew_before_expiration_in_milliseconds=0,
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
+            target_self=False,
+            after_cast_delay=False,
+        ))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Deaths_Charge"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 10),
+            mana_required_to_cast=15,
+            ignore_spirits=True,
+            hex_factor=Simple_Hex_Factors(not_hexed_factor=0, already_hexed_factor=1, already_hexed_maxed=None),
+            target_type_factor=target_type_factor_DefaultScoreFactors(caster_factor=3.0, non_caster_factor=-10),
+            distance_factor=DistanceFactors_Short(touch=10, adjacent=0, nearby=0, area=0, twice_area=20, earshot=7),
+            custom_agent_targeting_predicate=lambda agent_id: (Agent.GetHealth(Player.GetAgentID()) < 0.5),
+        ))
+
         pass
 
     @classmethod
