@@ -1,5 +1,7 @@
 import Py4GW
 from PyItem import ItemModifier
+
+from Py4GWCoreLib import traceback
 from Py4GWCoreLib.enums_src.Item_enums import Rarity
 from Py4GWCoreLib.item_mods_src.decoded_modifier import DecodedModifier
 from Py4GWCoreLib.item_mods_src.properties import InherentProperty, InscriptionProperty, ItemProperty, PrefixProperty, SuffixProperty
@@ -86,6 +88,7 @@ class ItemModifierParser:
         
         except Exception as e:
             print(f"Error building properties: {e}")
+            print(f"Stack trace: {traceback.format_exc()}")
             
     def get_properties(self) -> list[ItemProperty]:
         return self.properties
