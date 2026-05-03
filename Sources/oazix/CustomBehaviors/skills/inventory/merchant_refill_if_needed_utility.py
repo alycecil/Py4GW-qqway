@@ -127,11 +127,8 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         else:
             self.inventory_config: InventoryConfig = InventoryConfig()
 
-        data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")
-        if data is not None:
-            self.inventory_utils_config: InventoryUtilsConfig = string_to_dict(data)
-        else:
-            self.inventory_utils_config: InventoryUtilsConfig = InventoryUtilsConfig()
+        from Sources.inventory_managment.config.inventory_util_config_loader import inventory_util_config_load_json
+        self.inventory_utils_config: InventoryUtilsConfig = inventory_util_config_load_json()
 
         self.inventory_utils: InventoryUtils = InventoryUtils()
 
@@ -141,11 +138,8 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         timeout_seconds: int = random.randint(2, 5)
         CustomBehaviorParty().get_shared_lock_manager().try_aquire_lock(lock_key, timeout_seconds=timeout_seconds)
 
-        data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")
-        if data is not None:
-            self.inventory_utils_config: InventoryUtilsConfig = string_to_dict(data)
-        else:
-            self.inventory_utils_config: InventoryUtilsConfig = InventoryUtilsConfig()
+        from Sources.inventory_managment.config.inventory_util_config_loader import inventory_util_config_load_json
+        self.inventory_utils_config: InventoryUtilsConfig = inventory_util_config_load_json()
 
         self.npc_visited[MerchantType.SORT_STORAGE] = False
         self.npc_visited[MerchantType.SORT_INVENTORY] = False
@@ -186,12 +180,12 @@ class MerchantRefillIfNeededUtility(CustomSkillUtilityBase):
         merchant_tags = ['Rune Trader']
         agent_name = Agent.GetNameByID(agent_id)
         return any(merchant_tag in agent_name for merchant_tag in merchant_tags)
-    
+
     def _is_rare_material_trader_agent(self, agent_id: int) -> bool:
         merchant_tags = ['Rare Material Trader']
         agent_name = Agent.GetNameByID(agent_id)
         return any(merchant_tag in agent_name for merchant_tag in merchant_tags)
-    
+
     def _is_crafter_material_trader_agent(self, agent_id: int) -> bool:
         merchant_tags = ['Crafting Material Trader']
         agent_name = Agent.GetNameByID(agent_id)

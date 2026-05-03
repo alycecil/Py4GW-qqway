@@ -301,13 +301,14 @@ class AutoInventoryHandler():
 
         def default_reasons(item):
             try:
-                from Sources.inventory_managment.json_helper import string_to_dict, dict_to_string
                 from Sources.inventory_managment.inventory_utils import InventoryUtils
                 from Sources.inventory_managment.config.inventory_utils_config import InventoryUtilsConfig
                 from Sources.inventory_managment.config.inventory_utils_config import InventoryMode
+                from Py4GWCoreLib import Inventory
+
                 action_for_item = self.action_for_item(item.item_id)
                 inventory_mode_salvage_ = [InventoryMode.SALVAGE]
-                from Py4GWCoreLib import Inventory
+
                 if Inventory.GetFreeSlotCount() < 5:
                     inventory_mode_salvage_ = [InventoryMode.SALVAGE, InventoryMode.SELL_DONT_IDENTIFY, InventoryMode.SELL]
                 if action_for_item is None:
@@ -638,15 +639,10 @@ class AutoInventoryHandler():
         #ConsoleLog("AutoInventoryHandler", "ID, Salvage and Deposit routine completed", Console.MessageType.Success)
 
     def action_for_item(self, item_id):
-        from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
-        from Sources.inventory_managment.json_helper import string_to_dict
         from Sources.inventory_managment.inventory_utils import InventoryUtils
         from Sources.inventory_managment.config.inventory_utils_config import InventoryUtilsConfig
-        data: str | None = PersistenceLocator().skills.read("my_inventory_utils_config", "inventory_utils_config")
-        if data is not None:
-            inventory_utils_config = string_to_dict(data)
-        else:
-            inventory_utils_config = InventoryUtilsConfig()
+        from Sources.inventory_managment.config.inventory_util_config_loader import inventory_util_config_load_json
+        inventory_utils_config: InventoryUtilsConfig = inventory_util_config_load_json()
 
         inventory_utils = InventoryUtils()
 

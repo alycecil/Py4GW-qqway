@@ -84,38 +84,13 @@ def draw_widget():
     PyImGui.separator()
 
     # PyImGui.same_line(0,-1)
-    if GLOBAL_CACHE.Inventory.IsStorageOpen():
-        if PyImGui.button(f"{IconsFontAwesome5.ICON_BOX_OPEN} Xunlai Opened"):
-            ticker = None
-    else:
-        if PyImGui.button(f"{IconsFontAwesome5.ICON_BOX} Open Xunlai"):
-            GLOBAL_CACHE.Inventory.OpenXunlaiWindow()
-            ticker = None
-
-    PyImGui.same_line(0,-1)
-    if PyImGui.button(f"{IconsFontAwesome5.ICON_MAGNIFYING_GLASS} Identify All"):
-        ticker = bt_identify_all()
-
-    PyImGui.same_line(0,-1)
-    if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Deposit Materials"):
-        ticker = bt_deposit_mats()
-
-    if PyImGui.button(f"{IconsFontAwesome5.ICON_SHOPPING_BAG} Compact Bags"):
-        ticker = merge_stacks_bags()
-
-    PyImGui.same_line(0,-1)
-    if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Compact Storage"):
-        ticker = merge_stacks_storage()
-
-    PyImGui.same_line(0,-1)
-    if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Sort Storage"):
-        ticker = sort_storage()
-
-    PyImGui.separator()
 
     if PyImGui.begin_tab_bar("top_level_tabs"):
         if ImGui.begin_tab_item("Minimal"):
             ImGui.end_tab_item()
+
+        if ImGui.begin_tab_item("Actions"):
+            actions()
 
         if ImGui.begin_tab_item("Settings"):
             settings()
@@ -126,6 +101,35 @@ def draw_widget():
         PyImGui.end_tab_bar()
 
     PyImGui.end()
+
+
+def actions():
+    global ticker
+    if GLOBAL_CACHE.Inventory.IsStorageOpen():
+        if PyImGui.button(f"{IconsFontAwesome5.ICON_BOX_OPEN} Xunlai Opened"):
+            ticker = None
+    else:
+        if PyImGui.button(f"{IconsFontAwesome5.ICON_BOX} Open Xunlai"):
+            GLOBAL_CACHE.Inventory.OpenXunlaiWindow()
+            ticker = None
+
+    PyImGui.same_line(0, -1)
+    if PyImGui.button(f"{IconsFontAwesome5.ICON_MAGNIFYING_GLASS} Identify All"):
+        ticker = bt_identify_all()
+
+    PyImGui.same_line(0, -1)
+    if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Deposit Materials"):
+        ticker = bt_deposit_mats()
+    # Line 2
+    if PyImGui.button(f"{IconsFontAwesome5.ICON_SHOPPING_BAG} Compact Bags"):
+        ticker = merge_stacks_bags()
+    PyImGui.same_line(0, -1)
+    if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Compact Storage"):
+        ticker = merge_stacks_storage()
+    PyImGui.same_line(0, -1)
+    if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Sort Storage"):
+        ticker = sort_storage()
+    ImGui.end_tab_item()
 
 
 def merge_stacks_bags():
@@ -140,12 +144,64 @@ def sort_storage():
     return BehaviorTree(BTNodes.Bags.SortBags(bags=STORAGE_BAGS))
 
 
+def bt_deposit_gold():
+    def _do_the_work() -> Generator:
+        ConsoleLog("bt_salvage_items", f"Opening Xunlai", Console.MessageType.Info)
+
+        from Py4GWCoreLib.py4gwcorelib_src.AutoInventoryHandler import AutoInventoryHandler
+        inventory_handler = AutoInventoryHandler()
+        current_state = inventory_handler.module_active
+
+        yield
+        inventory_handler.module_active = False
+
+        yield from Routines.Yield.Items.DepositGold(inventory_handler.keep_gold, log =False)
+
+        yield
+        inventory_handler.module_active = current_state
+    return as_behavior_tree("bt_deposit_gold", _do_the_work())
+
+
+def bt_salvage_items():
+    def _do_the_work() -> Generator:
+        ConsoleLog("bt_salvage_items", f"Opening Xunlai", Console.MessageType.Info)
+
+        from Py4GWCoreLib.py4gwcorelib_src.AutoInventoryHandler import AutoInventoryHandler
+        inventory_handler = AutoInventoryHandler()
+        current_state = inventory_handler.module_active
+        yield
+        inventory_handler.module_active = False
+
+        yield from inventory_handler.SalvageItems()
+        #yield from Routines.Yield.Items.DepositGold(inventory_handler.keep_gold, log =False)
+
+        yield
+        inventory_handler.module_active = current_state
+    return as_behavior_tree("bt_salvage_items", _do_the_work())
+
+
 def bt_deposit_mats():
-    return as_behavior_tree("DepositMaterials", DepositMaterials().DepositMaterials())
+    return as_behavior_tree("bt_deposit_mats", DepositMaterials().DepositMaterials())
 
 
 def bt_identify_all():
-    return as_behavior_tree("IdentifyAllItems", IdentifyAllItems().IdentifyAll())
+    return as_behavior_tree("bt_identify_all", IdentifyAllItems().IdentifyAll())
+
+
+def bt_deposit_items():
+    def _do_the_deposit() -> Generator:
+        ConsoleLog("bt_deposit_items", f"Opening Xunlai", Console.MessageType.Info)
+
+        from Py4GWCoreLib.py4gwcorelib_src.AutoInventoryHandler import AutoInventoryHandler
+        inventory_handler = AutoInventoryHandler()
+        current_state = inventory_handler.module_active
+        yield
+        inventory_handler.module_active = False
+
+        yield from inventory_handler.IdentifyItems()
+        yield
+        inventory_handler.module_active = current_state
+    return as_behavior_tree("bt_deposit_items", _do_the_deposit())
 
 
 def settings():
@@ -156,7 +212,13 @@ def settings():
 
 
 def debug():
+    global ticker
+
     constants.DEBUG = PyImGui.checkbox("with_debugging_logs", constants.DEBUG)
+
+    if PyImGui.button(f"{IconsFontAwesome5.ICON_VENUS_DOUBLE} trigger on map load"):
+        ticker = _on_map_load()
+
     ImGui.end_tab_item()
 
 
@@ -188,9 +250,11 @@ def arrived_guild_hall() -> BehaviorTree | None:
     on_map_entry.append(bt_identify_all())
     on_map_entry.append(bt_deposit_mats())
 
-    # on_map_entry.append(merge_stacks_storage())
-    # on_map_entry.append(merge_stacks_bags())
+    on_map_entry.append(merge_stacks_storage())
+    on_map_entry.append(merge_stacks_bags())
     # on_map_entry.append(sort_storage())
+
+    on_map_entry.append(bt_deposit_items())
 
     return as_btt(on_map_entry)
 
@@ -208,6 +272,8 @@ def arrived_outpost() -> BehaviorTree | None:
     # on_map_entry.append(merge_stacks_bags())
     # on_map_entry.append(sort_storage())
 
+    on_map_entry.append(bt_deposit_items())
+
     return as_btt(on_map_entry)
 
 
@@ -219,7 +285,7 @@ def arrived_random_map() -> BehaviorTree | None:
 
     on_map_entry.append(bt_identify_all())
 
-    # on_map_entry.append(merge_stacks_bags())
+    on_map_entry.append(merge_stacks_bags())
 
     return as_btt(on_map_entry)
 
@@ -239,18 +305,24 @@ def assign_auto_ticker() -> BehaviorTree | None:
         ACTION_AFTER_NEW_MAP_THROTTLE.Reset()
 
     if action_after_new_map and ACTION_AFTER_NEW_MAP_THROTTLE.IsExpired():
-        new_map = False
-        action_after_new_map = False
         NEW_MAP_THROTTLE.Reset()
-
-        if Map.IsGuildHall():
-            return arrived_guild_hall()
-        elif Map.IsOutpost():
-            return arrived_outpost()
-        elif Map.IsExplorable():
-            return arrived_random_map()
+        return _on_map_load()
 
     return None
+
+
+def _on_map_load():
+    global new_map, action_after_new_map
+    new_map = False
+    action_after_new_map = False
+    if Map.IsGuildHall():
+        return arrived_guild_hall()
+    elif Map.IsOutpost():
+        return arrived_outpost()
+    elif Map.IsExplorable():
+        return arrived_random_map()
+    else:
+        return None
 
 
 def main():
@@ -259,6 +331,7 @@ def main():
     global NEW_MAP_THROTTLE, new_map
 
     if not Routines.Checks.Map.MapValid():
+        ticker = None
         if NEW_MAP_THROTTLE.IsExpired():
             new_map = True
         return

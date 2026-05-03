@@ -250,15 +250,12 @@ def main():
 
             try:
                 from Sources.oazix.CustomBehaviors.primitives.infrastructure.persistence_locator import PersistenceLocator
-                from Sources.inventory_managment.json_helper import string_to_dict
                 from Sources.inventory_managment.inventory_utils import InventoryUtils
                 from Sources.inventory_managment.config.inventory_utils_config import InventoryUtilsConfig
                 from Sources.inventory_managment.config.inventory_utils_config import InventoryMode
 
-                inventory_config: InventoryUtilsConfig = InventoryUtilsConfig()
-                data: str | None = PersistenceLocator().skills.read("my_inventory_config", "inventory_config")
-                if data is not None:
-                    inventory_config: InventoryUtilsConfig = string_to_dict(data)
+                from Sources.inventory_managment.config.inventory_util_config_loader import inventory_util_config_load_json
+                inventory_config: InventoryUtilsConfig = inventory_util_config_load_json()
 
                 action = InventoryUtils().get_action_for_item(inventory_config, hovered_item_id)
                 add_row("Inventory action", str(action) if action else "N/A")
