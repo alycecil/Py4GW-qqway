@@ -18,7 +18,7 @@ class ConvertHexesUtility(CustomSkillUtilityBase):
         event_bus: EventBus,
         current_build: list[CustomSkill],
         score_definition: ScoreStaticDefinition = ScoreStaticDefinition(50),
-        mana_required_to_cast: int = 0,
+        mana_required_to_cast: int = 15,
         allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]
         ) -> None:
 
