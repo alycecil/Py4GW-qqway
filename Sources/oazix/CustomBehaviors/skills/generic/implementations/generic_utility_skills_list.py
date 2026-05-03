@@ -414,6 +414,16 @@ class GenericUtilitySkillsList:
             custom_agent_targeting_predicate=lambda agent_id: Agent.GetHealth(agent_id) < Agent.GetHealth(Player.GetAgentID()),
             override_skill_range=Range.Touch.value,
         ))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Aura_Slicer"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 10),
+            mana_required_to_cast=10,
+            ignore_spirits=True,
+            custom_agent_targeting_predicate=lambda agent_id: not Agent.IsConditioned(agent_id),
+            override_skill_range=Range.Touch.value,
+        ))
 
     @staticmethod
     def warriorSkills(event_bus, in_game_build, skills):
