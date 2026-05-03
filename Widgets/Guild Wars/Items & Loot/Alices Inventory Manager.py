@@ -243,7 +243,6 @@ def assign_auto_ticker() -> BehaviorTree | None:
         action_after_new_map = False
         NEW_MAP_THROTTLE.Reset()
 
-        # todo
         if Map.IsGuildHall():
             return arrived_guild_hall()
         elif Map.IsOutpost():
