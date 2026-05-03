@@ -1,6 +1,6 @@
 from typing import Any, Generator, override
 
-from Py4GWCoreLib import Range, Agent
+from Py4GWCoreLib import Range, Agent, Player
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
@@ -34,9 +34,10 @@ class DrawConditionsUtility(CustomSkillUtilityBase):
         self.score_definition: ScoreStaticDefinition = score_definition
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
+        player_agent_id = Player.GetAgentID()
         return custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
             within_range=Range.Spellcast.value * 1.2,
-            condition=lambda agent_id: Agent.IsConditioned(agent_id),
+            condition=lambda agent_id: Agent.IsConditioned(agent_id) and agent_id != player_agent_id,
             sort_key=(TargetingOrder.CONDITION_PRIORITY_LEVEL_DESC, TargetingOrder.MELEE_THEN_CASTER, TargetingOrder.HP_ASC),
         )
 
