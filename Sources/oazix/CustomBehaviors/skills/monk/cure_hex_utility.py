@@ -15,16 +15,24 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base i
 
 class CureHexUtility(CustomSkillUtilityBase):
     def __init__(self,
-        event_bus: EventBus,
-        current_build: list[CustomSkill],
-        score_definition: ScoreStaticDefinition = ScoreStaticDefinition(50),
-        mana_required_to_cast: int = 0,
-        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]
-        ) -> None:
+                 event_bus: EventBus,
+                 current_build: list[CustomSkill],
+                 score_definition: ScoreStaticDefinition = ScoreStaticDefinition(50),
+                 mana_required_to_cast: int = 0,
+                 allowed_states: list[BehaviorState] = [
+                     BehaviorState.IN_AGGRO,
+                     BehaviorState.CLOSE_TO_AGGRO,
+                     BehaviorState.FAR_FROM_AGGRO
+                 ],
+                 skill: CustomSkill | None = None
+                 ) -> None:
+
+        if skill is None:
+            skill = CustomSkill("Cure_Hex")
 
         super().__init__(
             event_bus=event_bus,
-            skill=CustomSkill("Cure_Hex"),
+            skill=skill,
             in_game_build=current_build,
             score_definition=score_definition,
             mana_required_to_cast=mana_required_to_cast,

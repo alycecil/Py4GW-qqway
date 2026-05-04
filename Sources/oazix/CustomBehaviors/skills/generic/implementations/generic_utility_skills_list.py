@@ -26,9 +26,6 @@ from Sources.oazix.CustomBehaviors.skills.dervich.vow_of_revolution_utility impo
     Vow_of_Revolution_KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.apply_hex_simple_utility import ApplyHexCommonUtility
 from Sources.oazix.CustomBehaviors.skills.generic.generic_resurrection_utility import GenericResurrectionUtility
-from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
-from Sources.oazix.CustomBehaviors.skills.generic.minion_invocation_from_corpse_utility import \
-    MinionInvocationFromCorpseUtility
 from Sources.oazix.CustomBehaviors.skills.generic.preparation_utility import PreparationUtility
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.minion_invocation_from_corpse_utility import MinionInvocationFromCorpseUtility
@@ -41,8 +38,8 @@ from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_attack_utility impo
 from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_heal_utility import RawSimpleHealUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_party_heal_utility import RawSimplePartyHealUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_spirit_utility import RawSpiritUtility
-from Sources.oazix.CustomBehaviors.skills.generic.stub_utility import StubUtility
 from Sources.oazix.CustomBehaviors.skills.mesmer.ether_nightmare_utility import EtherNightmareUtility
+from Sources.oazix.CustomBehaviors.skills.monk.cure_hex_utility import CureHexUtility
 from Sources.oazix.CustomBehaviors.skills.necromancer.signet_of_corruption_utility import SignetOfCorruptionUtility
 from Sources.oazix.CustomBehaviors.skills.paragon.save_yourselves_utility import SaveYourSelfKurzUtility, \
     SaveYourSelfLuxonUtility
@@ -52,7 +49,6 @@ from Sources.oazix.CustomBehaviors.skills.paragon.watch_yourself_utility import 
 from Sources.oazix.CustomBehaviors.skills.ritualist.summon_spirit_utility import SummonSpiritUtility
 
 from Sources.oazix.CustomBehaviors.skills.generic.stub_utility import StubUtility
-from Sources.oazix.CustomBehaviors.skills.pve.junundu_bite_utility import JunundoBiteUtility
 from Sources.oazix.CustomBehaviors.specifics.underworld.dhuums_rest_utility import DhuumsRestUtility
 from Sources.oazix.CustomBehaviors.specifics.underworld.ghostly_fury_utility import GhostlyFuryUtility
 from Sources.oazix.CustomBehaviors.specifics.underworld.reversal_of_death_utility import ReversalOfDeathUtility
@@ -307,9 +303,17 @@ class GenericUtilitySkillsList:
             hex_factor=Simple_Hex_Factors(not_hexed_factor=20, already_hexed_factor=-5, already_hexed_maxed=None),
             target_type_factor=target_type_factor_DefaultScoreFactors(caster_factor=-15.0, non_caster_factor=10)
         ))
-        skills.append(KeepSelfEffectUpUtility(event_bus=event_bus, current_build=in_game_build,
-                                              skill=CustomSkill("Mantra_of_Frost"),
-                                              score_definition=ScoreStaticDefinition(60)))
+        skills.append(ApplyHexCommonUtility(
+            event_bus=event_bus, skill=CustomSkill("Empathy_(PvP)"), current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 10),
+            hex_factor=Simple_Hex_Factors(not_hexed_factor=20, already_hexed_factor=-5, already_hexed_maxed=None),
+            target_type_factor=target_type_factor_DefaultScoreFactors(caster_factor=-15.0, non_caster_factor=10)
+        ))
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, current_build=in_game_build,
+            skill=CustomSkill("Mantra_of_Frost"),
+            score_definition=ScoreStaticDefinition(60)
+        ))
         skills.append(EbonBattleStandardOfHonorUtility(
             event_bus=event_bus, current_build=in_game_build, skill=CustomSkill("Time_Ward"),
             score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 60 if enemy_qte >= 3 else 45 if enemy_qte <= 2 else 21)
@@ -321,6 +325,10 @@ class GenericUtilitySkillsList:
             score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 80),
             custom_agent_targeting_predicate=lambda agent_id: Agent.IsCasting(agent_id) and GLOBAL_CACHE.Skill.Data.GetActivation(Agent.GetCastingSkillID(agent_id)) >= 0.33, # only skills that are longer than 1s. too much changes to fail otherwise
             distance_factor=DistanceFactors_Short()
+        ))
+        skills.append(CureHexUtility(
+                event_bus=event_bus, skill=CustomSkill("Hex_Eater_Signet"),
+                current_build=in_game_build
         ))
 
     @staticmethod
@@ -397,6 +405,18 @@ class GenericUtilitySkillsList:
             score_definition=ScoreStaticDefinition(10),
             renew_before_expiration_in_milliseconds=0
         ))
+        skills.append(DervichEnchantmentUtility(
+            event_bus=event_bus, skill=CustomSkill("Whirling_Charge"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(10),
+            renew_before_expiration_in_milliseconds=0,
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]
+        ))
+        skills.append(DervichEnchantmentUtility(
+            event_bus=event_bus, skill=CustomSkill("Eremites_Zeal"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(10),
+            renew_before_expiration_in_milliseconds=0,
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]
+        ))
         skills.append(PiousAssault_Utility(
             event_bus=event_bus, current_build=in_game_build,
         ))
@@ -448,6 +468,28 @@ class GenericUtilitySkillsList:
             mana_required_to_cast=10,
             ignore_spirits=True,
             override_skill_range=Range.Adjacent.value,
+        ))
+        skills.append(
+            RawSimplePartyHealUtility(
+                event_bus=event_bus, skill=CustomSkill("Mystic_Healing"),
+                current_build=in_game_build,
+                score_definition=ScorePerHealthGravityDefinition(1)))
+        skills.append(
+            RawSimplePartyHealUtility(
+                event_bus=event_bus, skill=CustomSkill("Mystic_Healing_(PvP)"),
+                current_build=in_game_build,
+                score_definition=ScorePerHealthGravityDefinition(1)))
+        # TODO depend on dervish enchantment
+        skills.append(
+            RawSimpleHealUtility(event_bus=event_bus, skill=CustomSkill("Signet_of_Pious_Light"), current_build=in_game_build,
+                                 score_definition=ScorePerHealthGravityDefinition(1))
+        )
+        #pve
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, skill=CustomSkill("Eternal_Aura"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(10),
+            renew_before_expiration_in_milliseconds=0,
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO]
         ))
 
     @staticmethod
@@ -634,6 +676,14 @@ class GenericUtilitySkillsList:
         skills.append(KeepSelfEffectUpUtility(
             event_bus=event_bus, skill=CustomSkill("Never_Rampage_Alone"), current_build=in_game_build,
             score_definition=ScoreStaticDefinition(80), mana_required_to_cast=15,
+            renew_before_expiration_in_milliseconds=0,
+            allowed_states=[BehaviorState.IN_AGGRO],
+            target_self=False,
+            after_cast_delay=False,
+        ))
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, skill=CustomSkill("Feral_Aggression"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(10), mana_required_to_cast=15,
             renew_before_expiration_in_milliseconds=0,
             allowed_states=[BehaviorState.IN_AGGRO],
             target_self=False,
