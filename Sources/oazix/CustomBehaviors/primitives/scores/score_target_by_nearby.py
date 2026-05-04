@@ -24,7 +24,7 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_de
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 
 
-class ScorePerAgentWeightedBySkillDefinition(ScoreDefinition):
+class ScoreFactorsDefinition(ScoreDefinition):
 
     def __init__(
             self,

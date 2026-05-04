@@ -27,7 +27,7 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.target_type_f
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import \
     ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_target_by_nearby import \
-    ScorePerAgentWeightedBySkillDefinition
+    ScoreFactorsDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility

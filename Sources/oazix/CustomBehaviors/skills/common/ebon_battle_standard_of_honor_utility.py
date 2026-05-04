@@ -21,12 +21,16 @@ class EbonBattleStandardOfHonorUtility(CustomSkillUtilityBase):
         current_build: list[CustomSkill],
         score_definition: ScorePerAgentQuantityDefinition = ScorePerAgentQuantityDefinition(lambda enemy_qte: 65 if enemy_qte >= 3 else 50 if enemy_qte <= 2 else 25),
         mana_required_to_cast: int = 20,
-        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO]
+        allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
+        skill: CustomSkill | None = None,
         ) -> None:
+
+        if skill is None:
+            skill = CustomSkill("Ebon_Battle_Standard_of_Honor")
 
         super().__init__(
             event_bus=event_bus,
-            skill=CustomSkill("Ebon_Battle_Standard_of_Honor"),
+            skill=skill,
             in_game_build=current_build,
             score_definition=score_definition,
             mana_required_to_cast=mana_required_to_cast,

@@ -27,7 +27,7 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.target_type_f
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import \
     ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_target_by_nearby import \
-    ScorePerAgentWeightedBySkillDefinition
+    ScoreFactorsDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 
@@ -64,7 +64,7 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
             allowed_states=allowed_states)
         
         self.score_definition: ScorePerAgentQuantityDefinition = score_definition
-        self.target_score: ScorePerAgentWeightedBySkillDefinition = ScorePerAgentWeightedBySkillDefinition(
+        self.target_score: ScoreFactorsDefinition = ScoreFactorsDefinition(
             skill=skill,
             in_range_factor=Agents_in_Range_Skill_Aware_Factors(score_definition),
             condition_factor=condition_factor,

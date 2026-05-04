@@ -16,7 +16,7 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_factors.range_factors
 from Sources.oazix.CustomBehaviors.primitives.scores.score_per_agent_quantity_definition import ScorePerAgentQuantityDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.scores.score_target_by_nearby import \
-    ScorePerAgentWeightedBySkillDefinition
+    ScoreFactorsDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
 
@@ -42,7 +42,7 @@ class UnnaturalSignetUtility(CustomSkillUtilityBase):
         self.score_definition: ScorePerAgentQuantityDefinition = score_definition
         self.should_fallback_if_no_target_found = bool(int(PersistenceLocator().skills.read_or_default(self.custom_skill.skill_name, "should_fallback_if_no_target_found", str(int(should_fallback_if_no_target_found)))))
 
-        self.target_score: ScorePerAgentWeightedBySkillDefinition = ScorePerAgentWeightedBySkillDefinition(
+        self.target_score: ScoreFactorsDefinition = ScoreFactorsDefinition(
             skill=custom_skill,
             in_range_factor=Agents_in_Range_Simple_Factors(score_definition),
             distance_factor=DistanceFactors(),

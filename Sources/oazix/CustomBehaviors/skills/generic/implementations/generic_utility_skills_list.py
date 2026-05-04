@@ -17,6 +17,8 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_per_health_gravity_de
 from Sources.oazix.CustomBehaviors.primitives.scores.score_static_definition import ScoreStaticDefinition
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base import CustomSkillUtilityBase
+from Sources.oazix.CustomBehaviors.skills.common.ebon_battle_standard_of_honor_utility import \
+    EbonBattleStandardOfHonorUtility
 from Sources.oazix.CustomBehaviors.skills.dervich.dervich_enchantment_utility import DervichEnchantmentUtility
 from Sources.oazix.CustomBehaviors.skills.dervich.imbue_health_utility import ImbueHealthUtility
 from Sources.oazix.CustomBehaviors.skills.dervich.pious_assault_utility import PiousAssault_Utility
@@ -308,6 +310,10 @@ class GenericUtilitySkillsList:
         skills.append(KeepSelfEffectUpUtility(event_bus=event_bus, current_build=in_game_build,
                                               skill=CustomSkill("Mantra_of_Frost"),
                                               score_definition=ScoreStaticDefinition(60)))
+        skills.append(EbonBattleStandardOfHonorUtility(
+            event_bus=event_bus, current_build=in_game_build, skill=CustomSkill("Time_Ward"),
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 60 if enemy_qte >= 3 else 45 if enemy_qte <= 2 else 21)
+        ))
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
             skill=CustomSkill("Signet_of_Disruption"),
