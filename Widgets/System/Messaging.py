@@ -458,12 +458,24 @@ def MoveToXY_correct_map(dialog_id, map_x, map_y):
 
     if dialog_id > 0:
         yield from MoveToXY_send_dialog_id(dialog_id, map_x, map_y)
+    elif dialog_id == -1:
+        yield from MoveToXY_interact_only(map_x, map_y)
+
+
+def MoveToXY_interact_only(map_x, map_y):
+    result = yield from Routines.Yield.Agents.InteractWithAgentXY(x=map_x, y=map_y)
+    yield from Routines.Yield.wait(500)
+    if result:
+        ConsoleLog(MODULE_NAME, f"Dialog started at ({map_x}, {map_y}).", Console.MessageType.Info, False)
+        yield from Routines.Yield.wait(500)
+    else:
+        ConsoleLog(MODULE_NAME, f"Dialog at ({map_x}, {map_y}) failed, could not find an npc there.",
+                   Console.MessageType.Info, False)
 
 
 def MoveToXY_send_dialog_id(dialog_id, map_x, map_y):
     result = yield from Routines.Yield.Agents.InteractWithAgentXY(x=map_x, y=map_y)
     yield from Routines.Yield.wait(500)
-    # ConsoleLog(MODULE_NAME, f"Interaction result: {result}", Py4GW.Console.MessageType.Info)
     if result:
         ConsoleLog(MODULE_NAME, f"Dialog {dialog_id} at ({map_x}, {map_y}).", Console.MessageType.Info, False)
         Player.SendDialog(dialog_id)

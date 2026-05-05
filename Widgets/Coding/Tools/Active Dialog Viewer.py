@@ -141,6 +141,9 @@ def _draw_multibox_controls() -> None:
     
     if PyImGui.button(f"{IconsFontAwesome5.ICON_CROSSHAIRS} Send Dialog to All"):
         _send_dialog()
+    PyImGui.same_line(0, -1)
+    if PyImGui.button(f"{IconsFontAwesome5.ICON_CROSSHAIRS} Interact"):
+        _start_dialog_with_npc()
     
     PyImGui.text_wrapped("Ctrl+Shift+Click on dialog buttons to send to all accounts")
 
@@ -280,6 +283,30 @@ def _send_dialog():
     except Exception as e:
         print(f"Sending {default_dialog_string} failed: {e}")
         default_dialog_string = "0x84"
+
+
+def _start_dialog_with_npc(include_sender: bool = True):
+    """Send dialog command to all accounts"""
+    global legacy_mode
+
+    target = Player.GetTargetID()
+    if target == 0:
+        print("No target to interact with.")
+    else:
+        sender_email = Player.GetAccountEmail()
+        accounts = GLOBAL_CACHE.ShMem.GetAllAccountData()
+        for account in accounts:
+            if not include_sender and sender_email == account.AccountEmail:
+                continue
+
+            agent_x, agent_y = Agent.GetXY(target)
+            print(f"Ordering {account.AccountEmail} to start conversation with target: {target} @ ({agent_x},{agent_y})")
+
+            map_id: int = Map.GetMapID()
+            GLOBAL_CACHE.ShMem.SendMessage(
+                sender_email, account.AccountEmail, SharedCommandType.MoveToXY,
+                (map_id, agent_x, agent_y, -1)
+            )
 
 
 def _send_dialog_for_all(dialog_string: str, dialog_id: int, include_sender: bool = True):
