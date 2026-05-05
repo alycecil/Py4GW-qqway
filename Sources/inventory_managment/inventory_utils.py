@@ -5,12 +5,15 @@ from Py4GWCoreLib import ItemArray, Item, Inventory
 from Py4GWCoreLib.enums import Bags
 from Py4GWCoreLib.enums_src.Item_enums import ItemType
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
+from Py4GWCoreLib.py4gwcorelib_src.Console import ConsoleLog
+from Sources.inventory_managment import constants
 from Sources.inventory_managment.config.inventory_utils_config import InventoryMode, InventoryUtilsConfig
 from Sources.inventory_managment.properties.is_maxed.is_maxed import IsMaxed
 from Sources.inventory_managment.properties.mods.get_mods_from_item import GetMods
 from Sources.inventory_managment.properties.salvage_handler import SalvageHandler
 from Sources.inventory_managment.properties.weapon_handler import WeaponHandler
 from Sources.marks_sources.mods_parser import ParsedModifierResult
+from Sources.inventory_managment.storage.get_inventory_items import common_get_inventory_items
 
 
 # Create an enumeration
@@ -70,40 +73,9 @@ class InventoryUtils:
             self,
             inventory_config: InventoryUtilsConfig,
             slot_blacklist: list[tuple[int, int]] = [],
-            bags=range(Bags.Backpack, Bags.Bag2 + 1)
+            bags=[Bags.Backpack, Bags.BeltPouch, Bags.Bag1, Bags.Bag2]
     ) -> list[int]:
-        '''
-        Returns a list of all item IDs in the player's inventory excluding banlist items
-        '''
-        my_items = []
-
-        # Loop over all bags
-        for bag_id in bags:
-            bag_to_check = ItemArray.CreateBagList(bag_id)
-            item_array = ItemArray.GetItemArray(bag_to_check)  # Get all items in the baglist
-
-            # Loop over items
-            for item_id in item_array:
-
-                if Item.Properties.IsCustomized(item_id):
-                    # dont touch this stuff, the player loves it.
-                    continue
-
-                item_type_to_int, item1_type_name = GLOBAL_CACHE.Item.GetItemType(item_id)
-
-                if item_type_to_int in inventory_config.block_list_item_type:
-                    continue
-
-                if GLOBAL_CACHE.Item.GetModelID(item_id) in inventory_config.block_list_model_id:
-                    continue
-
-                slot = GLOBAL_CACHE.Item.GetSlot(item_id)
-                if (bag_id, slot) in slot_blacklist:
-                    continue
-
-                my_items.append(item_id)
-
-        return my_items
+        return common_get_inventory_items(inventory_config, slot_blacklist, bags)
 
     def get_mods_from_item(self, item_id) -> tuple[str | None, str | None, str | None, ParsedModifierResult]:
         return GetMods().get_mods_from_item(item_id)
@@ -121,17 +93,28 @@ class InventoryUtils:
             item_id: int
     ) -> InventoryMode:
         # Strict types
-        if GLOBAL_CACHE.Item.GetModelID(item_id) in inventory_config.block_list_model_id:
+
+        if item_id < 1:
+            if constants.DEBUG: ConsoleLog("InvUtil", f"item_id #{item_id} is not valid")
+            return InventoryMode.KEEP_DONT_IDENTIFY
+
+        if GLOBAL_CACHE.Item.Properties.IsCustomized(item_id):
+            if constants.DEBUG: ConsoleLog("InvUtil", f"item_id #{item_id} is customized")
+            return InventoryMode.KEEP_DONT_IDENTIFY
+
+        model_id = GLOBAL_CACHE.Item.GetModelID(item_id)
+        mode = inventory_config.event_item_config.get_inventory_mode(model_id)
+        if mode is not None:
+            if constants.DEBUG: ConsoleLog("InvUtil", f"item_id #{item_id} overridden mode {mode}")
+            return mode
+
+        if model_id in inventory_config.block_list_model_id:
+            if constants.DEBUG: ConsoleLog("InvUtil", f"item_id #{item_id} black listed")
             return InventoryMode.KEEP_DONT_IDENTIFY
 
         item_type_to_int, item1_type_name = GLOBAL_CACHE.Item.GetItemType(item_id)
         if item_type_to_int in inventory_config.block_list_item_type:
-            return InventoryMode.KEEP_DONT_IDENTIFY
-
-        if GLOBAL_CACHE.Item.Properties.IsCustomized(item_id):
-            return InventoryMode.KEEP_DONT_IDENTIFY
-
-        if item_id < 1:
+            if constants.DEBUG: ConsoleLog("InvUtil", f"item_type {item_type_to_int} ({item1_type_name}) for item #{item_id} black listed")
             return InventoryMode.KEEP_DONT_IDENTIFY
 
         for item_type in [

@@ -5,22 +5,25 @@ from enum import IntEnum
 from typing import Generator
 
 from HeroAI.cache_data import CacheData
-from Py4GWCoreLib import GLOBAL_CACHE, PyUIManager, UIManager, IconsFontAwesome5, Map
+from Py4GWCoreLib import GLOBAL_CACHE, PyUIManager, UIManager, IconsFontAwesome5, Map, Inventory, Item, ItemArray
 from Py4GWCoreLib import ThrottledTimer
 from Py4GWCoreLib import IniHandler
 from Py4GWCoreLib import PyImGui, Color, ImGui
 from Py4GWCoreLib import Routines
 from Py4GWCoreLib import Timer, Player, Console, ConsoleLog
-from Py4GWCoreLib.enums_src.Item_enums import STORAGE_BAGS, INVENTORY_BAGS
+from Py4GWCoreLib.enums_src.Item_enums import STORAGE_BAGS, INVENTORY_BAGS, Rarity, Bags
 from Py4GWCoreLib.enums_src.Multiboxing_enums import SharedCommandType
 from Py4GWCoreLib.py4gwcorelib_src.BehaviorTree import BehaviorTree
 from Py4GWCoreLib.routines_src.Checks import Checks
 from Sources.ApoSource.ApoBottingLib.wrappers import LogMessage
 from Sources.frenkeyLib.ItemHandling.BTNodes import BTNodes
 from Sources.inventory_managment import constants
+from Sources.inventory_managment.config.inventory_utils_config import InventoryMode, InventoryUtilsConfig
+from Sources.inventory_managment.inventory_utils import InventoryUtils
 from Sources.inventory_managment.ui_manipulators.deposit_materials import DepositMaterials
 from Sources.inventory_managment.ui_manipulators.identify_all import IdentifyAllItems
 from Sources.inventory_managment.util.yield_as_behavior_tree import YieldAsBehaviorTree, as_behavior_tree
+from Sources.inventory_managment.config.inventory_util_config_loader import inventory_util_config_load_json
 
 script_directory = os.path.dirname(os.path.abspath(__file__))
 project_root = Console.get_projects_path()
@@ -59,9 +62,39 @@ NEW_MAP_THROTTLE = ThrottledTimer(13601)
 ACTION_AFTER_NEW_MAP_THROTTLE = ThrottledTimer(9427)
 
 
+class CachedItem:
+    def __init__(
+            self,
+            item_id,
+            name,
+            rarity,
+            action
+    ):
+
+        self.item_id = item_id
+        self.name = name
+        self.rarity = rarity
+        self.action = action
+
+    def item_id(self):
+        return self.item_id
+
+    def name(self):
+        return self.name
+
+    def rarity(self):
+        return self.rarity
+
+    def action(self):
+        return self.action
+
+
+inventory_gui_cache: list[CachedItem] = []
+inventory_utils_config: InventoryUtilsConfig | None = inventory_util_config_load_json()
+
+
 def draw_widget():
     global window_x, window_y, window_collapsed, first_run
-    global default_dialog_string
     global ticker
 
     if not PyImGui.begin(MODULE_NAME, PyImGui.WindowFlags.AlwaysAutoResize):
@@ -101,6 +134,80 @@ def draw_widget():
         PyImGui.end_tab_bar()
 
     PyImGui.end()
+    end_pos = PyImGui.get_window_pos()
+
+    post_gui(end_pos)
+
+
+def post_gui(end_pos):
+    global window_x, window_y, inventory_gui_cache
+    if save_window_timer.HasElapsed(1000):
+        save_window_details(end_pos)
+
+        refresh_cache()
+
+
+def refresh_cache():
+    global inventory_gui_cache
+    global inventory_utils_config
+    # cache details
+    inventory_gui_cache = []
+
+    inventory_utils_config = inventory_util_config_load_json()
+    inventory_utils = InventoryUtils()
+
+    inventory_item_ids = get_inventory_items(inventory_utils_config, allow_all_types=True)
+    if constants.DEBUG: ConsoleLog("refresh_cache", f"Inventory List filtered = {inventory_item_ids}", Console.MessageType.Info)
+    for my_item_id in inventory_item_ids:
+        item_id = my_item_id
+
+        action = _get_action_for_item(inventory_utils, inventory_utils_config, my_item_id)
+
+        if Item.IsNameReady(my_item_id):
+            name = Item.GetName(my_item_id)
+        else:
+            Item.RequestName(my_item_id)
+            name = "Pending"
+
+        rarity = GLOBAL_CACHE.Item.Rarity.GetRarity(my_item_id)
+        rarity = rarity
+
+        item = CachedItem(
+            item_id,
+            name,
+            rarity,
+            action
+        )
+        inventory_gui_cache.append(item)
+
+
+def ColorByRarity(rarity):
+    if rarity[0] == Rarity.White.value or rarity[1] == "White":
+        return (1, 1, 0.91, 1)
+    if rarity[0] == Rarity.Blue.value or rarity[1] == "Blue":
+        return (0, .64, 0.91, 1)
+    if rarity[0] == Rarity.Purple.value or rarity[1] == "Purple":
+        return (0.76, .34, 0.76, 1)
+    if rarity[0] == Rarity.Gold.value or rarity[1] == "Gold":
+        return (1, .79, 0.05, 1)
+    if rarity[0] == Rarity.Green.value or rarity[1] == "Green":
+        return (.13, .68, 0.29, 1)
+
+    return (0.91, 0.91, 0.91, 1)
+
+
+def save_window_details(end_pos):
+    global window_x, window_y
+    # Position changed?
+    if (end_pos[0], end_pos[1]) != (window_x, window_y):
+        window_x, window_y = int(end_pos[0]), int(end_pos[1])
+        ini_window.write_key(MODULE_NAME, X_POS, str(window_x))
+        ini_window.write_key(MODULE_NAME, Y_POS, str(window_y))
+    # Collapsed state changed?
+    # if new_collapsed != window_collapsed:
+    #     window_collapsed = new_collapsed
+    #     ini_window.write_key(MODULE_NAME, COLLAPSED, str(window_collapsed))
+    save_window_timer.Reset()
 
 
 def actions():
@@ -120,6 +227,7 @@ def actions():
     PyImGui.same_line(0, -1)
     if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Deposit Materials"):
         ticker = bt_deposit_mats()
+
     # Line 2
     if PyImGui.button(f"{IconsFontAwesome5.ICON_SHOPPING_BAG} Compact Bags"):
         ticker = merge_stacks_bags()
@@ -129,7 +237,119 @@ def actions():
     PyImGui.same_line(0, -1)
     if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Sort Storage"):
         ticker = sort_storage()
+
+    # Line 3
+    if PyImGui.button(f"{IconsFontAwesome5.ICON_TRASH_RESTORE} Deposit All"):
+        ticker = bt_deposit_items()
+    # PyImGui.same_line(0, -1)
+    # if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Compact Storage"):
+    #     ticker = merge_stacks_storage()
+    # PyImGui.same_line(0, -1)
+    # if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Sort Storage"):
+    #     ticker = sort_storage()
+
     ImGui.end_tab_item()
+
+
+def get_inventory_items(
+            inventory_config: InventoryUtilsConfig,
+            slot_blacklist: list[tuple[int, int]] = [],
+            bags=range(Bags.Backpack, Bags.Bag2 + 1),
+            allow_all_types: bool = False
+    ) -> list[int]:
+        '''
+        Returns a list of all item IDs in the player's inventory excluding banlist items
+        '''
+        my_items = []
+
+        # Loop over all bags
+        for bag_id in bags:
+            bag_to_check = ItemArray.CreateBagList(bag_id)
+            item_array = ItemArray.GetItemArray(bag_to_check)  # Get all items in the baglist
+
+            # Loop over items
+            for item_id in item_array:
+
+                if Item.Properties.IsCustomized(item_id):
+                    from Py4GWCoreLib import ConsoleLog, Console
+
+                    if constants.DEBUG: ConsoleLog(
+                        "get_inventory_items",
+                        f"IsCustomized item id = {item_id}",
+                        Console.MessageType.Info
+                    )
+                    # dont touch this stuff, the player loves it.
+                    continue
+
+                item_type_to_int, item1_type_name = GLOBAL_CACHE.Item.GetItemType(item_id)
+
+                if allow_all_types:
+                    pass
+                elif item_type_to_int in inventory_config.block_list_item_type:
+                    from Py4GWCoreLib import ConsoleLog, Console
+
+                    if constants.DEBUG: ConsoleLog(
+                        "get_inventory_items",
+                        f"block_list_item_type = {item_type_to_int}",
+                        Console.MessageType.Info
+                    )
+                    continue
+
+                model_id = GLOBAL_CACHE.Item.GetModelID(item_id)
+                if model_id in inventory_config.block_list_model_id:
+                    from Py4GWCoreLib import ConsoleLog, Console
+
+                    if constants.DEBUG: ConsoleLog(
+                        "get_inventory_items",
+                        f"block_list_model_id = {model_id}",
+                        Console.MessageType.Info
+                    )
+                    continue
+
+                slot = GLOBAL_CACHE.Item.GetSlot(item_id)
+                if (bag_id, slot) in slot_blacklist:
+                    from Py4GWCoreLib import ConsoleLog, Console
+
+                    if constants.DEBUG: ConsoleLog(
+                        "get_inventory_items",
+                        f"slot_blacklist = {item_id}, slot = {slot}",
+                        Console.MessageType.Info
+                    )
+                    continue
+
+                my_items.append(item_id)
+
+        return list(set(my_items))
+
+
+def _get_action_for_item(
+    inventory_utils: InventoryUtils,
+    _inventory_utils_config: InventoryUtilsConfig,
+    item_id
+) -> InventoryMode:
+    action_for_item: InventoryMode = inventory_utils.get_action_for_item(_inventory_utils_config, item_id)
+
+    # if Inventory.GetFreeSlotCount() <= 2:
+    #     if action_for_item == InventoryMode.SELL_DONT_IDENTIFY or action_for_item == InventoryMode.SELL:
+    #         return InventoryMode.SALVAGE
+
+    return action_for_item
+
+
+def _get_items_to_deposit(inventory_utils: InventoryUtils, _inventory_utils_config: InventoryUtilsConfig):
+    from Py4GWCoreLib import ConsoleLog, Console
+    my_items = []
+    inventory_item_ids = get_inventory_items(_inventory_utils_config, allow_all_types=True)
+    if constants.DEBUG: ConsoleLog("get_items_to_deposit", f"Inventory List filtered = {inventory_item_ids}", Console.MessageType.Info)
+    for my_item_id in inventory_item_ids:
+
+        action_for_item: InventoryMode = _get_action_for_item(inventory_utils, _inventory_utils_config, my_item_id)
+        if action_for_item == InventoryMode.DEPOSIT:
+            my_items.append(my_item_id)
+        else:
+            if constants.DEBUG: ConsoleLog("get_items_to_deposit", f"Ignoring item #{my_item_id} its a {action_for_item}", Console.MessageType.Info)
+
+    return my_items
 
 
 def merge_stacks_bags():
@@ -189,6 +409,8 @@ def bt_identify_all():
 
 
 def bt_deposit_items():
+    global inventory_utils_config
+
     def _do_the_deposit() -> Generator:
         ConsoleLog("bt_deposit_items", f"Opening Xunlai", Console.MessageType.Info)
 
@@ -199,25 +421,61 @@ def bt_deposit_items():
         inventory_handler.module_active = False
 
         yield from inventory_handler.IdentifyItems()
+
+        yield from inventory_handler.DepositItemsAuto()
         yield
         inventory_handler.module_active = current_state
+
+    inventory_utils = InventoryUtils()
+
+    get_items_to_deposit = _get_items_to_deposit(inventory_utils, inventory_utils_config)
+
+    tree = BehaviorTree(BTNodes.Items.DepositItems(get_items_to_deposit))
     return as_behavior_tree("bt_deposit_items", _do_the_deposit())
 
 
 def settings():
+    global inventory_utils_config
+
+    from Sources.inventory_managment.config.inventory_util_config_loader import (
+        persist_configuration_for_account,
+        persist_configuration_as_global,
+        delete_persisted_configuration
+    )
+
     PyImGui.text("Settings")
-    if PyImGui.button(f"{IconsFontAwesome5.ICON_VAULT} Save"):
-        pass
+    PyImGui.bullet_text(f"Persistence :")
+    if PyImGui.button(f"Save for account {IconsFontAwesome5.ICON_SAVE}"):
+        persist_configuration_for_account(inventory_utils_config)
+    PyImGui.same_line(0, 5)
+    if PyImGui.button(f"Save global {IconsFontAwesome5.ICON_SAVE}"):
+        persist_configuration_as_global(inventory_utils_config)
+    PyImGui.same_line(0, 5)
+    if PyImGui.button(f"Delete {IconsFontAwesome5.ICON_TRASH}"):
+        delete_persisted_configuration()
     ImGui.end_tab_item()
 
 
 def debug():
     global ticker
+    global inventory_gui_cache
 
     constants.DEBUG = PyImGui.checkbox("with_debugging_logs", constants.DEBUG)
 
     if PyImGui.button(f"{IconsFontAwesome5.ICON_VENUS_DOUBLE} trigger on map load"):
         ticker = _on_map_load()
+
+    # render inventory_gui_cache
+    if inventory_gui_cache:
+        for item in inventory_gui_cache:
+            item_rarity = item.rarity
+            color = ColorByRarity(item_rarity)
+
+            PyImGui.push_style_color(PyImGui.ImGuiCol.Text, color)
+
+            PyImGui.bullet_text(f"""{item_rarity} : #{item.item_id}: {item.name} : {item.action}""")
+
+            PyImGui.pop_style_color(1)
 
     ImGui.end_tab_item()
 

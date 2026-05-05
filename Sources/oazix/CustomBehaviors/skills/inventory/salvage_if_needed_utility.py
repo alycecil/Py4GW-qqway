@@ -119,7 +119,7 @@ class SalvageIfNeededUtility(CustomSkillUtilityBase):
 
     @override
     def delete_persisted_configuration(self):
-        from Sources.inventory_managment.config.inventory_util_config_loader import delete_persisted_configuration
+        from Sources.inventory_managment.config.inventory_util_config_loader import persist_configuration_as_global
         delete_persisted_configuration()
 
     @override
