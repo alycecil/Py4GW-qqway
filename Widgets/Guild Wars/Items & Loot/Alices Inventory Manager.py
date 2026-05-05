@@ -38,7 +38,8 @@ cached_data = CacheData()
 
 # ——— Window Persistence Setup ———
 ini_window = IniHandler(INI_WIDGET_WINDOW_PATH)
-save_window_timer = Timer()
+save_window_timer = ThrottledTimer(1000)
+cache_window_timer = ThrottledTimer(30000)
 save_window_timer.Start()
 
 # String consts
@@ -48,9 +49,9 @@ COLLAPSED = "collapsed"
 X_POS = "x"
 Y_POS = "y"
 
-# load last‐saved window state (fallback to 100,100 / un-collapsed)
-window_x = ini_window.read_int(MODULE_NAME, X_POS, 100)
-window_y = ini_window.read_int(MODULE_NAME, Y_POS, 100)
+# load last‐saved window state (fallback to 200,50 / un-collapsed)
+window_x = 200
+window_y = 50
 window_collapsed = ini_window.read_bool(MODULE_NAME, COLLAPSED, False)
 
 
@@ -96,10 +97,20 @@ inventory_utils_config: InventoryUtilsConfig | None = inventory_util_config_load
 def draw_widget():
     global window_x, window_y, window_collapsed, first_run
     global ticker
+    global ini_window
+
+    if first_run:
+        window_x = ini_window.read_int(MODULE_NAME, X_POS, window_x)
+        window_y = ini_window.read_int(MODULE_NAME, Y_POS, window_y)
+        PyImGui.set_next_window_pos(window_x, window_y)
+        PyImGui.set_next_window_collapsed(window_collapsed, 0)
+        first_run = False
 
     if not PyImGui.begin(MODULE_NAME, PyImGui.WindowFlags.AlwaysAutoResize):
         PyImGui.end()
         return
+
+    new_collapsed = PyImGui.is_window_collapsed()
 
     if ticker is not None:
         PyImGui.text("Working, clicking a button will replace the current run")
@@ -136,15 +147,16 @@ def draw_widget():
     PyImGui.end()
     end_pos = PyImGui.get_window_pos()
 
-    post_gui(end_pos)
+    post_gui(end_pos, new_collapsed)
 
 
-def post_gui(end_pos):
-    global window_x, window_y, inventory_gui_cache
-    if save_window_timer.HasElapsed(1000):
-        save_window_details(end_pos)
+def post_gui(end_pos, new_collapsed):
+    global window_x, window_y, inventory_gui_cache, first_run
+    global cache_window_timer, save_window_timer
 
-        refresh_cache()
+    if save_window_timer.IsExpired():
+        save_window_details(end_pos, new_collapsed)
+
 
 
 def refresh_cache():
@@ -196,18 +208,32 @@ def ColorByRarity(rarity):
     return (0.91, 0.91, 0.91, 1)
 
 
-def save_window_details(end_pos):
+def save_window_details(end_pos, new_collapsed):
     global window_x, window_y
+    global window_collapsed
+    global ini_window
     # Position changed?
     if (end_pos[0], end_pos[1]) != (window_x, window_y):
+
+        from Py4GWCoreLib import ConsoleLog, Console
+
+        # if constants.DEBUG:
+        ConsoleLog(
+            MODULE_NAME,
+            f"save_window_details = {end_pos[0]}, {end_pos[1]}",
+            Console.MessageType.Info
+        )
+
         window_x, window_y = int(end_pos[0]), int(end_pos[1])
         ini_window.write_key(MODULE_NAME, X_POS, str(window_x))
         ini_window.write_key(MODULE_NAME, Y_POS, str(window_y))
-    # Collapsed state changed?
-    # if new_collapsed != window_collapsed:
-    #     window_collapsed = new_collapsed
-    #     ini_window.write_key(MODULE_NAME, COLLAPSED, str(window_collapsed))
-    save_window_timer.Reset()
+
+        # Collapsed state changed?
+        if new_collapsed != window_collapsed:
+            window_collapsed = new_collapsed
+            ini_window.write_key(MODULE_NAME, COLLAPSED, str(window_collapsed))
+
+        save_window_timer.Reset()
 
 
 def actions():
@@ -422,6 +448,8 @@ def bt_deposit_items():
 
         yield from inventory_handler.IdentifyItems()
 
+        yield from Routines.Yield.wait(350)
+
         yield from inventory_handler.DepositItemsAuto()
         yield
         inventory_handler.module_active = current_state
@@ -476,6 +504,10 @@ def debug():
             PyImGui.bullet_text(f"""{item_rarity} : #{item.item_id}: {item.name} : {item.action}""")
 
             PyImGui.pop_style_color(1)
+
+    if cache_window_timer.IsExpired():
+        refresh_cache()
+        cache_window_timer.Reset()
 
     ImGui.end_tab_item()
 
