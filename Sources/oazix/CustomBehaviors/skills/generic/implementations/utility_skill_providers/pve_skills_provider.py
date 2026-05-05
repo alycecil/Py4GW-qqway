@@ -120,5 +120,24 @@ class PveSkillsProvider:
             ignore_spirits=True,
             within_range=Range.Adjacent
         ))
+
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Triple_Shot_luxon"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 16 if enemy_qte >= 2 else 13 if enemy_qte == 1 else 10),
+            mana_required_to_cast=10,
+            ignore_spirits=True,
+            override_skill_range=Range.Touch.value,
+        ))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Triple_Shot_kurzick"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 16 if enemy_qte >= 2 else 13 if enemy_qte == 1 else 10),
+            mana_required_to_cast=10,
+            ignore_spirits=True,
+            override_skill_range=Range.Touch.value,
+        ))
         
         return skills
