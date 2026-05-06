@@ -39,7 +39,7 @@ class AutoAttackUtility(CustomSkillUtilityBase):
 
     def __get_target_agent_id(self) -> int:
         targets = custom_behavior_helpers.Targets.get_all_possible_enemies_ordered_by_priority_raw(
-            within_range=Range.Spellcast,
+            within_range=Range.Longbow,
             sort_key=(TargetingOrder.DISTANCE_ASC, TargetingOrder.HP_ASC))
         
         if len(targets) == 0: return 0
