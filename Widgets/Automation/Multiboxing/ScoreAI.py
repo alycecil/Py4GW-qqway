@@ -43,32 +43,6 @@ show_debug = False
 MODULE_NAME = "ScoreAI: Multi-boxing Skill Selection"
 MODULE_ICON = "Textures/Module_Icons/Custom Behaviors.png"
 
-def initialize_score_ai():
-    """Initialize ScoreAI engine with current build."""
-    global score_ai_engine, in_game_build
-    
-    try:
-        # Get current skillbar - simplified approach
-        in_game_build = []
-        for slot in range(1, 9):  # Skill slots 1-8
-            # Create dummy skills for demonstration
-            skill = CustomSkill(f"Skill_{slot}")
-            skill.skill_id = slot
-            skill.skill_slot = slot
-            in_game_build.append(skill)
-        
-        # Create ScoreAI engine
-        from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
-        event_bus = EventBus()
-        score_ai_engine = ScoreAISkillsList.create_score_ai_engine(event_bus, in_game_build)
-        
-        if constants.DEBUG:
-            print(f"ScoreAI initialized with {len(in_game_build)} skills")
-            
-    except Exception as e:
-        Py4GW.Console.Log("ScoreAI", f"Error initializing: {e}")
-        print(f"ScoreAI init error: {e}")
-
 def get_agents_in_range() -> tuple[List[int], List[int], List[int]]:
     """Get all agents, allies, and enemies within detection range."""
     try:
@@ -97,6 +71,32 @@ def get_agents_in_range() -> tuple[List[int], List[int], List[int]]:
             print(f"Error getting agents in range: {e}")
         return [], [], []
 
+def initialize_score_ai():
+    """Initialize ScoreAI engine with current build."""
+    global score_ai_engine, in_game_build
+    
+    try:
+        # Get current skillbar - simplified approach
+        in_game_build = []
+        for slot in range(1, 9):  # Skill slots 1-8
+            # Create dummy skills for demonstration
+            skill = CustomSkill(f"Skill_{slot}")
+            skill.skill_id = slot
+            skill.skill_slot = slot
+            in_game_build.append(skill)
+        
+        # Create ScoreAI engine
+        from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
+        event_bus = EventBus()
+        score_ai_engine = ScoreAISkillsList.create_score_ai_engine(event_bus, in_game_build)
+        
+        if constants.DEBUG:
+            print(f"ScoreAI initialized with {len(in_game_build)} skills")
+            
+    except Exception as e:
+        Py4GW.Console.Log("ScoreAI", f"Error initializing: {e}")
+        print(f"ScoreAI init error: {e}")
+
 def evaluate_and_execute_skill():
     """Evaluate skills and execute best one based on current situation."""
     global score_ai_engine
@@ -117,7 +117,7 @@ def evaluate_and_execute_skill():
             print(f"  State: {current_state}")
         
         # Get best skill for current situation using detected agents
-        best_result = score_ai_engine.get_best_skill(current_state, [], all_agents)
+        best_result = score_ai_engine.get_best_skill(current_state, all_agents)
         
         if best_result and best_result.score > 0:
             if show_debug:
@@ -126,7 +126,7 @@ def evaluate_and_execute_skill():
                 print(f"  Score: {best_result.score:.1f}")
             
             # Execute the skill using detected agents
-            for result, skill_result in score_ai_engine.execute_best_skill(current_state, [], all_agents):
+            for result, skill_result in score_ai_engine.execute_best_skill(current_state, all_agents):
                 if result:
                     if show_debug:
                         print(f"  Executed successfully!")
@@ -162,6 +162,12 @@ def render_main_tab():
     # Configuration
     ImGui.text("Configuration:")
     
+    # Display detected agents from game state
+    all_agents, allies, enemies = get_agents_in_range()
+    ImGui.text(f"Detected Agents: {len(all_agents)}")
+    ImGui.text(f"  Allies: {len(allies)}")
+    ImGui.text(f"  Enemies: {len(enemies)}")
+    
     # Detection range
     changed, detection_range = ImGui.slider_float("Detection Range", detection_range, 100.0, 2000.0)
     
@@ -174,7 +180,6 @@ def render_main_tab():
     ImGui.separator()
     
     # Current situation
-    all_agents, allies, enemies = get_agents_in_range()
     ImGui.text("Current Situation:")
     ImGui.text(f"  Agents in range: {len(all_agents)}")
     ImGui.text(f"  Allies: {len(allies)}")
