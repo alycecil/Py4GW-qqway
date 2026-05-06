@@ -1,10 +1,10 @@
+from typing import List
+
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 
 from ...primitives.skills.score_ai_skill_base import ScoreAISkillBase
 from ...primitives.skills.score_ai_engine import ScoreAIEngine
-
-from .implementations.simple_score_ai_skills import SimpleScoreAISkillsProvider
 
 
 class ScoreAISkillsList:
@@ -14,11 +14,8 @@ class ScoreAISkillsList:
     provides scores for specific agent_id values.
     """
     
-    def __init__(self):
-        pass
-
     @staticmethod
-    def get_score_ai_skills_list(event_bus: EventBus, in_game_build: list[CustomSkill]) -> list[ScoreAISkillBase]:
+    def get_score_ai_skills_list(event_bus: EventBus, in_game_build: List[CustomSkill]) -> List[ScoreAISkillBase]:
         """
         Get list of ScoreAI skills for multi-boxing scenarios.
         
@@ -29,15 +26,18 @@ class ScoreAISkillsList:
         Returns:
             List of ScoreAI skills with agent_id support
         """
-        skills: list[ScoreAISkillBase] = []
-
-        # Add simple demonstration skills
+        skills: List[ScoreAISkillBase] = []
+        
+        # Add example skills - in real implementation, you would
+        # add actual skill providers here
+        from .implementations.simple_score_ai_skills import SimpleScoreAISkillsProvider
+        
         skills.extend(SimpleScoreAISkillsProvider.get_skills(event_bus, in_game_build))
-
+        
         return skills
 
     @staticmethod
-    def create_score_ai_engine(event_bus: EventBus, in_game_build: list[CustomSkill]) -> ScoreAIEngine:
+    def create_score_ai_engine(event_bus: EventBus, in_game_build: List[CustomSkill]) -> ScoreAIEngine:
         """
         Create a ScoreAIEngine with all available skills.
         
@@ -49,4 +49,4 @@ class ScoreAISkillsList:
             Configured ScoreAIEngine instance
         """
         skills = ScoreAISkillsList.get_score_ai_skills_list(event_bus, in_game_build)
-        return ScoreAIEngine(event_bus, skills)
+        return ScoreAIEngine(skills)

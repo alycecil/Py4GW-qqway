@@ -1,4 +1,4 @@
-from typing import Optional, List, Any
+from typing import List, Optional
 from collections.abc import Generator
 
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
@@ -6,7 +6,6 @@ from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import Beh
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
 from Sources.oazix.CustomBehaviors.primitives.scores.score_definition import ScoreDefinition
-from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
 
 from ....primitives.skills.score_ai_skill_base import ScoreAISkillBase
 
@@ -47,18 +46,14 @@ class SimpleScoreAIUtility(ScoreAISkillBase):
         if self.allowed_states is not None and current_state not in self.allowed_states:
             return False
             
-        if custom_behavior_helpers.Resources.get_player_absolute_energy() < self.mana_required_to_cast:
-            return False
-            
-        # Simple skill slot check - in real implementation you'd use proper skill checking
         if self.custom_skill.skill_slot == 0:
             return False
             
         return True
 
-    def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: List[CustomSkill], agent_id: Optional[int] = None) -> float | None:
+    def get_score_for_agent(self, agent_id: Optional[int]) -> float:
         """
-        Evaluate the skill for a specific agent_id.
+        Score this skill for a specific agent_id.
         This is the key difference from CustomBehaviors - agent_id is preserved.
         """
         # Base score
@@ -82,10 +77,17 @@ class SimpleScoreAIUtility(ScoreAISkillBase):
             
         return max(0.0, min(100.0, base_score))
 
-    def _execute(self, state: BehaviorState, agent_id: Optional[int] = None) -> Generator[Any | None, Any | None, BehaviorResult]:
+    def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: List[CustomSkill], agent_id: Optional[int] = None) -> Optional[float]:
+        """
+        Evaluate the skill for a specific agent_id.
+        This is the key difference from CustomBehaviors - agent_id is preserved.
+        """
+        return self.get_score_for_agent(agent_id)
+
+    def _execute(self, state: BehaviorState, agent_id: Optional[int] = None) -> Generator[None, None, BehaviorResult]:
         """
         Execute the skill for a specific agent_id.
-        The agent_id is preserved from evaluation.
+        The agent_id is preserved from evaluation to execution.
         """
         print(f"Executing {self.custom_skill.skill_name} for agent_id: {agent_id}")
         
@@ -104,7 +106,7 @@ class SimpleScoreAIUtility(ScoreAISkillBase):
         print(f"  Casting {self.custom_skill.skill_name}")
         
         # Return success
-        yield BehaviorResult(1)  # ACTION_SUCCESSFUL equivalent
+        yield BehaviorResult(1)  # SUCCESS equivalent
 
     def customized_debug_ui(self, current_state: BehaviorState) -> None:
         """Display debug information for the skill."""

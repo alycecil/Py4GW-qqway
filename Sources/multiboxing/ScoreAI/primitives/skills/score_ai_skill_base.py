@@ -1,46 +1,46 @@
 from abc import abstractmethod
-import traceback
 from collections.abc import Callable, Generator
 from typing import Any, Optional
-
-from Py4GWCoreLib import Routines
-from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
 
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
 from Sources.oazix.CustomBehaviors.primitives.helpers.behavior_result import BehaviorResult
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.helpers import custom_behavior_helpers
+from Sources.oazix.CustomBehaviors.primitives.parties.custom_behavior_party import CustomBehaviorParty
 from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill import CustomSkill
-from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_nature import CustomSkillNature
 from Sources.oazix.CustomBehaviors.primitives.scores.score_definition import ScoreDefinition
 from Sources.oazix.CustomBehaviors.primitives import constants
+
 from Sources.oazix.CustomBehaviors.primitives.skills.plugins.utility_skill_option import UtilitySkillOption
 from Sources.oazix.CustomBehaviors.primitives.skills.plugins.utility_skill_watchdog import UtilitySkillWatchdog
 from Sources.oazix.CustomBehaviors.primitives.skills.plugins.utility_skill_plugin import UtilitySkillPlugin
 from Sources.oazix.CustomBehaviors.primitives.skills.plugins.utility_skill_precondition import UtilitySkillPrecondition
 from Sources.oazix.CustomBehaviors.primitives.skills.plugins.utility_skill_targeting_modifier import UtilitySkillTargetingModifier
-from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_execution_strategy import UtilitySkillExecutionStrategy
 from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_typology import UtilitySkillTypology
+from Sources.oazix.CustomBehaviors.primitives.skills.utility_skill_execution_strategy import UtilitySkillExecutionStrategy
 
 
 class ScoreAISkillBase:
     """
     Base class for ScoreAI skills with agent_id support.
-    Each skill provides scores for specific agent_id values and the engine
-    preserves the agent_id when calling _evaluate.
+    
+    Key difference from CustomBehaviors:
+    - Each skill provides scores for specific agent_id values
+    - Engine preserves agent_id from evaluation to execution
+    - agent_id can be None for global operations
     """
     
     def __init__(self, 
-                event_bus: EventBus,
-                skill: CustomSkill,
-                in_game_build: list[CustomSkill],
-                score_definition: ScoreDefinition,
-                mana_required_to_cast: float = 0,
-                allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
-                utility_skill_typology: UtilitySkillTypology = UtilitySkillTypology.COMBAT,
-                execution_strategy = UtilitySkillExecutionStrategy.EXECUTE_THROUGH_THE_END,
-                ):
-
+                 event_bus: EventBus,
+                 skill: CustomSkill,
+                 in_game_build: list[CustomSkill],
+                 score_definition: ScoreDefinition,
+                 mana_required_to_cast: float = 0,
+                 allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
+                 utility_skill_typology: UtilitySkillTypology = UtilitySkillTypology.COMBAT,
+                 execution_strategy = UtilitySkillExecutionStrategy.EXECUTE_THROUGH_THE_END,
+                 ):
+        
         self.event_bus: EventBus = event_bus
         self.custom_skill: CustomSkill = skill
         self.utility_skill_typology: UtilitySkillTypology = utility_skill_typology
@@ -48,35 +48,34 @@ class ScoreAISkillBase:
         self.allowed_states: list[BehaviorState] | None = allowed_states
         self.mana_required_to_cast: float = mana_required_to_cast
         self.is_enabled: bool = True
-        self.execution_strategy: UtilitySkillExecutionStrategy = execution_strategy
+        self.execution_strategy = execution_strategy
         self.score_definition: ScoreDefinition = score_definition
-
+        
         self._utility_skill_plugins: list[UtilitySkillPlugin] = []
 
-    # Plugin management ------------------
-
-    def add_plugin_precondition(self, precondition: Callable[['ScoreAISkillBase'], UtilitySkillPrecondition] ) -> 'ScoreAISkillBase':
+    # Plugin management (inherited from CustomBehaviors)
+    def add_plugin_precondition(self, precondition: Callable[['ScoreAISkillBase'], UtilitySkillPrecondition]) -> 'ScoreAISkillBase':
         plugin_instance: UtilitySkillPlugin = precondition(self)
         if plugin_instance.plugin_name in [capability.plugin_name for capability in self._utility_skill_plugins]: 
             raise Exception(f"Precondition {plugin_instance.plugin_name} already added to {self.custom_skill.skill_name}")
         self._utility_skill_plugins.append(plugin_instance)
         return self
     
-    def add_plugin_watchdog(self, extension: Callable[['ScoreAISkillBase'], UtilitySkillWatchdog] ) -> 'ScoreAISkillBase':
+    def add_plugin_watchdog(self, extension: Callable[['ScoreAISkillBase'], UtilitySkillWatchdog]) -> 'ScoreAISkillBase':
         plugin_instance: UtilitySkillPlugin = extension(self)
         if plugin_instance.plugin_name in [capability.plugin_name for capability in self._utility_skill_plugins]: 
             raise Exception(f"Extension {plugin_instance.plugin_name} already added to {self.custom_skill.skill_name}")
         self._utility_skill_plugins.append(plugin_instance)
         return self
-
-    def add_plugin_targetting_modifier(self, targeting_modifier: Callable[['ScoreAISkillBase'], UtilitySkillTargetingModifier] ) -> 'ScoreAISkillBase':
+    
+    def add_plugin_targetting_modifier(self, targeting_modifier: Callable[['ScoreAISkillBase'], UtilitySkillTargetingModifier]) -> 'ScoreAISkillBase':
         plugin_instance: UtilitySkillPlugin = targeting_modifier(self)
         if plugin_instance.plugin_name in [capability.plugin_name for capability in self._utility_skill_plugins]: 
             raise Exception(f"Targeting modifier {plugin_instance.plugin_name} already added to {self.custom_skill.skill_name}")
         self._utility_skill_plugins.append(plugin_instance)
         return self
     
-    def add_plugin_option(self, option: Callable[['ScoreAISkillBase'], UtilitySkillOption] ) -> 'ScoreAISkillBase':
+    def add_plugin_option(self, option: Callable[['ScoreAISkillBase'], UtilitySkillOption]) -> 'ScoreAISkillBase':
         plugin_instance: UtilitySkillPlugin = option(self)
         if plugin_instance.plugin_name in [capability.plugin_name for capability in self._utility_skill_plugins]: 
             raise Exception(f"Option {plugin_instance.plugin_name} already added to {self.custom_skill.skill_name}")
@@ -102,55 +101,47 @@ class ScoreAISkillBase:
     
     def get_plugin_watchdogs(self) -> list[UtilitySkillWatchdog]:
         return [plugin for plugin in self._utility_skill_plugins if isinstance(plugin, UtilitySkillWatchdog)]
-    
-    def _get_plugin_targeting_modifiers(self) -> list[UtilitySkillTargetingModifier]:
-        return [plugin for plugin in self._utility_skill_plugins if isinstance(plugin, UtilitySkillTargetingModifier)]
-    
-    def get_plugin_targeting_modifiers_filtering_predicate_any(self) -> Callable[[int], bool]:
-        modifiers = self._get_plugin_targeting_modifiers()
-        if len(modifiers) == 0: return lambda agent_id: True
-        # 'any' is good to cumulate filtering predicates on same skill.
-        return lambda agent_id: any(modifier.get_agent_id_filtering_predicate()(agent_id) for modifier in modifiers)
-    
-    def get_plugin_targeting_modifiers_filtering_predicate_all(self) -> Callable[[int], bool]:
-        modifiers = self._get_plugin_targeting_modifiers()
-        if len(modifiers) == 0: return lambda agent_id: True
-        # 'all' is good to cumulate filtering predicates on same skill.
-        return lambda agent_id: all(modifier.get_agent_id_filtering_predicate()(agent_id) for modifier in modifiers)
 
-    def get_plugin_targeting_modifiers_ordering_predicate(self) -> Callable[[int], int]:
-        modifiers = self._get_plugin_targeting_modifiers()
-        if len(modifiers) == 0: return lambda agent_id: 0
-        return lambda agent_id: sum(modifier.get_agent_id_ordering_predicate()(agent_id) for modifier in modifiers)
-
-    # End of plugin management ------------------
-
-    @abstractmethod
+    # Core ScoreAI methods
     def are_common_pre_checks_valid(self, current_state: BehaviorState) -> bool:
-        if current_state is BehaviorState.IDLE: return False
+        """Common pre-checks for the skill."""
+        if current_state is BehaviorState.IDLE: 
+            return False
 
         if self.allowed_states is not None and current_state not in self.allowed_states:
-            if constants.DEBUG: print(f'PreCheck Reject - Wrong State {self.custom_skill.skill_name}')
             return False
+            
         if custom_behavior_helpers.Resources.get_player_absolute_energy() < self.mana_required_to_cast:
-            if constants.DEBUG: print(f'PreCheck Reject - Energy Requirement for Utility {self.custom_skill.skill_name}')
             return False
-        if not Routines.Checks.Skills.IsSkillSlotReady(self.custom_skill.skill_slot):
-            if constants.DEBUG:
-                print(f"custom_skill.skill_slot: {self.custom_skill.skill_slot}")
-                print(f'PreCheck Reject - IsSkillSlotReady {self.custom_skill.skill_name}')
-            return False
-        if not custom_behavior_helpers.Resources.has_enough_resources(self.custom_skill):
-            if constants.DEBUG: print(f'PreCheck Reject - Resources Requirement for Ability {self.custom_skill.skill_name}')
-            return False
-
+            
         return True
-    
+
+    def get_score_for_agent(self, agent_id: Optional[int]) -> float:
+        """
+        Score this skill for a specific agent_id.
+        This is the key ScoreAI difference - agent-specific scoring.
+        
+        Args:
+            agent_id: The agent ID to score for (None for global score)
+            
+        Returns:
+            Score for this agent (0.0 to 100.0)
+        """
+        # Base implementation - override in subclasses
+        return 0.0
+
     @abstractmethod
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill], agent_id: Optional[int] = None) -> float | None:
         """
         Evaluate the skill for a specific agent_id.
-        This is the main difference from CustomBehaviors - agent_id is preserved.
+        
+        Args:
+            current_state: Current behavior state
+            previously_attempted_skills: Skills already attempted this cycle
+            agent_id: The agent ID to evaluate for (None for global)
+            
+        Returns:
+            Score for this agent (None if not applicable)
         """
         pass
 
@@ -158,105 +149,42 @@ class ScoreAISkillBase:
     def _execute(self, state: BehaviorState, agent_id: Optional[int] = None) -> Generator[Any | None, Any | None, BehaviorResult]:
         """
         Execute the skill for a specific agent_id.
+        
+        Args:
+            state: Current behavior state
+            agent_id: The agent ID to execute for (None for global)
+            
+        Yields:
+            Generator for execution steps
+            
+        Returns:
+            BehaviorResult of execution
         """
         pass
 
-    def get_score_for_agent(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill], agent_id: Optional[int] = None) -> float | None:
-        """
-        Get score for a specific agent_id. This method handles the common checks
-        and delegates to _evaluate with the agent_id preserved.
-        """
-        if not self.is_enabled:
-            if constants.DEBUG: print(f'I Am Not Enabled {self.custom_skill.skill_name}')
-            return None
-        if self.custom_skill.skill_slot == 0 and self.custom_skill.skill_id != 0:
-            print(f'PreCheck Reject {self.custom_skill.skill_name} was missing its skill slot, reloading.')
-            self.custom_skill.skill_slot = GLOBAL_CACHE.SkillBar.GetSlotBySkillID(self.custom_skill.skill_id) if self.custom_skill.skill_id != 0 else 0
-        
+    def evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill], agent_id: Optional[int] = None) -> float | None:
+        """Public evaluation method with agent_id support."""
         if not self.are_common_pre_checks_valid(current_state):
-            if constants.DEBUG:
-                if self.utility_skill_typology == UtilitySkillTypology.COMBAT and current_state == BehaviorState.IN_AGGRO and current_state in self.allowed_states:
-                    print(f'PreCheck Reject {self.custom_skill.skill_name}')
             return None
-
+            
         if not self.are_preconditions_satisfied():
-            if constants.DEBUG: print(f'Reject - Capabilities not satisfied for {self.custom_skill.skill_name}')
             return None
+            
+        return self._evaluate(current_state, previously_attempted_skills, agent_id)
+
+    def execute(self, state: BehaviorState, agent_id: Optional[int] = None) -> Generator[Any | None, Any | None, BehaviorResult]:
+        """Public execution method with agent_id support."""
+        if not self.are_common_pre_checks_valid(state):
+            yield BehaviorResult(1)  # FAILURE equivalent
+            return
+            
+        if not self.are_preconditions_satisfied():
+            yield BehaviorResult(1)  # FAILURE equivalent
+            return
+            
+        # Apply targeting modifiers if any
+        for plugin in self._utility_skill_plugins:
+            if isinstance(plugin, UtilitySkillTargetingModifier):
+                agent_id = plugin.modify_targeting(agent_id)
         
-        # Note: Skip typology checks for ScoreAI since it's designed for multiboxing scenarios
-        # You can add these back if needed based on your specific requirements
-
-        try:
-            score: float | None = None
-            score = self._evaluate(current_state, previously_attempted_skills, agent_id)
-
-            if score is None:
-                if constants.DEBUG:
-                    if self.utility_skill_typology == UtilitySkillTypology.COMBAT and current_state == BehaviorState.IN_AGGRO and current_state in self.allowed_states: 
-                        print(f'Evaluate Reject {self.custom_skill.skill_name}')
-                return None
-            if 0 > score > 100: raise Exception(f"{self.custom_skill.skill_name} : score must be between 0 and 100, calculated {score}.")
-
-            if constants.DEBUG:
-                if self.utility_skill_typology == UtilitySkillTypology.COMBAT: 
-                    print(f'Score {score} for {self.custom_skill.skill_name} (agent_id: {agent_id})')
-
-            return score
-        except Exception as e:
-            print(f'Evaluate Exception {self.custom_skill.skill_name}: {e}')
-            print(traceback.format_exc())
-            return None
-
-    def execute_for_agent(self, state: BehaviorState, agent_id: Optional[int] = None) -> Generator[Any | None, Any | None, BehaviorResult]:
-        if constants.DEBUG: print(f"Executing {self.custom_skill.skill_name} (agent_id: {agent_id})")
-
-        try:
-            gen: Generator[Any | None, Any | None, BehaviorResult] = self._execute(state, agent_id)
-            result: BehaviorResult = yield from gen
-
-        except Exception as e:
-            print(f'execute Exception {self.custom_skill.skill_name}: {e}')
-            print(traceback.format_exc())
-            return BehaviorResult.ACTION_SKIPPED
-
-        return result
-
-    def nature_has_been_attempted_last(self, previously_attempted_skills: list[CustomSkill]) -> bool:
-        if len(previously_attempted_skills) == 0: return False
-        last_value = previously_attempted_skills[-1]
-        is_nature_has_been_attempted_last = last_value.skill_nature == self.custom_skill.skill_nature
-        return is_nature_has_been_attempted_last
-
-    def is_another_interrupt_ready(self) -> bool:
-        for skill in self.in_game_build:
-            if skill.skill_nature == CustomSkillNature.Interrupt and skill.skill_id != self.custom_skill.skill_id:
-                if Routines.Checks.Skills.IsSkillIDReady(skill.skill_id):
-                    return True
-        return False
-
-    @abstractmethod
-    def customized_debug_ui(self, current_state: BehaviorState) -> None:
-        """
-        This method is used to display the debug UI for the skill.
-        Can be overridden by the skill itself to display additional information.
-        """
-        pass
-
-    @abstractmethod
-    def has_persistence(self) -> bool:
-        return False or any(plugin.has_persistence() for plugin in self._utility_skill_plugins)
-    
-    @abstractmethod
-    def delete_persisted_configuration(self):
-        for plugin in self._utility_skill_plugins:
-            plugin.delete_persisted_configuration()
-
-    @abstractmethod
-    def persist_configuration_as_global(self):
-        for plugin in self._utility_skill_plugins:
-            plugin.persist_configuration_as_global()
-
-    @abstractmethod
-    def persist_configuration_for_account(self):
-        for plugin in self._utility_skill_plugins:
-            plugin.persist_configuration_for_account()
+        yield from self._execute(state, agent_id)
