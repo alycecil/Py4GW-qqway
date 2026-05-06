@@ -19,6 +19,34 @@ class DistanceFactors(ScoreDefinition):
 
 
 class DistanceFactors_Simple(DistanceFactors):
+    def __init__(
+            self,
+            touch_short_range: float = 50,
+            touch_long_range: float = 2.2,
+            adjacent_short_range: float = 35,
+            adjacent_long_range: float = 2,
+            nearby_short_range: float = 20,
+            nearby_long_range: float = 1.5,
+            area_short_range: float = 10,
+            area_long_range: float = 1.1,
+            twice_area_short_range: float = 5,
+            twice_area_long_range: float = 0.5,
+            earshot_short_range: float = 1,
+            earshot_long_range: float = 0.1,
+    ):
+        self.touch_short_range = touch_short_range
+        self.touch_long_range = touch_long_range
+        self.adjacent_short_range = adjacent_short_range
+        self.adjacent_long_range = adjacent_long_range
+        self.nearby_short_range = nearby_short_range
+        self.nearby_long_range = nearby_long_range
+        self.area_short_range = area_short_range
+        self.area_long_range = area_long_range
+        self.twice_area_short_range = twice_area_short_range
+        self.twice_area_long_range = twice_area_long_range
+        self.earshot_short_range = earshot_short_range
+        self.earshot_long_range = earshot_long_range
+
     def distance_factor(
             self,
             score_max, score_min, score_offset,
@@ -26,17 +54,17 @@ class DistanceFactors_Simple(DistanceFactors):
     ):
         # Distance factor
         if distance < Range.Touch.value:
-            score_offset += 50 if short_range else 2.2
+            score_offset += self.touch_short_range if short_range else self.touch_long_range
         elif distance < Range.Adjacent.value:
-            score_offset += 35 if short_range else 2
+            score_offset += self.adjacent_short_range if short_range else self.adjacent_long_range
         elif distance < Range.Nearby.value:
-            score_offset += 20 if short_range else 1.5
+            score_offset += self.nearby_short_range if short_range else self.nearby_long_range
         elif distance < Range.Area.value:
-            score_offset += 10 if short_range else 1.1
+            score_offset += self.area_short_range if short_range else self.area_long_range
         elif distance < Range.Area.value * 2:
-            score_offset += 5 if short_range else 0.5
+            score_offset += self.twice_area_short_range if short_range else self.twice_area_long_range
         elif distance < Range.Earshot.value:
-            score_offset += 1 if short_range else 0.1
+            score_offset += self.earshot_short_range if short_range else self.earshot_long_range
         return score_max, score_min, score_offset
 
     @override

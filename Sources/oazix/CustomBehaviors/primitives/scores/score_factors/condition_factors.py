@@ -18,31 +18,49 @@ class Condition_Factors(ScoreDefinition):
 
 
 class condition_factor_prefer_omni(Condition_Factors):
+    def __init__(
+            self,
+            deep_wound_offset: float = 5.0,
+            knocked_down_offset: float = 1.0,
+            bleeding_offset: float = 1.0,
+            poisoned_offset: float = 1.0,
+            crippled_offset: float = 1.001,
+    ):
+        self.deep_wound_offset = deep_wound_offset
+        self.knocked_down_offset = knocked_down_offset
+        self.bleeding_offset = bleeding_offset
+        self.poisoned_offset = poisoned_offset
+        self.crippled_offset = crippled_offset
+
     def condition_factor(
             self,
             score_max, score_min, score_offset,
             target_agent_id
     ):
         if Agent.IsDeepWounded(target_agent_id):
-            score_offset += 5.0
+            score_offset += self.deep_wound_offset
 
         if Agent.IsKnockedDown(target_agent_id):
-            score_offset += 1.0
+            score_offset += self.knocked_down_offset
 
         if Agent.IsBleeding(target_agent_id):
-            score_offset += 1.0
+            score_offset += self.bleeding_offset
 
         if Agent.IsPoisoned(target_agent_id):
-            score_offset += 1.0
+            score_offset += self.poisoned_offset
 
         if Agent.IsCrippled(target_agent_id):
-            score_offset += 1.001
+            score_offset += self.crippled_offset
 
         return score_max, score_min, score_offset
 
     @override
     def score_definition_debug_ui(self) -> str:
-        return f"""prefer deep wound += 5"""
+        return f"""prefer deep wound += {self.deep_wound_offset}
+knocked down += {self.knocked_down_offset}
+bleeding += {self.bleeding_offset}
+poisoned += {self.poisoned_offset}
+crippled += {self.crippled_offset}"""
 
 
 class condition_factor_crippled(Condition_Factors):

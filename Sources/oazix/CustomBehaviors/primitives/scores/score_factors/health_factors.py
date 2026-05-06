@@ -5,6 +5,42 @@ from Sources.oazix.CustomBehaviors.primitives.scores.score_definition import Sco
 
 
 class Health_Factors(ScoreDefinition):
+    def __init__(
+            self,
+            very_low_health_max: float = 7.5,
+            very_low_health_min: float = 15.0,
+            very_low_health_offset: float = 6,
+            low_health_max: float = 10.0,
+            low_health_min: float = 17.0,
+            low_health_offset: float = 5,
+            medium_health_max: float = 5.0,
+            medium_health_min: float = 15.0,
+            medium_health_offset: float = 3,
+            high_health_max: float = 1.0,
+            high_health_min: float = 1.0,
+            high_health_offset: float = 1,
+            very_low_health_threshold: float = 0.15,
+            low_health_threshold: float = 0.5,
+            medium_health_threshold: float = 0.75,
+            high_health_threshold: float = 0.9,
+    ):
+        self.very_low_health_max = very_low_health_max
+        self.very_low_health_min = very_low_health_min
+        self.very_low_health_offset = very_low_health_offset
+        self.low_health_max = low_health_max
+        self.low_health_min = low_health_min
+        self.low_health_offset = low_health_offset
+        self.medium_health_max = medium_health_max
+        self.medium_health_min = medium_health_min
+        self.medium_health_offset = medium_health_offset
+        self.high_health_max = high_health_max
+        self.high_health_min = high_health_min
+        self.high_health_offset = high_health_offset
+        self.very_low_health_threshold = very_low_health_threshold
+        self.low_health_threshold = low_health_threshold
+        self.medium_health_threshold = medium_health_threshold
+        self.high_health_threshold = high_health_threshold
+
     def health_factor(
             self,
             score_max, score_min, score_offset,
@@ -17,22 +53,22 @@ class Health_Factors(ScoreDefinition):
         return score_max, score_min, score_offset
 
     def _health_factors(self, health, score_max, score_min, score_offset):
-        if health <= .15:
-            score_max += 7.5
-            score_min += 15.0
-            score_offset += 6
-        elif health <= .5:
-            score_max += 10.0
-            score_min += 17.0
-            score_offset += 5
-        elif health <= .75:
-            score_max += 5.0
-            score_min += 15.0
-            score_offset += 3
-        elif health <= .9:
-            score_max += 1.0
-            score_min += 1.0
-            score_offset += 1
+        if health <= self.very_low_health_threshold:
+            score_max += self.very_low_health_max
+            score_min += self.very_low_health_min
+            score_offset += self.very_low_health_offset
+        elif health <= self.low_health_threshold:
+            score_max += self.low_health_max
+            score_min += self.low_health_min
+            score_offset += self.low_health_offset
+        elif health <= self.medium_health_threshold:
+            score_max += self.medium_health_max
+            score_min += self.medium_health_min
+            score_offset += self.medium_health_offset
+        elif health <= self.high_health_threshold:
+            score_max += self.high_health_max
+            score_min += self.high_health_min
+            score_offset += self.high_health_offset
         return score_max, score_min, score_offset
 
     @override

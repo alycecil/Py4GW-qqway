@@ -40,9 +40,9 @@ class target_type_moving_factor(target_type_factor_DefaultScoreFactors):
             moving_factor: float = 3.0,
             not_moving_factor: float = 0.0,
     ):
-        super().__init__()
-        self.moving_factor: float = moving_factor
-        self.not_moving_factor: float = not_moving_factor
+        super().__init__(moving_factor, not_moving_factor)
+        self.moving_factor = moving_factor
+        self.not_moving_factor = not_moving_factor
 
     def target_type_factor(
             self,
