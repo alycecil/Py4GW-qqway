@@ -2,7 +2,8 @@ from typing import Any, Generator, Callable, override
 
 import PyImGui
 
-from Py4GWCoreLib import GLOBAL_CACHE, Range, Agent, traceback
+from Py4GWCoreLib import GLOBAL_CACHE, Range, Agent, traceback, Player
+from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
 from Sources.oazix.CustomBehaviors.primitives import constants
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
 from Sources.oazix.CustomBehaviors.primitives.bus.event_bus import EventBus
@@ -101,6 +102,12 @@ class RawAoeAttackUtility(CustomSkillUtilityBase):
             within_range=self.within_range,
             sort_key=(TargetingOrder.AGENT_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_DESC),
             range_to_count_enemies=self.skill_range())
+
+        player_x, player_y = Player.GetXY()
+        by_priority_raw = list(filter(lambda x: Utils.Distance(
+            Agent.GetXY(x.agent_id),
+            (player_x, player_y)
+        ), by_priority_raw))
 
         by_priority_raw.sort(key=lambda target: (
             -self._get_target_score(target),
