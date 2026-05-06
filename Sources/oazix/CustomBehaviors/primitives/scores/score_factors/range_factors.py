@@ -30,10 +30,12 @@ class Agents_in_Range_Skill_Aware_Factors(Agents_in_Range_Factors):
             self,
             agents_nearby_factor: ScorePerAgentQuantityDefinition,
             short_range_divisor: float = 10.0,
+            no_score_fallback: float = 0.0,
     ):
         super().__init__()
         self.callable_score: ScorePerAgentQuantityDefinition = agents_nearby_factor
         self.short_range_divisor = short_range_divisor
+        self.no_score_fallback = no_score_fallback
 
     def get_score_for_agent_count(self, agent_quantity: int) -> float | None:
         return self.callable_score.get_score(agent_quantity)
@@ -45,7 +47,7 @@ class Agents_in_Range_Skill_Aware_Factors(Agents_in_Range_Factors):
     ):
         nearby_weight = self.get_score_for_agent_count(enemy_quantity_within_range)
         if nearby_weight is None:
-            nearby_weight = 0
+            nearby_weight = self.no_score_fallback
         if short_range:
             nearby_weight /= self.short_range_divisor
         return score_max, score_min, score_offset + nearby_weight
@@ -68,9 +70,11 @@ class Agents_in_Range_Simple_Factors(Agents_in_Range_Factors):
     def __init__(
             self,
             agents_nearby_factor: ScorePerAgentQuantityDefinition,
+            no_score_fallback: float = 0.0,
     ):
         super().__init__()
         self.callable_score: ScorePerAgentQuantityDefinition = agents_nearby_factor
+        self.no_score_fallback = no_score_fallback
 
     def get_score_for_agent_count(self, agent_quantity: int) -> float | None:
         return self.callable_score.get_score(agent_quantity)
@@ -82,7 +86,7 @@ class Agents_in_Range_Simple_Factors(Agents_in_Range_Factors):
     ):
         nearby_weight = self.get_score_for_agent_count(enemy_quantity_within_range)
         if nearby_weight is None:
-            nearby_weight = 0
+            nearby_weight = self.no_score_fallback
         return score_max, score_min, score_offset + nearby_weight
 
     @override

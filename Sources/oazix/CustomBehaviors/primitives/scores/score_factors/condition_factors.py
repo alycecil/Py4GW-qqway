@@ -25,12 +25,22 @@ class condition_factor_prefer_omni(Condition_Factors):
             bleeding_offset: float = 1.0,
             poisoned_offset: float = 1.0,
             crippled_offset: float = 1.001,
+            not_deep_wound_offset: float = 0.0,
+            not_knocked_down_offset: float = 0.0,
+            not_bleeding_offset: float = 0.0,
+            not_poisoned_offset: float = 0.0,
+            not_crippled_offset: float = 0.0,
     ):
         self.deep_wound_offset = deep_wound_offset
         self.knocked_down_offset = knocked_down_offset
         self.bleeding_offset = bleeding_offset
         self.poisoned_offset = poisoned_offset
         self.crippled_offset = crippled_offset
+        self.not_deep_wound_offset = not_deep_wound_offset
+        self.not_knocked_down_offset = not_knocked_down_offset
+        self.not_bleeding_offset = not_bleeding_offset
+        self.not_poisoned_offset = not_poisoned_offset
+        self.not_crippled_offset = not_crippled_offset
 
     def condition_factor(
             self,
@@ -39,28 +49,38 @@ class condition_factor_prefer_omni(Condition_Factors):
     ):
         if Agent.IsDeepWounded(target_agent_id):
             score_offset += self.deep_wound_offset
+        else:
+            score_offset += self.not_deep_wound_offset
 
         if Agent.IsKnockedDown(target_agent_id):
             score_offset += self.knocked_down_offset
+        else:
+            score_offset += self.not_knocked_down_offset
 
         if Agent.IsBleeding(target_agent_id):
             score_offset += self.bleeding_offset
+        else:
+            score_offset += self.not_bleeding_offset
 
         if Agent.IsPoisoned(target_agent_id):
             score_offset += self.poisoned_offset
+        else:
+            score_offset += self.not_poisoned_offset
 
         if Agent.IsCrippled(target_agent_id):
             score_offset += self.crippled_offset
+        else:
+            score_offset += self.not_crippled_offset
 
         return score_max, score_min, score_offset
 
     @override
     def score_definition_debug_ui(self) -> str:
-        return f"""prefer deep wound += {self.deep_wound_offset}
-knocked down += {self.knocked_down_offset}
-bleeding += {self.bleeding_offset}
-poisoned += {self.poisoned_offset}
-crippled += {self.crippled_offset}"""
+        return f"""prefer deep wound += {self.deep_wound_offset} (not deep wound += {self.not_deep_wound_offset})
+knocked down += {self.knocked_down_offset} (not knocked down += {self.not_knocked_down_offset})
+bleeding += {self.bleeding_offset} (not bleeding += {self.not_bleeding_offset})
+poisoned += {self.poisoned_offset} (not poisoned += {self.not_poisoned_offset})
+crippled += {self.crippled_offset} (not crippled += {self.not_crippled_offset})"""
 
 
 class condition_factor_crippled(Condition_Factors):

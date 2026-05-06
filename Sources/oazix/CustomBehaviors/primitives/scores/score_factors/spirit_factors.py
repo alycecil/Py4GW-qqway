@@ -11,11 +11,17 @@ class spirit_factor_DefaultScoreFactors(ScoreDefinition):
             score_offset: float = -15,
             score_max: float = -25,
             score_min: float = 0,
+            not_spirit_score_offset: float = 0.0,
+            not_spirit_score_max: float = 0.0,
+            not_spirit_score_min: float = 0.0,
     ):
         super().__init__()
         self.score_offset: float = score_offset
         self.score_max: float = score_max
         self.score_min: float = score_min
+        self.not_spirit_score_offset: float = not_spirit_score_offset
+        self.not_spirit_score_max: float = not_spirit_score_max
+        self.not_spirit_score_min: float = not_spirit_score_min
 
     def spirit_factor(
             self,
@@ -26,6 +32,10 @@ class spirit_factor_DefaultScoreFactors(ScoreDefinition):
             score_offset += self.score_offset
             score_max += self.score_max
             score_min += self.score_min
+        else:
+            score_offset += self.not_spirit_score_offset
+            score_max += self.not_spirit_score_max
+            score_min += self.not_spirit_score_min
 
         return score_max, score_min, score_offset
 
@@ -40,8 +50,11 @@ class never_target_spirits_factor(spirit_factor_DefaultScoreFactors):
             score_offset: float = 0,
             score_max: float = 0,
             score_min: float = 0,
+            not_spirit_score_offset: float = 0.0,
+            not_spirit_score_max: float = 0.0,
+            not_spirit_score_min: float = 0.0,
     ):
-        super().__init__(score_offset, score_max, score_min)
+        super().__init__(score_offset, score_max, score_min, not_spirit_score_offset, not_spirit_score_max, not_spirit_score_min)
 
     def spirit_factor(
             self,
@@ -52,6 +65,10 @@ class never_target_spirits_factor(spirit_factor_DefaultScoreFactors):
             score_offset = self.score_offset
             score_max = self.score_max
             score_min = self.score_min
+        else:
+            score_offset += self.not_spirit_score_offset
+            score_max += self.not_spirit_score_max
+            score_min += self.not_spirit_score_min
 
         return score_max, score_min, score_offset
 

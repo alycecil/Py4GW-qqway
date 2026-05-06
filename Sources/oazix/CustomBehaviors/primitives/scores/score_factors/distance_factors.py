@@ -33,6 +33,8 @@ class DistanceFactors_Simple(DistanceFactors):
             twice_area_long_range: float = 0.5,
             earshot_short_range: float = 1,
             earshot_long_range: float = 0.1,
+            beyond_earshot_short_range: float = 0.0,
+            beyond_earshot_long_range: float = 0.0,
     ):
         self.touch_short_range = touch_short_range
         self.touch_long_range = touch_long_range
@@ -46,6 +48,8 @@ class DistanceFactors_Simple(DistanceFactors):
         self.twice_area_long_range = twice_area_long_range
         self.earshot_short_range = earshot_short_range
         self.earshot_long_range = earshot_long_range
+        self.beyond_earshot_short_range = beyond_earshot_short_range
+        self.beyond_earshot_long_range = beyond_earshot_long_range
 
     def distance_factor(
             self,
@@ -65,6 +69,8 @@ class DistanceFactors_Simple(DistanceFactors):
             score_offset += self.twice_area_short_range if short_range else self.twice_area_long_range
         elif distance < Range.Earshot.value:
             score_offset += self.earshot_short_range if short_range else self.earshot_long_range
+        else:
+            score_offset += self.beyond_earshot_short_range if short_range else self.beyond_earshot_long_range
         return score_max, score_min, score_offset
 
     @override
@@ -88,6 +94,7 @@ class DistanceFactors_Short(DistanceFactors):
                  area=3,
                  twice_area=2,
                  earshot=1,
+                 beyond_earshot=0,
                  ) -> None:
         self.touch = touch
         self.adjacent = adjacent
@@ -95,8 +102,8 @@ class DistanceFactors_Short(DistanceFactors):
         self.area = area
         self.twice_area = twice_area
         self.earshot = earshot
+        self.beyond_earshot = beyond_earshot
 
-    # todo constructor
     def distance_factor(
             self,
             score_max, score_min, score_offset,
@@ -115,6 +122,8 @@ class DistanceFactors_Short(DistanceFactors):
             score_offset += self.twice_area
         elif distance < Range.Earshot.value:
             score_offset += self.earshot
+        else:
+            score_offset += self.beyond_earshot
         return score_max, score_min, score_offset
 
     @override

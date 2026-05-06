@@ -19,6 +19,9 @@ class Health_Factors(ScoreDefinition):
             high_health_max: float = 1.0,
             high_health_min: float = 1.0,
             high_health_offset: float = 1,
+            full_health_max: float = 0.0,
+            full_health_min: float = 0.0,
+            full_health_offset: float = 0.0,
             very_low_health_threshold: float = 0.15,
             low_health_threshold: float = 0.5,
             medium_health_threshold: float = 0.75,
@@ -36,6 +39,9 @@ class Health_Factors(ScoreDefinition):
         self.high_health_max = high_health_max
         self.high_health_min = high_health_min
         self.high_health_offset = high_health_offset
+        self.full_health_max = full_health_max
+        self.full_health_min = full_health_min
+        self.full_health_offset = full_health_offset
         self.very_low_health_threshold = very_low_health_threshold
         self.low_health_threshold = low_health_threshold
         self.medium_health_threshold = medium_health_threshold
@@ -69,6 +75,10 @@ class Health_Factors(ScoreDefinition):
             score_max += self.high_health_max
             score_min += self.high_health_min
             score_offset += self.high_health_offset
+        else:
+            score_max += self.full_health_max
+            score_min += self.full_health_min
+            score_offset += self.full_health_offset
         return score_max, score_min, score_offset
 
     @override
