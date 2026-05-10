@@ -183,7 +183,6 @@ _PARTY_SPAMMABLE: List[Tuple[str, int, int]] = [
 
 _PARTY_SPAMMABLE_TONICS: List[Tuple[str, int, int]] = [
     ("Minutely Mad King Tonic", ModelID.Minutely_Mad_King_Tonic.value, 3),
-    ("Transmogrifier Tonic",    ModelID.Transmogrifier_Tonic.value,    2),
     ("Yuletide Tonic",          ModelID.Yuletide_Tonic.value,          2),
     ("Zaishen Tonic",           ModelID.Zaishen_Tonic.value,           3),
 ]
@@ -208,6 +207,7 @@ _PARTY_NORMAL_TONICS: List[Tuple[str, int, int]] = [
     ("Skeletonic Tonic",           ModelID.Skeletonic_Tonic.value,           2),
     ("Trapdoor Tonic",             ModelID.Trapdoor_Tonic.value,             2),
     ("Unseen Tonic",               ModelID.Unseen_Tonic.value,               2),
+    ("Transmogrifier Tonic",    ModelID.Transmogrifier_Tonic.value,    2),
 ]
 
 _ALCOHOL: List[Tuple[str, int, int]] = [
