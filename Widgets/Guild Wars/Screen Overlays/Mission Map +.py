@@ -422,7 +422,7 @@ def _snap_launch_path_coroutine(goal_x: float, goal_y: float, mm: "MissionMap"):
 def _snap_launch_bt_move_coroutine(goal_x: float, goal_y: float, mm: "MissionMap", generation: int):
     """Coroutine: run BottingTree MoveTo and allow cancellation via generation token."""
     mm.snap_move_running = True
-    move_tree = RoutinesBT.Player.Move(goal_x, goal_y, log=False)
+    move_tree = RoutinesBT.Movement.Move(goal_x, goal_y, log=False)
     mm.snap_bt_move_tree = move_tree
     try:
         while generation == mm.snap_move_generation:
