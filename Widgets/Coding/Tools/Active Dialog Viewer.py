@@ -115,6 +115,9 @@ def _draw_buttons() -> None:
         PyImGui.text(f"dialog_id: 0x{button.dialog_id:X} ({button.dialog_id})")
         PyImGui.text(f"button_icon: {button.button_icon}")
         PyImGui.text(f"decode_pending: {button.message_decode_pending}")
+        if  PyImGui.button(f"copy dialog to clipboard##copy_button_{index}"):
+            PyImGui.set_clipboard_text(f"0x{button.dialog_id:X}")
+
         if PyImGui.button(f"{IconsFontAwesome5.ICON_RSS} Send##dialog_button_{index}"):
             Player.SendAutomaticDialog(index)
         PyImGui.same_line(0, -1)
@@ -132,19 +135,19 @@ def _draw_buttons() -> None:
 def _draw_multibox_controls() -> None:
     """Draw multibox dialog controls"""
     global default_dialog_string
-    
+
     PyImGui.separator()
     PyImGui.text("Multibox Controls")
     PyImGui.separator()
-    
+
     default_dialog_string = ImGui.input_text("Dialog Id", default_dialog_string, 0)
-    
+
     if PyImGui.button(f"{IconsFontAwesome5.ICON_CROSSHAIRS} Send Dialog to All"):
         _send_dialog()
     PyImGui.same_line(0, -1)
     if PyImGui.button(f"{IconsFontAwesome5.ICON_CROSSHAIRS} Interact"):
         _start_dialog_with_npc()
-    
+
     PyImGui.text_wrapped("Ctrl+Shift+Click on dialog buttons to send to all accounts")
 
 
@@ -340,6 +343,10 @@ def _send_dialog_for_all(dialog_string: str, dialog_id: int, include_sender: boo
 
 
 def main():
+    from Py4GWCoreLib.Routines import Checks
+    if not Checks.Map.MapValid():
+        return
+
     global _dialog_was_active
     try:
         dialog_active = PyDialog.PyDialog.is_dialog_active()
@@ -361,10 +368,10 @@ def main():
                     ImGui.end_tab_item()
             PyImGui.end_tab_bar()
         PyImGui.end()
-        
+
         # Draw multibox overlay
         _draw_dialog_overlay()
-        
+
     except Exception as e:
         Py4GW.Console.Log(MODULE_NAME, f"Error: {e}", Py4GW.Console.MessageType.Error)
         Py4GW.Console.Log(MODULE_NAME, traceback.format_exc(), Py4GW.Console.MessageType.Error)
