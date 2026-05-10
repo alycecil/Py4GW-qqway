@@ -50,6 +50,15 @@ class WarriorSkillsProvider:
             distance_factor=DistanceFactors_Short(),
             override_skill_range=Range.Touch.value,
         ))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Thrill_of_Victory"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 12 if enemy_qte >= 3 else 10),
+            custom_agent_targeting_predicate=lambda agent_id: Agent.GetHealth(agent_id) < 0.5 < Agent.GetHealth(Player.GetAgentID()),
+            distance_factor=DistanceFactors_Short(),
+            override_skill_range=Range.Touch.value,
+        ))
         # Warrior # AOE
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
