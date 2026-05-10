@@ -36,10 +36,6 @@ widget_window_pos:tuple[float, float] = (0,0)
 MODULE_NAME = "Custom Behaviors: Utility AI"
 MODULE_ICON = "Textures/Module_Icons/Custom Behaviors.png"
 
-to_hex : str = "?"
-dialog_int : int = 0
-
-
 def gui():
 
     # PyImGui.set_next_window_size(260, 650)
