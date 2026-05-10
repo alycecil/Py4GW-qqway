@@ -343,6 +343,11 @@ class Attribute(IntEnum):
     EarthPrayers = 43
     Mysticism = 44
     None_ = 45  # Avoiding reserved keyword "None"
+    Festival46 = 46
+    Festival47 = 47
+    Festival48 = 48
+    Festival49 = 49
+    Festival50 = 50
     
     def get_profession(self) -> Profession:
         return _ATTRIBUTE_TO_PROFESSION.get(self, Profession._None)
@@ -409,6 +414,11 @@ AttributeNames = {
     Attribute.EarthPrayers: "Earth Prayers",
     Attribute.Mysticism: "Mysticism",
     Attribute.None_: "None",
+    Attribute.Festival46: "Festival46",
+    Attribute.Festival47: "Festival47",
+    Attribute.Festival48: "Festival48",
+    Attribute.Festival49: "Festival49",
+    Attribute.Festival50: "Festival50",
 }
 
 PROFESSION_ATTRIBUTES : dict[Profession, list[Attribute]] = {
