@@ -28,6 +28,7 @@ from Sources.oazix.CustomBehaviors.skills.common.scroll_of_resurrection_utility 
 from Sources.oazix.CustomBehaviors.skills.deamon.death_detection import DeathDetectionUtility
 from Sources.oazix.CustomBehaviors.skills.deamon.map_changed import MapChangedUtility
 from Sources.oazix.CustomBehaviors.skills.deamon.stuck_detection import StuckDetectionUtility
+from Sources.oazix.CustomBehaviors.skills.following.catch_up_party_leader_utility import CatchUpPartyLeaderUtility
 from Sources.oazix.CustomBehaviors.skills.following.follow_flag_utility import FollowFlagUtility
 from Sources.oazix.CustomBehaviors.skills.following.follow_party_leader_utility import FollowPartyLeaderUtility
 from Sources.oazix.CustomBehaviors.skills.following.spread_during_combat_utility import SpreadDuringCombatUtility
@@ -76,6 +77,7 @@ class CustomBehaviorBaseUtility():
             FollowPartyLeaderUtility(event_bus=self.event_bus, current_build=self.in_game_build),
             FollowFlagUtility(event_bus=self.event_bus, current_build=self.in_game_build),
             SpreadDuringCombatUtility(event_bus=self.event_bus, current_build=self.in_game_build),
+            CatchUpPartyLeaderUtility(event_bus=self.event_bus, current_build=self.in_game_build),
 
             # BLESSING
             TakeNearBlessingUtility(event_bus=self.event_bus, current_build=self.in_game_build),
