@@ -37,6 +37,7 @@ class WieldersBoonUtility(CustomSkillUtilityBase):
             within_range=Range.Spellcast.value * 1.2,
             condition=lambda agent_id: Agent.IsWeaponSpelled(agent_id) and Agent.GetHealth(agent_id) < 0.7,
             sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC),
+            allow_pets=False,
         )
 
     @override

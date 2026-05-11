@@ -52,7 +52,8 @@ class BreathOfTheGreatDwarfUtility(CustomSkillUtilityBase):
                 and custom_behavior_helpers.Resources.is_ally_under_specific_effect(agent_id, burning_skill_id),
             sort_key= (TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC),
             range_to_count_enemies=None,
-            range_to_count_allies=None)
+            range_to_count_allies=None,
+            allow_pets=False)
 
         if len(allies) > 1: return self.score_definition.get_score(HealingScore.PARTY_DAMAGE)
 

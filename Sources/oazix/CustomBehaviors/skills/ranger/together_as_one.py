@@ -43,7 +43,8 @@ class TogetherAsOneUtility(CustomSkillUtilityBase):
         if state is BehaviorState.IN_AGGRO:
             allies = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
                 within_range=Range.Spellcast.value,
-                condition=lambda agent_id: agent_id != Player.GetAgentID()
+                condition=lambda agent_id: agent_id != Player.GetAgentID(),
+                allow_pets=False
             )
             agent_ids: list[int] = [a.agent_id for a in allies]
 

@@ -45,7 +45,8 @@ class ProtectiveBondUtility(CustomSkillUtilityBase):
                 condition=lambda agent_id: self.get_plugin_targeting_modifiers_filtering_predicate_any()(agent_id), # todo not already under
                 sort_key=(TargetingOrder.DISTANCE_ASC,),
                 range_to_count_enemies=None,
-                range_to_count_allies=None)
+                range_to_count_allies=None,
+                allow_pets=False)
 
         if targets is None: return None
         if len(targets) == 0: return None

@@ -762,12 +762,16 @@ class Targets:
             sort_key: tuple[TargetingOrder, ...] | None = None,
             range_to_count_enemies: float | None = None,
             range_to_count_allies: float | None = None,
-            is_alive: bool = True) -> list[SortableAgentData]:
+            is_alive: bool = True,
+            allow_pets: bool = True,
+    ) -> list[SortableAgentData]:
 
         with EvalProfiler().measure("ally_targeting"):
             player_pos: tuple[float, float] = Player.GetXY()
             all_agent_ids: list[int] = AgentArray.GetAllyArray() # only 8 team members  (no pets, no npc-allies)
-            all_agent_pets = [agent_id for agent_id in AgentArray.GetSpiritPetArray() if Agent.IsPet(agent_id)] # add pets
+            all_agent_pets = []
+            if allow_pets:
+                all_agent_pets = [agent_id for agent_id in AgentArray.GetSpiritPetArray() if Agent.IsPet(agent_id)] # add pets
             all_agent_ids = all_agent_ids + all_agent_pets
 
             all_enemies_ids: list[int] = AgentArray.GetEnemyArray()
@@ -1064,36 +1068,47 @@ class Targets:
 class Heals:
 
     @staticmethod
-    def is_party_damaged(within_range:float, min_allies_count:int, less_health_than_percent:float) -> bool:
+    def is_party_damaged(within_range:float, min_allies_count:int, less_health_than_percent:float,
+                         allow_pets: bool = False,
+                         ) -> bool:
 
         allies = Targets.get_all_possible_allies_ordered_by_priority_raw(
             within_range=within_range,
             condition= lambda agent_id: Agent.GetHealth(agent_id) < less_health_than_percent,
             sort_key= (TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC),
             range_to_count_enemies=None,
-            range_to_count_allies=None)
+            range_to_count_allies=None,
+            allow_pets=allow_pets,
+        )
 
         if len(allies) < min_allies_count: return False
         return True
 
     @staticmethod
-    def party_average_health(within_range:float) -> float:
+    def party_average_health(within_range:float,
+                             allow_pets: bool = False,
+                             ) -> float:
         allies : list[SortableAgentData] = Targets.get_all_possible_allies_ordered_by_priority_raw(
             within_range=within_range,
             condition= lambda agent_id: True,
             sort_key= (TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC),
+            allow_pets=allow_pets
         )
         return reduce(lambda acc, ally: acc + Agent.GetHealth(ally.agent_id), allies, 0) / len(allies)
 
     @staticmethod
-    def get_first_member_damaged(within_range: float, less_health_than_percent: float, exclude_player:bool, condition: Optional[Callable[[int], bool]] = None) -> int | None:
+    def get_first_member_damaged(
+            within_range: float, less_health_than_percent: float, exclude_player:bool, condition: Optional[Callable[[int], bool]] = None,
+            allow_pets: bool = False,
+    ) -> int | None:
 
         allies = Targets.get_all_possible_allies_ordered_by_priority_raw(
             within_range=within_range,
             condition=lambda agent_id: Agent.GetHealth(agent_id) < less_health_than_percent,
             sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC),
             range_to_count_enemies=None,
-            range_to_count_allies=None)
+            range_to_count_allies=None,
+            allow_pets=allow_pets)
 
         if exclude_player:
             allies = AgentArray.Filter.ByCondition(allies, lambda agent_id: agent_id != Player.GetAgentID())

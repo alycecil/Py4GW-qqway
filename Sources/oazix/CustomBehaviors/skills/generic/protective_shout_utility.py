@@ -42,7 +42,8 @@ class ProtectiveShoutUtility(CustomSkillUtilityBase):
             within_range=Range.Earshot.value,
             condition=lambda agent_id: Agent.GetHealth(agent_id) < self.allies_health_less_than_percent
                and not custom_behavior_helpers.Resources.is_ally_under_specific_effect(agent_id, self.custom_skill.skill_id),
-            sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC))
+            sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC),
+            allow_pets=False)
         
         if len(targets) == 0: return None
         if len(targets) < self.allies_quantity_required: return None

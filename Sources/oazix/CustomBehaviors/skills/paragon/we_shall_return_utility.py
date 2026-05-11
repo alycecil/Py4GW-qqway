@@ -56,6 +56,7 @@ class WeShallReturnUtility(CustomSkillUtilityBase):
             sort_key=(TargetingOrder.DISTANCE_ASC,),
             is_alive=False,
             condition=lambda aid: aid not in self._blocked_targets,
+            allow_pets=False,
         )
 
     @override

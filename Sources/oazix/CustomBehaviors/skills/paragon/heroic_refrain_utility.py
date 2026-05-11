@@ -60,7 +60,8 @@ class HeroicRefrainUtility(CustomSkillUtilityBase):
                                            and not custom_behavior_helpers.Resources.is_ally_under_specific_effect(agent_id, self.custom_skill.skill_id),
                 sort_key=(TargetingOrder.DISTANCE_ASC, TargetingOrder.CASTER_THEN_MELEE),
                 range_to_count_enemies=None,
-                range_to_count_allies=None)
+                range_to_count_allies=None,
+                allow_pets=False)
         
         # sort by priority
         targets.sort(key=lambda target: self.get_plugin_targeting_modifiers_ordering_predicate()(target.agent_id))

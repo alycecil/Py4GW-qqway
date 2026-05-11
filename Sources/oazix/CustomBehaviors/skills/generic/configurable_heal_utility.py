@@ -34,6 +34,7 @@ class ConfigurableHealUtility(CustomSkillUtilityBase):
         mana_required_to_cast: int = 0,
         allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO, BehaviorState.FAR_FROM_AGGRO],
         should_target_player: bool = True,
+        allow_pets: bool = False,
     ) -> None:
 
         super().__init__(
@@ -49,6 +50,7 @@ class ConfigurableHealUtility(CustomSkillUtilityBase):
 
         self.add_plugin_targetting_modifier(lambda x: BuffConfigurator(event_bus, self.custom_skill, buff_configuration_per_profession= BuffConfigurationPerProfession.BUFF_CONFIGURATION_ALL))
         self.add_plugin_targetting_modifier(lambda x: ShouldTargetPlayer(x.custom_skill, should_target_player))
+        self.allow_pets = allow_pets
 
     def _get_targets(self) -> list[custom_behavior_helpers.SortableAgentData]:
 
@@ -59,6 +61,7 @@ class ConfigurableHealUtility(CustomSkillUtilityBase):
                 and self.get_plugin_targeting_modifiers_filtering_predicate_all()(agent_id)
             ),
             sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC),
+            allow_pets=self.allow_pets
         )
         return targets
 

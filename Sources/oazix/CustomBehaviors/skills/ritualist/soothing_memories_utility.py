@@ -37,7 +37,8 @@ class SoothingMemoriesUtility(CustomSkillUtilityBase):
         targets: list[custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
             within_range=Range.Spirit.value,
             condition=lambda agent_id: Agent.GetHealth(agent_id) < 0.9,
-            sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC)
+            sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC),
+            allow_pets=False
         )
         
         if len(targets) == 0: return None

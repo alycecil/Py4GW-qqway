@@ -41,6 +41,7 @@ class MendingGripUtility(CustomSkillUtilityBase):
                 and Agent.GetHealth(agent_id) < 0.8
             ),
             sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC),
+            allow_pets=False,
         )
 
     @override

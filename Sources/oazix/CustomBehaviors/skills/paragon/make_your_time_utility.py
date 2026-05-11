@@ -35,7 +35,8 @@ class MakeYourTimeUtility(CustomSkillUtilityBase):
         # how much allies in earshot
         allies = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
             within_range=Range.Earshot.value,
-            condition=lambda agent_id: agent_id != Player.GetAgentID()
+            condition=lambda agent_id: agent_id != Player.GetAgentID(),
+            allow_pets=False
         )
 
         return min(len(allies), 6)

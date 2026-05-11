@@ -36,7 +36,8 @@ class EbonBattleStandardOfWisdom(CustomSkillUtilityBase):
         buff_predicate = self.get_plugin_targeting_modifiers_filtering_predicate_any()
         allies = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
             within_range=Range.Spellcast.value,
-            condition=lambda agent_id: agent_id != Player.GetAgentID() and buff_predicate(agent_id)
+            condition=lambda agent_id: agent_id != Player.GetAgentID() and buff_predicate(agent_id),
+            allow_pets=False
         )
         return [a.agent_id for a in allies]
 

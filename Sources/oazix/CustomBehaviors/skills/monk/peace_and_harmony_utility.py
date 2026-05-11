@@ -71,7 +71,8 @@ class PeaceAndHarmonyUtility(CustomSkillUtilityBase):
         by_priority_raw: list[custom_behavior_helpers.SortableAgentData] = custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
             within_range=Range.Spellcast.value * 1.2,
             condition=lambda agent_id: Agent.IsHexed(agent_id) or Agent.IsConditioned(agent_id),
-            sort_key=(TargetingOrder.HEX_PRIORITY_LEVEL_DESC, TargetingOrder.CONDITION_PRIORITY_LEVEL_DESC, )
+            sort_key=(TargetingOrder.HEX_PRIORITY_LEVEL_DESC, TargetingOrder.CONDITION_PRIORITY_LEVEL_DESC, ),
+            allow_pets=False
         )
 
         by_priority_raw.sort(key=lambda target: (

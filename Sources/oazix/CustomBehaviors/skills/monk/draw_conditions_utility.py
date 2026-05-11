@@ -39,6 +39,7 @@ class DrawConditionsUtility(CustomSkillUtilityBase):
             within_range=Range.Spellcast.value * 1.2,
             condition=lambda agent_id: Agent.IsConditioned(agent_id) and agent_id != player_agent_id,
             sort_key=(TargetingOrder.CONDITION_PRIORITY_LEVEL_DESC, TargetingOrder.MELEE_THEN_CASTER, TargetingOrder.HP_ASC),
+            allow_pets=False,
         )
 
     def _get_lock_key(self, agent_id: int) -> str:

@@ -52,7 +52,8 @@ class ScrollOfResurrectionUtility(CustomSkillUtilityBase):
             within_range=Range.Earshot.value,
             condition=lambda agent_id: agent_id != player_agent_id,
             is_alive=False,
-            sort_key=(TargetingOrder.DISTANCE_ASC,)
+            sort_key=(TargetingOrder.DISTANCE_ASC,),
+            allow_pets=False
         )
         return dead_allies
 

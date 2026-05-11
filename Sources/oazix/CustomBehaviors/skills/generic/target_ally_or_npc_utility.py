@@ -45,7 +45,8 @@ class TargetAllyWithMostEnemiesNearby(CustomSkillUtilityBase):
             within_range=Range.Spellcast.value * 1.2,
             sort_key=(TargetingOrder.ENEMIES_QUANTITY_WITHIN_RANGE_DESC, TargetingOrder.HP_ASC),
             range_to_count_allies=None,
-            range_to_count_enemies=max(GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id), Range.Adjacent.value)
+            range_to_count_enemies=max(GLOBAL_CACHE.Skill.Data.GetAoERange(self.custom_skill.skill_id), Range.Adjacent.value),
+            allow_pets=True
         )
 
         vanguard = self._get_vanguard()

@@ -35,6 +35,7 @@ class ShouldReserveEnergyForRez(UtilitySkillPrecondition):
             within_range=Range.Spellcast.value * 1.5,
             sort_key=(TargetingOrder.DISTANCE_ASC,),
             is_alive=False,
+            allow_pets=False,
         )
         if not dead:
             return True

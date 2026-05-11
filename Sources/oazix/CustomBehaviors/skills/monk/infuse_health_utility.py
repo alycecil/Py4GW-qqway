@@ -66,6 +66,7 @@ class InfuseHealthUtility(CustomSkillUtilityBase):
             within_range=Range.Spellcast.value,
             condition=lambda agent_id: agent_id != player_agent, # we accept healing full life allies
             sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC),
+            allow_pets=False
         )
         return targets
 

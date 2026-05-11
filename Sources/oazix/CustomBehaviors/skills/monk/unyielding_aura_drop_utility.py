@@ -54,7 +54,8 @@ class UnyieldingAuraDropUtility(CustomSkillUtilityBase):
         return custom_behavior_helpers.Targets.get_all_possible_allies_ordered_by_priority_raw(
             within_range=Range.Earshot.value,
             sort_key=(TargetingOrder.DISTANCE_ASC,),
-            is_alive=False
+            is_alive=False,
+            allow_pets=False
         )
 
     @override

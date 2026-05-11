@@ -48,7 +48,8 @@ class ProtectiveSpiritUtility(CustomSkillUtilityBase):
                 not Routines.Checks.Effects.HasBuff(agent_id, self.custom_skill.skill_id) and
                 self.get_plugin_targeting_modifiers_filtering_predicate_any()(agent_id)
             ),
-            sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC))
+            sort_key=(TargetingOrder.HP_ASC, TargetingOrder.DISTANCE_ASC),
+            allow_pets=False)
         return targets
 
     @override
