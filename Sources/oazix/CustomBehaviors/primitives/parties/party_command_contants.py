@@ -1,3 +1,4 @@
+from Py4GWCoreLib import PyImGui, Color, ImGui
 import random
 from typing import Generator, Any
 from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
@@ -45,13 +46,20 @@ class PartyCommandConstants:
                 if account.AccountEmail == account_email:
                     continue
                 if constants.DEBUG: print(f"SendMessage {account_email} to {account.AccountEmail}")
-                if (self_account.AgentData.Map.MapID == account.AgentData.Map.MapID and
+
+                io = PyImGui.get_io()
+                if io.key_shift:
+                    GLOBAL_CACHE.Party.Players.InvitePlayer(account.AgentData.CharacterName)
+                    GLOBAL_CACHE.ShMem.SendMessage(account_email, account.AccountEmail, SharedCommandType.InviteToParty, (0,0,0,0))
+                    yield from custom_behavior_helpers.Helpers.wait_for(333)
+
+                elif (self_account.AgentData.Map.MapID == account.AgentData.Map.MapID and
                     self_account.AgentData.Map.Region == account.AgentData.Map.Region and
                     self_account.AgentData.Map.District == account.AgentData.Map.District and
                     self_account.AgentPartyData.PartyID != account.AgentPartyData.PartyID):
                     GLOBAL_CACHE.Party.Players.InvitePlayer(account.AgentData.CharacterName)
                     GLOBAL_CACHE.ShMem.SendMessage(account_email, account.AccountEmail, SharedCommandType.InviteToParty, (0,0,0,0))
-                    yield from custom_behavior_helpers.Helpers.wait_for(300)
+                    yield from custom_behavior_helpers.Helpers.wait_for(333)
     
     @staticmethod
     def leave_current_party() -> Generator[Any, None, None]:
