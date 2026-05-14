@@ -120,14 +120,36 @@ class RangerSkillsProvider:
         )
         skills.append(qz_util)
         skills.append(serpents_quickness_prep_utility)
+
+        common_scoring = ScorePerAgentQuantityDefinition(
+            lambda enemy_qte: 16 if enemy_qte >= 2 else 13 if enemy_qte == 1 else 10)
+
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
             skill=CustomSkill("Dual_Shot"),
             current_build=in_game_build,
-            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 16 if enemy_qte >= 2 else 13 if enemy_qte == 1 else 10),
+            score_definition=common_scoring,
             mana_required_to_cast=10,
             ignore_spirits=True,
-            override_skill_range=Range.Touch.value,
+            override_skill_range=Range.Earshot.value,
+        ))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Power_Shot"),
+            current_build=in_game_build,
+            score_definition=common_scoring,
+            mana_required_to_cast=10,
+            ignore_spirits=True,
+            override_skill_range=Range.Earshot.value,
+        ))
+
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus, skill=CustomSkill("Troll_Unguent"), current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(10), mana_required_to_cast=15,
+            renew_before_expiration_in_milliseconds=0,
+            allowed_states=[BehaviorState.IN_AGGRO],
+            target_self=False,
+            after_cast_delay=False,
         ))
         
         return skills
