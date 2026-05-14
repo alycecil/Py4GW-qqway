@@ -1,4 +1,4 @@
-from Py4GWCoreLib import Botting, get_texture_for_model, ModelID, AutoPathing
+from Py4GWCoreLib import Botting, get_texture_for_model, ModelID, AutoPathing, GLOBAL_CACHE
 import PyImGui
 
 BOT_NAME = "Alkar's Concoction Item Getter"
@@ -12,17 +12,26 @@ MOVE_TO = (10, -831)
 bot = Botting(BOT_NAME)
 
 
+def condition():
+    item_id = GLOBAL_CACHE.Inventory.GetFirstModelID(ALKARS_CONCOCTION)
+
+    if not item_id:
+        return True  # nothing to deposit
+    return False
+
+
 def Routine(bot: Botting) -> None:
     bot.States.AddHeader(BOT_NAME)
     bot.Map.Travel(OUTPOST_TO_TRAVEL)
-    bot.States.AddHeader(f"{BOT_NAME}_loop")
-    bot.Wait.ForTime(333)
-    bot.Items.Deposit(ALKARS_CONCOCTION)
     bot.Wait.ForTime(100)
     bot.Move.XY(MOVE_TO[0], MOVE_TO[1])
-    bot.Move.XYAndDialog(-5.00, -911.00, 0x835C05)
-    bot.Wait.ForTime(333)
+    bot.Wait.ForTime(133)
+    bot.States.AddHeader(f"{BOT_NAME}_loop")
     bot.Items.Deposit(ALKARS_CONCOCTION)
+    bot.Move.XYAndDialog(-5.00, -911.00, 0x835C05)
+    bot.Wait.ForTime(123)
+    bot.Items.Deposit(ALKARS_CONCOCTION)
+    bot.Wait.UntilCondition(condition)
     bot.States.JumpToStepName(f"[H]{BOT_NAME}_loop_2")
 
 
