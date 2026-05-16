@@ -43,12 +43,21 @@ class WarriorSkillsProvider:
             custom_agent_targeting_predicate=lambda agent_id: Agent.IsKnockedDown(agent_id) and Utils.Distance(
                 Player.GetXY(), Agent.GetXY(agent_id)) < Range.Adjacent.value
         ))
+        distance_factors_short = DistanceFactors_Short(
+            touch=50,
+            adjacent=20,
+            nearby=10,
+            area=3,
+            twice_area=2,
+            earshot=1,
+            beyond_earshot=0,
+        )
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
             skill=CustomSkill("Soldiers_Strike"),
             current_build=in_game_build,
             score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 12 if enemy_qte >= 3 else 10),
-            distance_factor=DistanceFactors_Short(),
+            distance_factor=distance_factors_short,
             override_skill_range=Range.Touch.value,
         ))
         skills.append(RawAoeAttackUtility(
@@ -57,7 +66,7 @@ class WarriorSkillsProvider:
             current_build=in_game_build,
             score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 12 if enemy_qte >= 3 else 10),
             custom_agent_targeting_predicate=lambda agent_id: Agent.GetHealth(agent_id) < 0.5 < Agent.GetHealth(Player.GetAgentID()),
-            distance_factor=DistanceFactors_Short(),
+            distance_factor=distance_factors_short,
             override_skill_range=Range.Touch.value,
         ))
         # Warrior # AOE
@@ -70,6 +79,7 @@ class WarriorSkillsProvider:
             mana_required_to_cast=0,
             ignore_spirits=True,
             override_skill_range=Range.Adjacent.value,
+            distance_factor=distance_factors_short,
         ))
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
@@ -80,6 +90,7 @@ class WarriorSkillsProvider:
             mana_required_to_cast=0,
             ignore_spirits=True,
             override_skill_range=Range.Touch.value,
+            distance_factor=distance_factors_short,
         ))
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
@@ -90,6 +101,7 @@ class WarriorSkillsProvider:
             mana_required_to_cast=0,
             ignore_spirits=True,
             override_skill_range=Range.Touch.value,
+            distance_factor=distance_factors_short,
         ))
 
         # Common support for this archetype
@@ -143,6 +155,7 @@ class WarriorSkillsProvider:
             mana_required_to_cast=0,
             ignore_spirits=True,
             override_skill_range=Range.Adjacent.value,
+            distance_factor=distance_factors_short,
         ))
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
@@ -155,6 +168,7 @@ class WarriorSkillsProvider:
             custom_agent_targeting_predicate=lambda agent_id: Agent.IsCasting(agent_id),
             within_range=Range.Touch,
             override_skill_range=Range.Touch.value,
+            distance_factor=distance_factors_short,
         ))
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
@@ -167,6 +181,7 @@ class WarriorSkillsProvider:
             custom_agent_targeting_predicate=lambda agent_id: Agent.IsConditioned(agent_id),
             within_range=Range.Adjacent,
             override_skill_range=Range.Adjacent.value,
+            distance_factor=distance_factors_short,
         ))
         skills.append(KeepSelfEffectUpUtility(
             event_bus=event_bus, skill=CustomSkill("For_Great_Justice"), current_build=in_game_build,
