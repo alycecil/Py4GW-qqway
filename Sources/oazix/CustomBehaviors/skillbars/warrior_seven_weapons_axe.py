@@ -30,84 +30,11 @@ class WarriorSevenWeaponsAxe_UtilitySkillBar(CustomBehaviorBaseUtility):
             allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
         )
 
-        # Common support for this archetype
-        self.for_great_justice_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(
-            event_bus=self.event_bus,
-            skill=CustomSkill("For_Great_Justice"),
-            current_build=in_game_build,
-            score_definition=ScoreStaticDefinition(92),
-            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
-        )
-
-        # Core axe attacks
-        self.dismember_utility: CustomSkillUtilityBase = RawSimpleAttackUtility(
-            event_bus=self.event_bus,
-            skill=CustomSkill("Dismember"),
-            current_build=in_game_build,
-            score_definition=ScoreStaticDefinition(74),
-        )
-        self.axe_rake_utility: CustomSkillUtilityBase = RawSimpleAttackUtility(
-            event_bus=self.event_bus,
-            skill=CustomSkill("Axe_Rake"),
-            current_build=in_game_build,
-            score_definition=ScoreStaticDefinition(70),
-        )
-
-        # Optional skills requested
-        self.executioners_strike_utility: CustomSkillUtilityBase = RawSimpleAttackUtility(
-            event_bus=self.event_bus,
-            skill=CustomSkill("Executioners_Strike"),
-            current_build=in_game_build,
-            score_definition=ScoreStaticDefinition(69),
-        )
-        self.endure_pain_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(
-            event_bus=self.event_bus,
-            skill=CustomSkill("Endure_Pain"),
-            current_build=in_game_build,
-            score_definition=ScoreStaticDefinition(80),
-            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
-        )
-        self.whirlwind_attack_utility: CustomSkillUtilityBase = RawAoeAttackUtility(
-            event_bus=self.event_bus,
-            skill=CustomSkill("Whirlwind_Attack"),
-            current_build=in_game_build,
-            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 69 if enemy_qte >= 3 else 63 if enemy_qte == 2 else 0),
-            mana_required_to_cast=0,
-        )
-        self.cyclone_axe_utility: CustomSkillUtilityBase = RawAoeAttackUtility(
-            event_bus=self.event_bus,
-            skill=CustomSkill("Cyclone_Axe"),
-            current_build=in_game_build,
-            score_definition=ScorePerAgentQuantityDefinition(lambda enemy_qte: 68 if enemy_qte >= 3 else 62 if enemy_qte == 2 else 0),
-            mana_required_to_cast=0,
-        )
-        self.comfort_animal_utility: CustomSkillUtilityBase = ComfortAnimalUtility(
-            event_bus=self.event_bus,
-            current_build=in_game_build,
-            score_definition=ScoreStaticDefinition(82),
-        )
-        self.call_of_protection_utility: CustomSkillUtilityBase = KeepSelfEffectUpUtility(
-            event_bus=self.event_bus,
-            skill=CustomSkill("Call_of_Protection"),
-            current_build=in_game_build,
-            score_definition=ScoreStaticDefinition(65),
-            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
-        )
-
     @property
     @override
     def custom_skills_in_behavior(self) -> list[CustomSkillUtilityBase]:
         return [
             self.seven_weapons_stance_utility,
-            self.for_great_justice_utility,
-            self.dismember_utility,
-            self.axe_rake_utility,
-            self.executioners_strike_utility,
-            self.endure_pain_utility,
-            self.whirlwind_attack_utility,
-            self.cyclone_axe_utility,
-            self.comfort_animal_utility,
-            self.call_of_protection_utility,
         ]
 
     @property

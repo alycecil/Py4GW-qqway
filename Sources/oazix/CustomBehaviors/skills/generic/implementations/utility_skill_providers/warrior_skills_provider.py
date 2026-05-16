@@ -10,6 +10,7 @@ from Sources.oazix.CustomBehaviors.primitives.skills.custom_skill_utility_base i
 from Sources.oazix.CustomBehaviors.skills.generic.keep_self_effect_up_utility import KeepSelfEffectUpUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_aoe_attack_utility import RawAoeAttackUtility
 from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_attack_utility import RawSimpleAttackUtility
+from Sources.oazix.CustomBehaviors.skills.generic.raw_simple_heal_self_utility import RawSimpleHealSelfUtility
 from Sources.oazix.CustomBehaviors.skills.paragon.watch_yourself_utility import WatchYourselfPowerbatteryUtility
 from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
 
@@ -90,6 +91,49 @@ class WarriorSkillsProvider:
             ignore_spirits=True,
             override_skill_range=Range.Touch.value,
         ))
+
+        # Common support for this archetype
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("For_Great_Justice"),
+            current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(92),
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
+        ))
+
+        # Core axe attacks
+        skills.append(RawSimpleAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Dismember"),
+            current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(74),
+        ))
+        skills.append(RawSimpleAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Axe_Rake"),
+            current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(70),
+        ))
+        skills.append(RawSimpleAttackUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Executioners_Strike"),
+            current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(69),
+        ))
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Endure_Pain"),
+            current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(80),
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
+        ))
+        skills.append(KeepSelfEffectUpUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Call_of_Protection"),
+            current_build=in_game_build,
+            score_definition=ScoreStaticDefinition(65),
+            allowed_states=[BehaviorState.IN_AGGRO, BehaviorState.CLOSE_TO_AGGRO],
+        ))
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
             skill=CustomSkill("Earth_Shaker"),
@@ -154,6 +198,11 @@ class WarriorSkillsProvider:
             custom_agent_targeting_predicate=lambda agent_id: Agent.GetHealth(agent_id) < 0.89,
             within_range=Range.Adjacent,
             override_skill_range=Range.Adjacent.value,
+        ))
+        skills.append(RawSimpleHealSelfUtility(
+            event_bus=event_bus,
+            skill=CustomSkill("Healing_Signet"),
+            current_build=in_game_build,
         ))
         # TODO if we're hurt
         skills.append(KeepSelfEffectUpUtility(
