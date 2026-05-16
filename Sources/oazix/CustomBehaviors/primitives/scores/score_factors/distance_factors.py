@@ -21,11 +21,11 @@ class DistanceFactors(ScoreDefinition):
 class DistanceFactors_Simple(DistanceFactors):
     def __init__(
             self,
-            touch_short_range: float = 50,
+            touch_short_range: float = 70,
             touch_long_range: float = 2.2,
-            adjacent_short_range: float = 35,
+            adjacent_short_range: float = 50,
             adjacent_long_range: float = 2,
-            nearby_short_range: float = 20,
+            nearby_short_range: float = 15,
             nearby_long_range: float = 1.5,
             area_short_range: float = 10,
             area_long_range: float = 1.1,
