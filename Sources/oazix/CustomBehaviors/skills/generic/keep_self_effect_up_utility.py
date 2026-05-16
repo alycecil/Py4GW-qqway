@@ -43,15 +43,15 @@ class KeepSelfEffectUpUtility(CustomSkillUtilityBase):
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
+        if self.condition is not None:
+            if not self.condition(Player.GetAgentID()):
+                return None
+
         has_buff = Routines.Checks.Effects.HasBuff(Player.GetAgentID(), self.custom_skill.skill_id)
         if not has_buff: return self.score_definition.get_score()
         
         buff_time_remaining = GLOBAL_CACHE.Effects.GetEffectTimeRemaining(Player.GetAgentID(), self.custom_skill.skill_id)
         if buff_time_remaining <= self.renew_before_expiration_in_milliseconds: return self.score_definition.get_score()
-
-        if self.condition is not None:
-            if self.condition(Player.GetAgentID()):
-                return self.score_definition.get_score()
 
         return None
 
