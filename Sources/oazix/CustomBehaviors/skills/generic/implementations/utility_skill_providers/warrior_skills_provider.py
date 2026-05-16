@@ -82,6 +82,16 @@ class WarriorSkillsProvider:
         ))
         skills.append(RawAoeAttackUtility(
             event_bus=event_bus,
+            skill=CustomSkill("Cyclone_Axe"),
+            current_build=in_game_build,
+            score_definition=ScorePerAgentQuantityDefinition(
+                lambda enemy_qte: 22 if enemy_qte >= 3 else 18 if enemy_qte == 2 else 10),
+            mana_required_to_cast=0,
+            ignore_spirits=True,
+            override_skill_range=Range.Touch.value,
+        ))
+        skills.append(RawAoeAttackUtility(
+            event_bus=event_bus,
             skill=CustomSkill("Earth_Shaker"),
             current_build=in_game_build,
             score_definition=ScorePerAgentQuantityDefinition(
