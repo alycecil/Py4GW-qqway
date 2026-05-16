@@ -1,4 +1,4 @@
-from typing import Any, Generator, override
+from typing import Any, Generator, override, Callable
 
 from Py4GWCoreLib import GLOBAL_CACHE, Routines, Range, Player
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
@@ -21,6 +21,7 @@ class KeepSelfEffectUpUtility(CustomSkillUtilityBase):
     allowed_states: list[BehaviorState] = [BehaviorState.IN_AGGRO],
     after_cast_delay: bool = True,
     target_self: bool = True,
+    condition: Callable[[int], bool] | None = None,
     ) -> None:
 
         super().__init__(
@@ -37,6 +38,8 @@ class KeepSelfEffectUpUtility(CustomSkillUtilityBase):
         self.after_cast_delay = after_cast_delay
         self.target_self = target_self
 
+        self.condition = condition
+
     @override
     def _evaluate(self, current_state: BehaviorState, previously_attempted_skills: list[CustomSkill]) -> float | None:
 
@@ -45,7 +48,11 @@ class KeepSelfEffectUpUtility(CustomSkillUtilityBase):
         
         buff_time_remaining = GLOBAL_CACHE.Effects.GetEffectTimeRemaining(Player.GetAgentID(), self.custom_skill.skill_id)
         if buff_time_remaining <= self.renew_before_expiration_in_milliseconds: return self.score_definition.get_score()
-        
+
+        if self.condition is not None:
+            if self.condition(Player.GetAgentID()):
+                return self.score_definition.get_score()
+
         return None
 
     @override

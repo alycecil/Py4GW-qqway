@@ -1,3 +1,4 @@
+from Py4GWCoreLib import Agent, Player
 from Py4GWCoreLib.enums_src.GameData_enums import Range
 from Py4GWCoreLib.enums_src.Model_enums import SpiritModelID
 from Sources.oazix.CustomBehaviors.primitives.behavior_state import BehaviorState
@@ -145,11 +146,11 @@ class RangerSkillsProvider:
 
         skills.append(KeepSelfEffectUpUtility(
             event_bus=event_bus, skill=CustomSkill("Troll_Unguent"), current_build=in_game_build,
-            score_definition=ScoreStaticDefinition(10), mana_required_to_cast=15,
+            score_definition=ScoreStaticDefinition(10), mana_required_to_cast=5,
             renew_before_expiration_in_milliseconds=0,
             allowed_states=[BehaviorState.IN_AGGRO],
             target_self=False,
-            after_cast_delay=False,
+            condition=lambda agent_id: Agent.GetHealth(Player.GetAgentID()) < 0.9
         ))
         
         return skills
