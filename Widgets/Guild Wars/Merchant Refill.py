@@ -304,12 +304,33 @@ def _kit_counts() -> tuple[int, int, int]:
     return id_kits, salvage, expert
 
 
+# Unlimited-use kit model ids. These never run out, so when one is in the inventory the
+# corresponding restock purchase is disabled entirely.
+UNLIMITED_ID_KIT_MODEL = 4033
+UNLIMITED_SALVAGE_KIT_MODEL = 275
+
+
+def _has_unlimited_kit(model_id: int) -> bool:
+    return Inventory.GetModelCount(model_id) > 0
+
+
 def _kits_to_buy() -> tuple[int, int, int]:
     id_kits, salvage, expert = _kit_counts()
     target_id = _cfg_int("Kits", "keep_id_kits", 2)
     target_salvage = _cfg_int("Kits", "keep_salvage_kits", 5)
     target_expert = _cfg_int("Kits", "keep_expert_salvage_kits", 1)
-    return max(0, target_id - id_kits), max(0, target_salvage - salvage), max(0, target_expert - expert)
+
+    if _has_unlimited_kit(UNLIMITED_ID_KIT_MODEL):
+        target_id = 0
+    if _has_unlimited_kit(UNLIMITED_SALVAGE_KIT_MODEL):
+        target_salvage = 0
+        target_expert = 0
+
+    return (
+        max(0, target_id - id_kits),
+        max(0, target_salvage - salvage),
+        max(0, target_expert - expert),
+    )
 
 
 # ---------------------------------------------------------------------------
