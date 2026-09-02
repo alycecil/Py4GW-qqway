@@ -513,6 +513,25 @@ def _tick():
         GLOBAL_CACHE.Coroutines.append(_do_merchant_visit())
 
 
+_PREVIEW_CAP = 15
+
+
+def _item_label(item_id: int) -> str:
+    name = Item.GetName(item_id)
+    if name:
+        return f"{name} (#{item_id})"
+    return f"(id {item_id})"
+
+
+def _preview_bucket(title: str, item_ids: list[int]) -> None:
+    shown = item_ids[:_PREVIEW_CAP]
+    PyImGui.text(f"{title}: {len(item_ids)}")
+    for item_id in shown:
+        PyImGui.bullet_text(_item_label(item_id))
+    if len(item_ids) > _PREVIEW_CAP:
+        PyImGui.text(f"... and {len(item_ids) - _PREVIEW_CAP} more")
+
+
 def draw_widget():
     global INI_KEY
     cfg = _cfg()
@@ -640,10 +659,9 @@ def draw_widget():
 
         if PyImGui.collapsing_header("Item Preview", 0):
             buckets = _classify()
-            sell_n = len(buckets[_Action.SELL])
-            dep_n = len(buckets[_Action.DEPOSIT])
-            sal_n = len(buckets[_Action.SALVAGE])
-            PyImGui.text(f"Sell: {sell_n}   Deposit: {dep_n}   Salvage: {sal_n}")
+            _preview_bucket("Sell", buckets[_Action.SELL])
+            _preview_bucket("Deposit", buckets[_Action.DEPOSIT])
+            _preview_bucket("Salvage", buckets[_Action.SALVAGE])
 
         if PyImGui.button("Reset visit state"):
             visited.reset()
