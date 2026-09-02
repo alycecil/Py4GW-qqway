@@ -588,18 +588,33 @@ def draw_widget():
         if PyImGui.collapsing_header("Kits", PyImGui.TreeNodeFlags.DefaultOpen):
             id_kits, salvage, expert = _kit_counts()
             PyImGui.text(f"In inventory - ID: {id_kits}, Salvage: {salvage}, Expert: {expert}")
-            ka = cfg.get_int("Kits", "keep_id_kits", 2)
-            nva = PyImGui.slider_int("Keep ID Kits", ka, 0, 20)
-            if nva != ka:
-                cfg.set("Kits", "keep_id_kits", nva)
-            kb = cfg.get_int("Kits", "keep_salvage_kits", 5)
-            nvb = PyImGui.slider_int("Keep Salvage Kits", kb, 0, 20)
-            if nvb != kb:
-                cfg.set("Kits", "keep_salvage_kits", nvb)
-            kc = cfg.get_int("Kits", "keep_expert_salvage_kits", 1)
-            nvc = PyImGui.slider_int("Keep Expert Kits", kc, 0, 10)
-            if nvc != kc:
-                cfg.set("Kits", "keep_expert_salvage_kits", nvc)
+
+            has_unlimited_id = _has_unlimited_kit(UNLIMITED_ID_KIT_MODEL)
+            has_unlimited_salvage = _has_unlimited_kit(UNLIMITED_SALVAGE_KIT_MODEL)
+
+            if has_unlimited_id:
+                PyImGui.text_disabled("ID Kit restock disabled (unlimited ID kit equipped)")
+            else:
+                ka = cfg.get_int("Kits", "keep_id_kits", 2)
+                nva = PyImGui.slider_int("Keep ID Kits", ka, 0, 20)
+                if nva != ka:
+                    cfg.set("Kits", "keep_id_kits", nva)
+
+            if has_unlimited_salvage:
+                PyImGui.text_disabled("Salvage Kit restock disabled (unlimited salvage kit equipped)")
+            else:
+                kb = cfg.get_int("Kits", "keep_salvage_kits", 5)
+                nvb = PyImGui.slider_int("Keep Salvage Kits", kb, 0, 20)
+                if nvb != kb:
+                    cfg.set("Kits", "keep_salvage_kits", nvb)
+
+            if has_unlimited_salvage:
+                PyImGui.text_disabled("Expert Salvage Kit restock disabled (unlimited salvage kit equipped)")
+            else:
+                kc = cfg.get_int("Kits", "keep_expert_salvage_kits", 1)
+                nvc = PyImGui.slider_int("Keep Expert Kits", kc, 0, 10)
+                if nvc != kc:
+                    cfg.set("Kits", "keep_expert_salvage_kits", nvc)
 
         PyImGui.separator()
 
