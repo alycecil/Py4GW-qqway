@@ -192,12 +192,26 @@ def _weapon_requirement_mode(req: int) -> str | None:
     return _DEFAULT_MAXED_REQ_ACTION.get(req)
 
 
+# Raw modifier identifiers the legacy exporter kept regardless of damage/requirement.
+# Identifiers are compared against GetIdentifier() without stripping, matching the
+# original weapon_handler loop (Forget-Me-Not at max roll, and "of the profession").
+_FORGET_ME_NOT_IDENTIFIER = 10280
+_FORGET_ME_NOT_MAX_ARG1 = 19
+_OF_THE_PROFESSION_IDENTIFIER = 10408
+
+
 def _is_valuable_mod(item_id: int) -> bool:
-    """Keep overrides from the legacy exporter rules: Forget-Me-Not inscription and
-    'of the profession' prefix, regardless of damage/requirement."""
-    upgrade_names = {name for name, _ in Item.Mods.GetUpgrades(item_id)}
-    if "ForgetMeNot" in upgrade_names or "OfTheProfession" in upgrade_names:
-        return True
+    """Keep overrides from the legacy exporter rules (raw modifier scan):
+    Forget-Me-Not at its max value, and the 'of the profession' prefix."""
+    instance = Item.item_instance(item_id)
+    mods = instance.modifiers if instance is not None else None
+    if not mods:
+        return False
+    for mod in mods:
+        if mod.GetIdentifier() == _FORGET_ME_NOT_IDENTIFIER and mod.GetArg1() >= _FORGET_ME_NOT_MAX_ARG1:
+            return True
+        if mod.GetIdentifier() == _OF_THE_PROFESSION_IDENTIFIER:
+            return True
     return False
 
 
