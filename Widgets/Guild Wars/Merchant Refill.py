@@ -215,66 +215,73 @@ def _is_valuable_mod(item_id: int) -> bool:
     return False
 
 
-def _weapon_action(item_id: int, item_type: ItemType) -> str:
+def _weapon_reason(item_id: int, item_type: ItemType) -> tuple[str, str]:
     rarity = _rarity_name(item_id)
     if rarity == "Green":
-        return _Action.DEPOSIT
+        return _Action.DEPOSIT, "green weapon"
     if rarity == "Gold":
         default = _Action.SELL
     else:
         default = _Action.SELL if rarity in ("White", "Blue", "Purple") else _Action.KEEP
 
     if _is_valuable_mod(item_id):
-        return _Action.KEEP
+        return _Action.KEEP, "valuable mod (Forget-Me-Not / of the profession)"
 
     if item_type == ItemType.Shield:
-        # Shields: keep the (rare) skin rather than judging by damage.
-        return _Action.DEPOSIT
+        return _Action.DEPOSIT, "shield (keep skin)"
 
-    # Maxed-damage + requirement-tier override (port of WeaponConfig qN), any non-white.
     if rarity != "White" and Item.Properties.IsMaxDamage(item_id):
         _, requirement = Item.Properties.GetRequirement(item_id)
         override = _weapon_requirement_mode(int(requirement))
         if override is not None:
-            return override
+            return override, f"maxed damage req {int(requirement)}"
 
     if default == _Action.KEEP:
-        return _Action.DEPOSIT
-    return default
+        return _Action.DEPOSIT, f"{rarity} weapon (no maxed damage rule)"
+    return default, f"{rarity} weapon"
 
 
-def _salvage_action(item_id: int) -> str:
+def _salvage_reason(item_id: int) -> tuple[str, str]:
     rarity = _rarity_name(item_id)
-    return _DEFAULT_SALVAGE_ACTION.get(rarity, _Action.KEEP)
+    return _DEFAULT_SALVAGE_ACTION.get(rarity, _Action.KEEP), f"{rarity} salvage kit"
 
 
-def _action_for_item(item_id: int) -> str:
+def _action_reason_for_item(item_id: int) -> tuple[str, str]:
     if item_id < 1:
-        return _Action.KEEP
+        return _Action.KEEP, "invalid item id"
     if Item.Properties.IsCustomized(item_id):
-        return _Action.KEEP
+        return _Action.KEEP, "customized"
     if _is_keep_model(item_id):
-        return _Action.KEEP
+        return _Action.KEEP, "in keep list"
     if _is_blocklisted(item_id):
-        return _Action.KEEP
+        return _Action.KEEP, "blocklisted"
 
     item_type_value, _ = Item.GetItemType(item_id)
     item_type = ItemType(item_type_value)
     if item_type in _WEAPON_TYPE_IDS:
-        return _weapon_action(item_id, item_type)
+        return _weapon_reason(item_id, item_type)
     if item_type == ItemType.Salvage:
-        return _salvage_action(item_id)
+        return _salvage_reason(item_id)
     if item_type == ItemType.Kit:
-        return _Action.KEEP
-    return _Action.KEEP
+        return _Action.KEEP, "kit"
+    return _Action.KEEP, f"type {item_type.name}"
 
 
 def _classify() -> dict[str, list[int]]:
     buckets: dict[str, list[int]] = {a: [] for a in (_Action.SELL, _Action.DEPOSIT, _Action.SALVAGE)}
     for item_id in _get_inventory_item_ids():
-        action = _action_for_item(item_id)
+        action, _ = _action_reason_for_item(item_id)
         if action in buckets:
             buckets[action].append(item_id)
+    return buckets
+
+
+def _classify_reasons() -> dict[str, dict[int, str]]:
+    buckets: dict[str, dict[int, str]] = {a: {} for a in (_Action.SELL, _Action.DEPOSIT, _Action.SALVAGE)}
+    for item_id in _get_inventory_item_ids():
+        action, reason = _action_reason_for_item(item_id)
+        if action in buckets:
+            buckets[action][item_id] = reason
     return buckets
 
 
@@ -537,11 +544,12 @@ def _item_label(item_id: int) -> str:
     return f"(id {item_id})"
 
 
-def _preview_bucket(title: str, item_ids: list[int]) -> None:
+def _preview_bucket(title: str, items: dict[int, str]) -> None:
+    item_ids = list(items)
     shown = item_ids[:_PREVIEW_CAP]
     PyImGui.text(f"{title}: {len(item_ids)}")
     for item_id in shown:
-        PyImGui.bullet_text(_item_label(item_id))
+        PyImGui.text(f"  - {_item_label(item_id)}  [{items[item_id]}]")
     if len(item_ids) > _PREVIEW_CAP:
         PyImGui.text(f"... and {len(item_ids) - _PREVIEW_CAP} more")
 
@@ -687,7 +695,7 @@ def draw_widget():
         PyImGui.separator()
 
         if PyImGui.collapsing_header("Item Preview", 0):
-            buckets = _classify()
+            buckets = _classify_reasons()
             _preview_bucket("Sell", buckets[_Action.SELL])
             _preview_bucket("Deposit", buckets[_Action.DEPOSIT])
             _preview_bucket("Salvage", buckets[_Action.SALVAGE])
