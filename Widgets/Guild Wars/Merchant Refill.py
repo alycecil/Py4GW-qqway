@@ -306,8 +306,8 @@ def _kit_counts() -> tuple[int, int, int]:
 
 # Unlimited-use kit model ids. These never run out, so when one is in the inventory the
 # corresponding restock purchase is disabled entirely.
-UNLIMITED_ID_KIT_MODEL = 4033
-UNLIMITED_SALVAGE_KIT_MODEL = 275
+UNLIMITED_ID_KIT_MODEL = 38620
+UNLIMITED_SALVAGE_KIT_MODEL = 38621
 
 
 def _has_unlimited_kit(model_id: int) -> bool:
