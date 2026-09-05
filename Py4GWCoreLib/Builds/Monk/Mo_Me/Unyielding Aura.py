@@ -126,6 +126,45 @@ class Unyielding_Aura(BuildMgr):
         self._ua_source_agent_id = self._scan_unyielding_aura_source()
         return self._ua_source_agent_id
 
+    def _get_fallback_monk_target(self) -> int:
+        # No UA confirmed on any bar: pick whom to mimicry anyway. Prefer the
+        # last confirmed UA source; otherwise the nearest living primary-Monk
+        # ally in cast range. Arcane Mimicry copies the target's last-used
+        # elite, so mimicking a monk stays on UA in practice.
+        if self._ua_source_agent_id:
+            cached_id = int(self._ua_source_agent_id)
+            if Agent.IsValid(cached_id) and Agent.IsAlive(cached_id):
+                me_x, me_y = Player.GetXY()
+                cached_x, cached_y = Agent.GetXY(cached_id)
+                if ((cached_x - me_x) ** 2 + (cached_y - me_y) ** 2) ** 0.5 <= Range.Spellcast.value:
+                    return cached_id
+
+        try:
+            player_x, player_y = Player.GetXY()
+            ally_array = Routines.Agents.GetFilteredAllyArray(
+                player_x,
+                player_y,
+                Range.Spellcast.value,
+                other_ally=True,
+            )
+            best_ally_id = 0
+            best_squared_distance = float("inf")
+            for ally_id in ally_array or []:
+                ally_id = int(ally_id)
+                if ally_id == 0:
+                    continue
+                primary_profession, _ = Agent.GetProfessions(ally_id)
+                if int(primary_profession) != Profession.Monk.value:
+                    continue
+                ally_x, ally_y = Agent.GetXY(ally_id)
+                squared_distance = (ally_x - player_x) ** 2 + (ally_y - player_y) ** 2
+                if squared_distance < best_squared_distance:
+                    best_squared_distance = squared_distance
+                    best_ally_id = ally_id
+            return best_ally_id
+        except Exception:
+            return 0
+
     def _dead_party_member_in_range(self) -> bool:
         return bool(Routines.Party.GetDeadPartyMemberID(max_distance=Range.Spellcast.value))
 
@@ -168,8 +207,11 @@ class Unyielding_Aura(BuildMgr):
         # actually carries Unyielding Aura - never on any other ally.
         source_id = self.GetUnyieldingAuraSource()
         if not source_id:
-            self._log_debug("tick: no UA source ally found")
-            return False
+            source_id = self._get_fallback_monk_target()
+            if not source_id:
+                self._log_debug("tick: no UA source or fallback monk found, skipping")
+                return False
+            self._log_debug(f"tick: no UA on any bar, falling back to mimicry on monk {source_id}")
 
         me_x, me_y = Player.GetXY()
         source_x, source_y = Agent.GetXY(source_id)
