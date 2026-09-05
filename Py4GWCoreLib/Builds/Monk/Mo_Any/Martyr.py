@@ -192,10 +192,10 @@ class Martyr(BuildMgr):
         if (yield from self.skills.Monk.HealingPrayers.Cure_Hex(min_priority=HexRemovalPriority.HIGH)):
             return True
 
-        if support_snapshot.dwaynas_kiss_needed and (yield from self.skills.Monk.HealingPrayers.Dwaynas_Kiss()):
+        if support_snapshot.seed_of_life_needed and (yield from self.skills.Monk.NoAttribute.Seed_of_Life()):
             return True
 
-        if support_snapshot.seed_of_life_needed and (yield from self.skills.Monk.NoAttribute.Seed_of_Life()):
+        if support_snapshot.dwaynas_kiss_needed and (yield from self.skills.Monk.HealingPrayers.Dwaynas_Kiss()):
             return True
 
         if player_energy_pct >= 0.50 and (yield from self.skills.Monk.NoAttribute.Remove_Hex(min_priority=HexRemovalPriority.MEDIUM)):
