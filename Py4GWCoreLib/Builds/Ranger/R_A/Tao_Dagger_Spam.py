@@ -59,6 +59,9 @@ class Tao_Dagger_Spam(BuildMgr):
         if not Routines.Checks.Skills.CanCast():
             return False
 
+        if self.IsSkillEquipped(Together_as_one_ID) and (yield from self.skills.Ranger.Expertise.Together_as_One()):
+            return True
+
         if self.IsSkillEquipped(I_Am_the_Strongest_ID) and (yield from self.CastSkillID(
             skill_id=I_Am_the_Strongest_ID,
             log=False,
@@ -93,9 +96,6 @@ class Tao_Dagger_Spam(BuildMgr):
             aftercast_delay=250,
         )):
             return
-
-        if (yield from self.skills.Ranger.Expertise.Together_as_One()):
-            return True
 
         if (yield from self.skills.Assassin.DaggerMastery.Death_Blossom()):
             return True
