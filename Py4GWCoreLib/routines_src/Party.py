@@ -48,28 +48,42 @@ class Party:
         return False
     
     @staticmethod
-    def GetDeadPartyMemberID():
+    def GetDeadPartyMemberID(max_distance=0.0):
+        """
+        Purpose: Find a party member that is dead.
+        Args:
+            max_distance (float): If > 0, only report a dead party member
+                within this range of the player. 0 disables the range filter.
+        Returns: agent_id: The agent ID of a dead party member, or 0.
+        """
         from ..GlobalCache import GLOBAL_CACHE
         from ..Routines import Checks
         from ..Agent import Agent
+        from ..Py4GWcorelib import Utils
         if not Checks.Map.MapValid():
             return 0
         players = GLOBAL_CACHE.Party.GetPlayers()
         henchmen = GLOBAL_CACHE.Party.GetHenchmen()
         heroes = GLOBAL_CACHE.Party.GetHeroes()
 
+        def _in_range(agent_id):
+            if max_distance <= 0:
+                return True
+            agent_pos = Agent.GetXY(agent_id)
+            return Utils.Distance(Player.GetXY(), agent_pos) <= max_distance
+
         for player in players:
             agent_id = GLOBAL_CACHE.Party.Players.GetAgentIDByLoginNumber(player.login_number)
-            if Agent.IsValid(agent_id) and Agent.IsDead(agent_id):
+            if Agent.IsValid(agent_id) and Agent.IsDead(agent_id) and _in_range(agent_id):
                 return agent_id
 
         for henchman in henchmen:
-            if Agent.IsValid(henchman.agent_id) and Agent.IsDead(henchman.agent_id):
+            if Agent.IsValid(henchman.agent_id) and Agent.IsDead(henchman.agent_id) and _in_range(henchman.agent_id):
                 return henchman.agent_id
 
         for hero in heroes:
             # Heroes may have agent_id=0 in outposts before spawning
-            if Agent.IsValid(hero.agent_id) and Agent.IsDead(hero.agent_id):
+            if Agent.IsValid(hero.agent_id) and Agent.IsDead(hero.agent_id) and _in_range(hero.agent_id):
                 return hero.agent_id
 
         return 0
