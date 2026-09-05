@@ -554,6 +554,20 @@ def _preview_bucket(title: str, items: dict[int, str]) -> None:
         PyImGui.text(f"... and {len(item_ids) - _PREVIEW_CAP} more")
 
 
+def _preview_text(buckets: dict[str, dict[int, str]]) -> str:
+    lines: list[str] = []
+    for action in (_Action.SELL, _Action.DEPOSIT, _Action.SALVAGE):
+        items = buckets[action]
+        if not items:
+            continue
+        lines.append(f"{action.upper()} ({len(items)}):")
+        for item_id, reason in items.items():
+            name = Item.GetName(item_id) or "(unknown)"
+            model_id = Item.GetModelID(item_id)
+            lines.append(f"  - {name}  item_id={item_id} model_id={model_id}  -> {reason}")
+    return "\n".join(lines)
+
+
 def draw_widget():
     global INI_KEY
     cfg = _cfg()
