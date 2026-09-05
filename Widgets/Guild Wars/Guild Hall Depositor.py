@@ -4,8 +4,8 @@ Guild Hall Depositor widget.
 Detects when a guild hall (or a configured outpost map such as the Great
 Temple of Balthazar, map 248, or Embark Beach, map 857) finishes loading,
 then runs a one-shot sequence: wait a configurable delay (3-10 s), click
-Identify All in the inventory, wait a short gap, then deposit all materials
-at the Xunlai chest.
+Identify All in the inventory, wait a short gap, deposit all materials at
+the Xunlai chest, then deposit gold down to the keep amount (10 plat).
 
 Runs once per load; re-arms whenever the character leaves the target map
 (or zones through another one). A manual "Run now" button is available for
@@ -36,6 +36,7 @@ _DEFAULT_DELAY_MS = 5000
 _MIN_GAP_S = 1
 _MAX_GAP_S = 10
 _DEFAULT_GAP_MS = 3000
+_DEFAULT_KEEP_GOLD = 10_000  # 10 plat (1 plat = 1000 gold)
 _DEFAULT_EXTRA_MAP_IDS = "248 857"
 
 initialized = False
@@ -122,6 +123,18 @@ def _sequence() -> Generator[None, None, None]:
     _stage = "deposit all"
     yield from DepositMaterials().DepositMaterials()
 
+    if cfg.get_bool("Deposit", "deposit_gold", True) and _in_target_map():
+        keep = cfg.get_int("Deposit", "keep_gold", _DEFAULT_KEEP_GOLD)
+        on_char = int(GLOBAL_CACHE.Inventory.GetGoldOnCharacter())
+        if on_char > keep:
+            _stage = "deposit gold"
+            ConsoleLog(
+                MODULE_NAME,
+                f"Gold on character {on_char} above keep {keep} - depositing.",
+                Console.MessageType.Info,
+            )
+            yield from Routines.Yield.Items.DepositGold(keep, log=True)
+
     ConsoleLog(MODULE_NAME, "Identify + deposit sequence complete.", Console.MessageType.Info)
 
 
@@ -192,6 +205,8 @@ def draw_widget():
 
         PyImGui.text(f"State: {_stage}")
         PyImGui.text(f"Map: {Map.GetMapID()}")
+        char_gold = int(GLOBAL_CACHE.Inventory.GetGoldOnCharacter())
+        PyImGui.text(f"Gold on character: {char_gold:,}")
         PyImGui.text(
             f"Target loaded: {'yes' if _in_target_map() else 'no'}"
         )
@@ -210,6 +225,18 @@ def draw_widget():
         new_gap = PyImGui.slider_int("Delay between actions (s)", gap_s, _MIN_GAP_S, _MAX_GAP_S)
         if new_gap != gap_s:
             cfg.set("Sequence", "gap_ms", new_gap * 1000)
+
+        PyImGui.separator()
+
+        dep_gold = cfg.get_bool("Deposit", "deposit_gold", True)
+        new_dep = PyImGui.checkbox("Deposit Gold", dep_gold)
+        if new_dep != dep_gold:
+            cfg.set("Deposit", "deposit_gold", new_dep)
+
+        keep_gold = cfg.get_int("Deposit", "keep_gold", _DEFAULT_KEEP_GOLD)
+        new_keep = PyImGui.slider_int("Keep Gold On Char", keep_gold, 0, 100000)
+        if new_keep != keep_gold:
+            cfg.set("Deposit", "keep_gold", new_keep)
 
         PyImGui.separator()
 
@@ -232,8 +259,8 @@ def draw_widget():
         PyImGui.text_wrapped(
             "On each target map load (any guild hall, plus the extra map IDs "
             "above): waits, clicks Identify All in the inventory, waits again, "
-            "then deposits all materials at the Xunlai chest. Runs once per "
-            "load; run it manually from any outpost."
+            "deposits all materials at the Xunlai chest, then deposits gold "
+            "down to the keep amount (default 10 plat). Runs once per load."
         )
 
     ImGui.End(INI_KEY)
