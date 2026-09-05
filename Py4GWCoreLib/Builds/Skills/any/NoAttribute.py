@@ -637,6 +637,14 @@ class NoAttribute:
             Utils.Distance(player_xy, Agent.GetXY(spirit_id))
             for spirit_id in spirits
         ]
+        summon_spirits: CustomSkill | None = self.build.GetCustomSkill(skill_id)
+        heal_threshold = (
+            float(summon_spirits.Conditions.LessLife)
+            if summon_spirits is not None and summon_spirits.Conditions.LessLife > 0
+            else 0.75
+        )
+        lowest_spirit_health = min((Agent.GetHealth(spirit_id) for spirit_id in spirits), default=1.0)
+        needs_heal = in_aggro and lowest_spirit_health < heal_threshold
         if in_aggro:
             # In combat, keep spirits tight: pull them once any core spirit leaves Nearby.
             should_reposition = any(
@@ -651,25 +659,26 @@ class NoAttribute:
             )
             mode_label = "ooc-compass"
 
-        if not should_reposition:
+        if not (should_reposition or needs_heal):
             nearest_distance = min(spirit_distances) if spirit_distances else 0.0
             farthest_distance = max(spirit_distances) if spirit_distances else 0.0
             self.build._debug(
                 (
                     "Summon Spirits skipped: all owned core spirits within threshold "
-                    f"(nearest={nearest_distance:.1f}, farthest={farthest_distance:.1f}, mode={mode_label})"
+                    f"(nearest={nearest_distance:.1f}, farthest={farthest_distance:.1f}, "
+                    f"lowest_hp={lowest_spirit_health:.2f}, mode={mode_label})"
                 ),
                 True,
             )
             return False
 
+        trigger_reason = "heal" if needs_heal else "reposition"
         self.build._debug(
-            f"Summon Spirits trigger: owned core spirit is beyond spirit range (mode={mode_label})",
+            f"Summon Spirits trigger: {trigger_reason} " f"(lowest_hp={lowest_spirit_health:.2f}, mode={mode_label})",
             True,
         )
-        precheck_failure = self.build._get_can_cast_skill_failure_reason(skill_id)
-        if precheck_failure is not None:
-            self.build._debug(f"Summon Spirits precheck blocked: reason={precheck_failure}", True)
+        if not self.build.CanCastSkillID(skill_id):
+            self.build._debug("Summon Spirits precheck blocked: CanCastSkillID refused the cast", True)
             return False
 
         result = (yield from self.build.CastSkillID(
