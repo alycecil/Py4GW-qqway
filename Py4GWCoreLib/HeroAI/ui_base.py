@@ -2264,6 +2264,8 @@ class HeroAI_BaseUI:
                 if options is not None:
                     HeroAI_BaseUI.DrawPanelButtons(cached_data.account_email, options)
 
+                HeroAI_BaseUI.DrawButtonBar(cached_data)
+
         if PyImGui.begin("##heroai_framed_content", True, flags):
             match HeroAI_FloatingWindows.selected_tab:
                 case HeroAI_FloatingWindows.TabType.control_panel:
