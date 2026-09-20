@@ -15,8 +15,24 @@ TWIN_MOON_SWEEP_ID = Skill.GetID("Twin_Moon_Sweep")
 EREMITES_ATTACK_ID = Skill.GetID("Eremites_Attack")
 STAGGERING_FORCE_ID = Skill.GetID("Staggering_Force")
 DUST_CLOAK_ID = Skill.GetID("Dust_Cloak")
+AURA_OF_THORNS_ID = Skill.GetID("Aura_of_Thorns")
 DRUNKEN_MASTER_ID = Skill.GetID("Drunken_Master")
 I_AM_UNSTOPPABLE_ID = Skill.GetID("I_Am_Unstoppable")
+LIGHTBRINGER_SIGNET_ID = Skill.GetID("Lightbringer_Signet")
+SIGNET_OF_CORRUPTION_ID = Skill.GetID("Signet_of_Corruption")
+SIGNET_OF_CORRUPTION_KURZICK_ID = Skill.GetID("Signet_of_Corruption_kurzick")
+SIGNET_OF_CORRUPTION_LUXON_ID = Skill.GetID("Signet_of_Corruption_luxon")
+
+# Flash-enchant flex slots. Any equipped subset feeds the scythe attacks;
+# the bar no longer requires a specific pair.
+FLASH_ENCHANT_IDS = (DUST_CLOAK_ID, STAGGERING_FORCE_ID, AURA_OF_THORNS_ID)
+
+# Faction variants share one flex slot: the bar carries at most one of them.
+SIGNET_OF_CORRUPTION_IDS = (
+    SIGNET_OF_CORRUPTION_ID,
+    SIGNET_OF_CORRUPTION_KURZICK_ID,
+    SIGNET_OF_CORRUPTION_LUXON_ID,
+)
 
 
 class Soul_Taker_Scythe(BuildMgr):
@@ -31,10 +47,20 @@ class Soul_Taker_Scythe(BuildMgr):
                 SOUL_TAKER_ID,
                 TWIN_MOON_SWEEP_ID,
                 EREMITES_ATTACK_ID,
+                DRUNKEN_MASTER_ID,
+            ],
+            # Flex slots: the bar matches without any of these. Any equipped
+            # flash enchant feeds the scythe attacks, and any equipped signet
+            # is used for energy management.
+            optional_skills=[
                 STAGGERING_FORCE_ID,
                 DUST_CLOAK_ID,
-                DRUNKEN_MASTER_ID,
+                AURA_OF_THORNS_ID,
                 I_AM_UNSTOPPABLE_ID,
+                LIGHTBRINGER_SIGNET_ID,
+                SIGNET_OF_CORRUPTION_ID,
+                SIGNET_OF_CORRUPTION_KURZICK_ID,
+                SIGNET_OF_CORRUPTION_LUXON_ID,
             ],
         )
         if match_only:
@@ -60,6 +86,56 @@ class Soul_Taker_Scythe(BuildMgr):
 
     def _auto_attack_cluster(self):
         return (yield from self.AutoAttack(target_type="EnemyClustered"))
+
+    def _get_equipped_flash_enchant_ids(self) -> tuple[int, ...]:
+        return tuple(skill_id for skill_id in FLASH_ENCHANT_IDS if self.IsSkillEquipped(skill_id))
+
+    def _signet_of_corruption(self, max_self_energy_pct: float = 0.70):
+        # Free AoE + energy per hexed/conditioned foe hit. The flash enchants
+        # and scythe attacks spread conditions, so this pays out once the
+        # spike is rolling. Energy-gated: only fires when the bar needs fuel.
+        signet_id = next(
+            (skill_id for skill_id in SIGNET_OF_CORRUPTION_IDS if self.IsSkillEquipped(skill_id)),
+            0,
+        )
+        if not signet_id:
+            return False
+        if not self.IsInAggro():
+            return False
+        if float(Agent.GetEnergy(Player.GetAgentID()) or 0.0) >= max_self_energy_pct:
+            return False
+
+        target_agent_id = Routines.Targeting.PickClusteredTarget(
+            cluster_radius=Range.Nearby.value,
+            preferred_condition=lambda agent_id: Agent.IsHexed(agent_id) or Agent.IsConditioned(agent_id),
+            filter_radius=Range.Spellcast.value,
+        )
+        if not target_agent_id:
+            return False
+
+        return (yield from self.CastSkillIDAndRestoreTarget(
+            skill_id=signet_id,
+            target_agent_id=target_agent_id,
+            log=False,
+            aftercast_delay=250,
+        ))
+
+    def _lightbringer_signet(self, max_self_energy_pct: float = 0.85):
+        # Free energy, but only inside the area of a demonic servant of
+        # Abaddon. Energy-gated so a fizzle outside demon areas costs at most
+        # one cast per recharge cycle.
+        if not self.IsSkillEquipped(LIGHTBRINGER_SIGNET_ID):
+            return False
+        if not self.IsInAggro():
+            return False
+        if float(Agent.GetEnergy(Player.GetAgentID()) or 0.0) >= max_self_energy_pct:
+            return False
+
+        return (yield from self.CastSkillID(
+            skill_id=LIGHTBRINGER_SIGNET_ID,
+            log=False,
+            aftercast_delay=250,
+        ))
 
     def _run_local_skill_logic(self):
         if not (self.IsInAggro() or self.IsCloseToAggro()):
@@ -105,22 +181,26 @@ class Soul_Taker_Scythe(BuildMgr):
 
         # Compress damage by reapplying flash enchants during the spike window
         # when energy is comfortable, otherwise just keep them maintained.
+        # Any equipped subset of the flex slots is maintained here.
         flash_chain_floor = 0.35 if cluster_size >= 2 else 0.15
 
-        if self.IsSkillEquipped(DUST_CLOAK_ID) and (
-            yield from self.skillbook.Dervish.EarthPrayers.Dust_Cloak(
-                refresh_window_ms=1200,
-                min_self_energy_pct=flash_chain_floor,
-            )
+        for flash_enchant_id, flash_cast in (
+            (DUST_CLOAK_ID, self.skillbook.Dervish.EarthPrayers.Dust_Cloak),
+            (STAGGERING_FORCE_ID, self.skillbook.Dervish.EarthPrayers.Staggering_Force),
+            (AURA_OF_THORNS_ID, self.skillbook.Dervish.EarthPrayers.Aura_of_Thorns),
         ):
+            if self.IsSkillEquipped(flash_enchant_id) and (
+                yield from flash_cast(
+                    refresh_window_ms=1200,
+                    min_self_energy_pct=flash_chain_floor,
+                )
+            ):
+                return True
+
+        if (yield from self._signet_of_corruption()):
             return True
 
-        if self.IsSkillEquipped(STAGGERING_FORCE_ID) and (
-            yield from self.skillbook.Dervish.EarthPrayers.Staggering_Force(
-                refresh_window_ms=1200,
-                min_self_energy_pct=flash_chain_floor,
-            )
-        ):
+        if (yield from self._lightbringer_signet()):
             return True
 
         if not self._is_in_melee_contact(target_agent_id):
@@ -129,7 +209,7 @@ class Soul_Taker_Scythe(BuildMgr):
             return False
 
         active_flash_enchants = self.skillbook.Dervish.ScytheMastery.Count_Active_Dervish_Enchantments(
-            (DUST_CLOAK_ID, STAGGERING_FORCE_ID)
+            self._get_equipped_flash_enchant_ids()
         )
 
         # Both scythe attacks consume a Dervish enchantment for their premium
@@ -176,7 +256,7 @@ class Soul_Taker_Scythe(BuildMgr):
                 return True
 
             active_flash_enchants = self.skillbook.Dervish.ScytheMastery.Count_Active_Dervish_Enchantments(
-                (DUST_CLOAK_ID, STAGGERING_FORCE_ID)
+                self._get_equipped_flash_enchant_ids()
             )
 
         if (yield from self._auto_attack_cluster()):

@@ -87,19 +87,35 @@ class Ether_Renewal_Speedrun(BuildMgr):
         player_id = Player.GetAgentID()
         not_has_balthazars_self = lambda: not Routines.Checks.Effects.HasBuff(player_id, Balthazars_Spirit_ID)
 
-        # Tier 1: self, via direct bar cast (see NOTE above).
-        if not_has_balthazars_self():
-            if not self.CanCastSkillID(Balthazars_Spirit_ID, extra_condition=not_has_balthazars_self):
-                return False
-            slot = self.GetEquippedSkillSlot(Balthazars_Spirit_ID)
-            if not (1 <= slot <= 8):
-                return False
-            GLOBAL_CACHE.SkillBar.UseSkill(slot, target_agent_id=player_id, aftercast_delay=250)
-            self._mark_local_cast_pending(250)
-            self.SetTickSuccess()
-            return True
+        # Tier 1: self, via direct bar cast (see NOTE above). The attempt is
+        # verified (buff must read back afterwards) and backed off for 10s:
+        # an unverified cast must never retry every tick and starve the rest
+        # of the bar.
+        import time
 
-        # Tier 2: lowest-HP melee ally in spellcast range missing it.
+        last_self_attempt = float(getattr(self, "_balthazars_self_last_attempt", 0.0) or 0.0)
+        if not_has_balthazars_self() and time.monotonic() - last_self_attempt >= 10.0:
+            if self.CanCastSkillID(Balthazars_Spirit_ID, extra_condition=not_has_balthazars_self):
+                slot = self.GetEquippedSkillSlot(Balthazars_Spirit_ID)
+                if 1 <= slot <= 8:
+                    GLOBAL_CACHE.SkillBar.UseSkill(slot, target_agent_id=player_id, aftercast_delay=250)
+                    self._mark_local_cast_pending(250)
+                    yield from Routines.Yield.wait(750)
+                    self._balthazars_self_last_attempt = time.monotonic()
+                    if Routines.Checks.Effects.HasBuff(player_id, Balthazars_Spirit_ID):
+                        self.SetTickSuccess()
+                        return True
+                    # Unverified: fall through to the frontline tier instead
+                    # of claiming the tick, so Infuse/Burning Speed still fire.
+
+        # Tier 2: nearest melee ally in spellcast range missing it, covered
+        # BEFORE the fight only. Mid-combat casts on moving frontliners
+        # insta-cancel (range churn between scan and cast, plus interrupts
+        # on the long activation), so prebuff while stacked instead of
+        # chasing melee through the fight. Nearest-first so the target is
+        # still in range when the cast resolves.
+        if self.IsInAggro():
+            return False
         ally_array = Routines.Targeting.GetAllAlliesArray(Range.Spellcast.value)
         ally_array = AgentArray.Filter.ByCondition(
             ally_array,
@@ -115,7 +131,11 @@ class Ether_Renewal_Speedrun(BuildMgr):
         )
         if not ally_array:
             return False
-        target_agent_id = min(ally_array, key=lambda agent_id: Agent.GetHealth(agent_id))
+        player_x, player_y = Player.GetXY()
+        target_agent_id = min(
+            ally_array,
+            key=lambda agent_id: (Agent.GetXY(agent_id)[0] - player_x) ** 2 + (Agent.GetXY(agent_id)[1] - player_y) ** 2,
+        )
 
         return (yield from self.CastSkillIDAndRestoreTarget(
             skill_id=Balthazars_Spirit_ID,

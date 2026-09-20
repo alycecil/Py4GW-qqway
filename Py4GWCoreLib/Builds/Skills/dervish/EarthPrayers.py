@@ -15,6 +15,37 @@ class EarthPrayers:
     def __init__(self, build: BuildMgr) -> None:
         self.build: BuildMgr = build
 
+    #region A
+    def Aura_of_Thorns(
+        self,
+        *,
+        refresh_window_ms: int = 1200,
+        min_self_energy_pct: float = 0.0,
+    ) -> BuildCoroutine:
+        aura_of_thorns_id: int = Skill.GetID("Aura_of_Thorns")
+        player_agent_id = Player.GetAgentID()
+
+        if not self.build.IsSkillEquipped(aura_of_thorns_id):
+            return False
+        if not (self.build.IsInAggro() or self.build.IsCloseToAggro()):
+            return False
+        if float(Agent.GetEnergy(player_agent_id) or 0.0) < min_self_energy_pct:
+            return False
+        if Routines.Checks.Agents.HasEffect(player_agent_id, aura_of_thorns_id):
+            remaining_ms = int(GLOBAL_CACHE.Effects.GetEffectTimeRemaining(
+                player_agent_id,
+                aura_of_thorns_id,
+            ) or 0)
+            if remaining_ms > refresh_window_ms:
+                return False
+
+        return (yield from self.build.CastSkillID(
+            skill_id=aura_of_thorns_id,
+            log=False,
+            aftercast_delay=250,
+        ))
+    #endregion
+
     #region D
     def Dust_Cloak(
         self,
