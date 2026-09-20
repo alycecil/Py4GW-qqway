@@ -8,6 +8,7 @@ from Py4GWCoreLib.Builds.Skills import SkillsTemplate
 
 Dark_Aura_ID = Skill.GetID("Dark_Aura")
 Blood_is_Power_ID = Skill.GetID("Blood_is_Power")
+Soul_Taker_ID = Skill.GetID("Soul_Taker")
 Foul_Feast_ID = Skill.GetID("Foul_Feast")
 Great_Dwarf_Weapon_ID = Skill.GetID("Great_Dwarf_Weapon")
 Stand_Your_Ground_ID = Skill.GetID("Stand_Your_Ground")
@@ -47,11 +48,13 @@ class Dark_Aura_Battery(BuildMgr):
         if not Routines.Checks.Skills.CanCast():
             return False
 
-        # Damage engine first: Dark Aura on the BiP sacrificer (usually self)
-        # turns every Blood is Power sacrifice into party-wide shadow damage.
+        # Damage engine first: Dark Aura on a Soul Taker attacker turns
+        # every dagger/scythe sacrifice into party-wide shadow damage.
         # Aggro/close gating and re-application tracking live inside.
         if self.IsSkillEquipped(Dark_Aura_ID) and (
-            yield from self.skills.Necromancer.DeathMagic.Dark_Aura(required_skill_id=Blood_is_Power_ID)
+            yield from self.skills.Necromancer.DeathMagic.Dark_Aura(
+                required_skill_id=Soul_Taker_ID
+            )
         ):
             return True
 

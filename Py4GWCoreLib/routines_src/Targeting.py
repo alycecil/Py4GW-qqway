@@ -260,18 +260,17 @@ class Targeting:
         return Utils.GetFirstFromArray(ally_array)
 
     @staticmethod
-    def TargetAllyByProfession(
+    def TargetAlliesByProfession(
         profession,
         *,
-        required_skill_id: int = 0,
+        required_skill_id: int | list[int] | tuple[int, ...] | set[int] = 0,
         include_secondary: bool = False,
         other_ally: bool = False,
         filter_skill_id: int = 0,
         distance=Range.Spellcast.value,
-    ):
+    ) -> list[int]:
         from ..Agent import Agent
         from ..GlobalCache import GLOBAL_CACHE
-        from ..Py4GWcorelib import Utils
         from ..enums_src.GameData_enums import Profession
 
         try:
@@ -282,7 +281,7 @@ class Targeting:
         ally_array = Targeting.GetAllAlliesArray(distance, ordered=True)
         ally_array = Targeting.FilterAllyArray(ally_array, distance, other_ally, filter_skill_id)
         if not ally_array:
-            return 0
+            return []
 
         def _has_profession(agent_id: int) -> bool:
             primary_profession, secondary_profession = Agent.GetProfessions(agent_id)
@@ -296,32 +295,59 @@ class Targeting:
             if Agent.IsValid(agent_id) and Agent.IsAlive(agent_id) and _has_profession(agent_id)
         ]
         if not matching_allies:
-            return 0
+            return []
 
         if required_skill_id:
-            required_skill_id = int(required_skill_id)
-            skillbar_by_agent_id: dict[int, set[int]] = {}
-            for account in GLOBAL_CACHE.ShMem.GetAllActiveSlotsData() or []:
-                agent_id = int(getattr(account.AgentData, "AgentID", 0) or 0)
-                if not agent_id:
-                    continue
+            if isinstance(required_skill_id, (list, tuple, set, frozenset)):
+                required_skill_ids = {int(skill_id) for skill_id in required_skill_id if int(skill_id) != 0}
+            else:
+                required_skill_ids = {int(required_skill_id)} if int(required_skill_id) != 0 else set()
+            if required_skill_ids:
+                skillbar_by_agent_id: dict[int, set[int]] = {}
+                for account in GLOBAL_CACHE.ShMem.GetAllActiveSlotsData() or []:
+                    agent_id = int(getattr(account.AgentData, "AgentID", 0) or 0)
+                    if not agent_id:
+                        continue
 
-                try:
-                    skill_ids = {
-                        int(skill.Id)
-                        for skill in account.AgentData.Skillbar.Skills
-                        if int(skill.Id) != 0
-                    }
-                except Exception:
-                    skill_ids = set()
+                    try:
+                        skill_ids = {
+                            int(skill.Id)
+                            for skill in account.AgentData.Skillbar.Skills
+                            if int(skill.Id) != 0
+                        }
+                    except Exception:
+                        skill_ids = set()
 
-                skillbar_by_agent_id[agent_id] = skill_ids
+                    skillbar_by_agent_id[agent_id] = skill_ids
 
-            matching_allies = [
-                agent_id
-                for agent_id in matching_allies
-                if required_skill_id in skillbar_by_agent_id.get(agent_id, set())
-            ]
+                matching_allies = [
+                    agent_id
+                    for agent_id in matching_allies
+                    if not required_skill_ids.isdisjoint(skillbar_by_agent_id.get(agent_id, set()))
+                ]
+
+        return matching_allies
+
+    @staticmethod
+    def TargetAllyByProfession(
+        profession,
+        *,
+        required_skill_id: int | list[int] | tuple[int, ...] | set[int] = 0,
+        include_secondary: bool = False,
+        other_ally: bool = False,
+        filter_skill_id: int = 0,
+        distance=Range.Spellcast.value,
+    ):
+        from ..Py4GWcorelib import Utils
+
+        matching_allies = Targeting.TargetAlliesByProfession(
+            profession,
+            required_skill_id=required_skill_id,
+            include_secondary=include_secondary,
+            other_ally=other_ally,
+            filter_skill_id=filter_skill_id,
+            distance=distance,
+        )
 
         return Utils.GetFirstFromArray(matching_allies)
 

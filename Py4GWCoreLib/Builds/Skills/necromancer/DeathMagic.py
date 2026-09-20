@@ -158,68 +158,98 @@ class DeathMagic:
         self,
         *,
         required_profession: Profession = Profession.Necromancer,
-        required_skill_id: int | None = None,
+        required_skill_id: int | list[int] | tuple[int, ...] | set[int] | None = None,
         other_ally: bool = False,
         self_only: bool = False,
         assume_active_ms: int = 25000,
     ) -> BuildCoroutine:
         """Maintain Dark Aura on a sacrificing Necromancer.
 
+        ``required_skill_id`` accepts one skill or several (matched with OR):
+        Blood is Power sacrificers and Soul Taker attackers both feed the
+        aura, so a battery can cover both bars with one call. Self-sacrifice
+        bars such as Soul Taker daggers still need it on their own character:
+        the caster pays the Health loss for every sacrifice the *enchanted
+        ally* makes, so parking it on another Necromancer bills us for their
+        attacks while the shadow damage lands around them.
+
         ``self_only`` restricts the aura to the caster instead of letting it
-        fall through to party targeting. Self-sacrifice bars such as Soul Taker
-        daggers need it on their own character: the caster pays the Health loss
-        for every sacrifice the *enchanted ally* makes, so parking it on another
-        Necromancer bills us for their attacks while the shadow damage lands
-        around them. Ignored when ``other_ally`` is set.
+        fall through to party targeting. Ignored when ``other_ally`` is set.
         """
         dark_aura_id: int = Skill.GetID("Dark_Aura")
         if required_skill_id is None:
-            required_skill_id = Skill.GetID("Soul_Taker")
+            required_skill_ids: tuple[int, ...] = (Skill.GetID("Soul_Taker"),)
+        elif isinstance(required_skill_id, (list, tuple, set, frozenset)):
+            required_skill_ids = tuple(int(skill_id) for skill_id in required_skill_id if int(skill_id) != 0)
+        elif int(required_skill_id) != 0:
+            required_skill_ids = (int(required_skill_id),)
+        else:
+            required_skill_ids = tuple()
 
         if not self.build.IsSkillEquipped(dark_aura_id):
             return False
         if not (self.build.IsInAggro() or self.build.IsCloseToAggro()):
             return False
 
+        def _self_has_sacrifice_skill() -> bool:
+            return not required_skill_ids or any(self.build.IsSkillEquipped(skill_id) for skill_id in required_skill_ids)
+
         def _self_target_candidate() -> int:
             player_agent_id = Player.GetAgentID()
             primary_profession, _ = Agent.GetProfessions(player_agent_id)
             if (
                 int(primary_profession or 0) == int(required_profession)
-                and self.build.IsSkillEquipped(required_skill_id)
+                and _self_has_sacrifice_skill()
                 and not Routines.Checks.Agents.HasEffect(player_agent_id, dark_aura_id)
             ):
                 return player_agent_id
             return 0
 
+        now_ms = int(Utils.GetBaseTimestamp())
+        assumed_targets = getattr(self.build, "_dark_aura_assumed_targets", {})
+        player_agent_id = Player.GetAgentID()
+
+        def _is_assumed(target_agent_id: int) -> bool:
+            # The assumed-active window exists because another ally's
+            # enchantments cannot be read reliably. Our own can, and were
+            # already checked above, so applying the window to ourselves
+            # would refuse to reapply the aura for the rest of it every time
+            # an enemy strips it early - which on a self-sacrifice bar is
+            # most of the damage gone for up to 25 seconds.
+            return (
+                target_agent_id != player_agent_id
+                and int(assumed_targets.get(target_agent_id, 0) or 0) > now_ms
+            )
+
         if self_only and not other_ally:
             # Deliberately no party fallback: for a self-sacrifice bar, "nobody
             # to enchant" means do nothing, not enchant someone else.
             target_agent_id = _self_target_candidate()
+            if not target_agent_id:
+                return False
         else:
-            target_agent_id = Routines.Targeting.TargetAllyByProfession(
+            candidates = Routines.Targeting.TargetAlliesByProfession(
                 required_profession,
-                required_skill_id=required_skill_id,
+                required_skill_id=required_skill_ids,
                 other_ally=other_ally,
                 filter_skill_id=dark_aura_id,
                 distance=Range.Spellcast.value,
             )
 
+            target_agent_id = 0
+            for candidate_id in candidates:
+                if not _is_assumed(candidate_id):
+                    target_agent_id = candidate_id
+                    break
+
             if not target_agent_id and not other_ally:
                 target_agent_id = _self_target_candidate()
 
-        if not target_agent_id:
-            return False
+            if not target_agent_id:
+                return False
 
-        now_ms = int(Utils.GetBaseTimestamp())
-        assumed_targets = getattr(self.build, "_dark_aura_assumed_targets", {})
-        # The assumed-active window exists because another ally's enchantments
-        # cannot be read reliably. Our own can, and were already checked above,
-        # so applying the window to ourselves would refuse to reapply the aura
-        # for the rest of it every time an enemy strips it early - which on a
-        # self-sacrifice bar is most of the damage gone for up to 25 seconds.
-        if target_agent_id != Player.GetAgentID() and int(assumed_targets.get(target_agent_id, 0) or 0) > now_ms:
-            return False
+            if _is_assumed(target_agent_id):
+                return False
 
         cast_result = yield from self.build.CastSkillIDAndRestoreTarget(
             skill_id=dark_aura_id,
