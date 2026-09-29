@@ -5,6 +5,7 @@ from Py4GWCoreLib import Range
 from Py4GWCoreLib import Agent, Party, Player
 from Py4GWCoreLib.Skill import Skill
 from Py4GWCoreLib.Builds.Any.HeroAI import HeroAI_Build
+from Py4GWCoreLib.Builds.Skills import SkillsTemplate
 
 
 Thrill_of_Victory_ID = Skill.GetID("Thrill_of_Victory")
@@ -26,10 +27,15 @@ class Together_as_One(BuildMgr):
     2 is the elite shout: it is instant with no aftercast, so it fires
     with aftercast_delay=0 whenever it is not up. This deliberately
     bypasses the shared Expertise.Together_as_One helper, which waits
-    250ms aftercast. Priority 3 is Never Rampage Alone, maintained the
-    same way but only while the pet is alive. Priority 4 is Run as One,
-    re-cast whenever its effect lapses. Everything else rides the
-    HeroAI fallback.
+    250ms aftercast. Priority 3 is Never Rampage Alone, re-cast on
+    recharge while the pet is alive with aftercast_delay=0. Priority 4
+    is Run as One, re-cast whenever its effect lapses. Priority 5 is
+    the sword rotation
+    (Thrill of Victory, Soldier's Strike, Whirlwind Attack, Throw Dirt),
+    cast explicitly like the R/A Tao dagger spammer instead of riding
+    the HeroAI fallback: the fallback gates Throw Dirt to martial-only
+    targets and leaves the remaining attacks at the bottom of its
+    generic priority order, so they effectively never fired.
 
     Carries OgEUURbeZcREFfa7goGrM8gj10GA (Thrill of Victory,
     Soldier's Strike, Whirlwind Attack, Throw Dirt, Run as One,
@@ -60,6 +66,8 @@ class Together_as_One(BuildMgr):
 
         self.SetFallback("HeroAI", HeroAI_Build(standalone_fallback=True))
         self.SetSkillCastingFn(self._run_local_skill_logic)
+        self.skills: SkillsTemplate = SkillsTemplate(self)
+        self.sword_target_type = "EnemyInjured"
 
     def _pet_is_alive(self, player_id: int) -> bool:
         pet_id = Party.Pets.GetPetID(player_id)
@@ -96,13 +104,18 @@ class Together_as_One(BuildMgr):
         return Agent.GetHealth(pet_id) < 0.30
 
     def _run_local_skill_logic(self):
+        # NOTE: every block below chains with `and` so that a failed cast
+        # attempt (e.g. skill still on recharge) falls through to the next
+        # priority instead of aborting the whole chain with `return False`.
         if not Routines.Checks.Skills.CanCast():
             return False
 
         player_id = Player.GetAgentID()
 
-        if self.IsSkillEquipped(Comfort_Animal_ID) and self._should_cast_comfort_animal(player_id):
-            return (
+        if (
+            self.IsSkillEquipped(Comfort_Animal_ID)
+            and self._should_cast_comfort_animal(player_id)
+            and (
                 yield from self.CastSkillID(
                     skill_id=Comfort_Animal_ID,
                     extra_condition=lambda: self._should_cast_comfort_animal(Player.GetAgentID()),
@@ -110,42 +123,103 @@ class Together_as_One(BuildMgr):
                     aftercast_delay=250,
                 )
             )
+        ):
+            return True
 
-        if self.IsSkillEquipped(Together_as_one_ID):
-            # Re-shout on recharge while a living ally is in earshot even
-            # when the effect is already up on us: the shout also lands on
-            # nearby party members, so holding a recharge wastes their buff.
-            if not Routines.Checks.Agents.HasEffect(player_id, Together_as_one_ID) or self._ally_in_shout_range(
-                player_id
-            ):
-                return (
-                    yield from self.CastSkillID(
-                        skill_id=Together_as_one_ID,
-                        log=False,
-                        aftercast_delay=0,
-                    )
+        # Re-shout on recharge while a living ally is in earshot even
+        # when the effect is already up on us: the shout also lands on
+        # nearby party members, so holding a recharge wastes their buff.
+        if (
+            self.IsSkillEquipped(Together_as_one_ID)
+            and (
+                not Routines.Checks.Agents.HasEffect(player_id, Together_as_one_ID)
+                or self._ally_in_shout_range(player_id)
+            )
+            and (
+                yield from self.CastSkillID(
+                    skill_id=Together_as_one_ID,
+                    log=False,
+                    aftercast_delay=0,
                 )
+            )
+        ):
+            return True
 
-        if self.IsSkillEquipped(Never_Rampage_Alone_ID):
-            if self._pet_is_alive(player_id) and not Routines.Checks.Agents.HasEffect(
-                player_id, Never_Rampage_Alone_ID
-            ):
-                return (
-                    yield from self.CastSkillID(
-                        skill_id=Never_Rampage_Alone_ID,
-                        log=False,
-                        aftercast_delay=250,
-                    )
+        if (
+            self.IsSkillEquipped(Never_Rampage_Alone_ID)
+            and self._pet_is_alive(player_id)
+            and (
+                yield from self.CastSkillID(
+                    skill_id=Never_Rampage_Alone_ID,
+                    log=False,
+                    aftercast_delay=0,
                 )
+            )
+        ):
+            return True
 
-        if self.IsSkillEquipped(Run_as_One_ID):
-            if not Routines.Checks.Agents.HasEffect(player_id, Run_as_One_ID):
-                return (
-                    yield from self.CastSkillID(
-                        skill_id=Run_as_One_ID,
-                        log=False,
-                        aftercast_delay=250,
-                    )
+        # Maintained in and out of combat: this block sits before the
+        # aggro gate and re-casts whenever the stance lapses. No aftercast
+        # hold so the refresh never delays the rest of the chain.
+        if (
+            self.IsSkillEquipped(Run_as_One_ID)
+            and not Routines.Checks.Agents.HasEffect(player_id, Run_as_One_ID)
+            and (
+                yield from self.CastSkillID(
+                    skill_id=Run_as_One_ID,
+                    log=False,
+                    aftercast_delay=0,
                 )
+            )
+        ):
+            return True
+
+        if not self.IsInAggro():
+            return False
+
+        if self.IsSkillEquipped(Thrill_of_Victory_ID) and (yield from self._cast_sword_attack(Thrill_of_Victory_ID)):
+            return True
+        if self.IsSkillEquipped(Soldiers_Strike_ID) and (yield from self._cast_sword_attack(Soldiers_Strike_ID)):
+            return True
+        if self.IsSkillEquipped(Whirlwind_Attack_ID) and (
+            yield from self.skills.Warrior.NoAttribute.Whirlwind_Attack()
+        ):
+            return True
+        if self.IsSkillEquipped(Throw_Dirt_ID) and (yield from self._cast_throw_dirt()):
+            return True
 
         return False
+
+    def _resolve_sword_target(self, skill_id: int, target_type: str) -> int:
+        if not self.CanCastSkillID(skill_id):
+            return 0
+        target_acquired, _ = self._resolve_target(target_type)
+        if not target_acquired:
+            return 0
+        return self.current_target_id
+
+    def _cast_sword_attack(self, skill_id: int):
+        target_agent_id = self._resolve_sword_target(skill_id, self.sword_target_type)
+        if not target_agent_id:
+            return False
+        return (
+            yield from self.CastSkillIDAndRestoreTarget(
+                skill_id=skill_id,
+                target_agent_id=target_agent_id,
+                log=False,
+                aftercast_delay=250,
+            )
+        )
+
+    def _cast_throw_dirt(self):
+        target_agent_id = self._resolve_sword_target(Throw_Dirt_ID, "EnemyAttacking")
+        if not target_agent_id:
+            return False
+        return (
+            yield from self.CastSkillIDAndRestoreTarget(
+                skill_id=Throw_Dirt_ID,
+                target_agent_id=target_agent_id,
+                log=False,
+                aftercast_delay=250,
+            )
+        )

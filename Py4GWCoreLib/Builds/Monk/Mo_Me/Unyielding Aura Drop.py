@@ -15,6 +15,13 @@ from Py4GWCoreLib.Skillbar import SkillBar
 Arcane_Mimicry_ID = Skill.GetID("Arcane_Mimicry")
 Unyielding_Aura_ID = Skill.GetID("Unyielding_Aura")
 Healers_Boon_ID = Skill.GetID("Healer's_Boon")
+Ebon_Escape_ID = Skill.GetID("Ebon_Escape")
+Orison_of_Healing_ID = Skill.GetID("Orison_of_Healing")
+Seed_of_Life_ID = Skill.GetID("Seed_of_Life")
+Power_Drain_ID = Skill.GetID("Power_Drain")
+Cure_Hex_ID = Skill.GetID("Cure_Hex")
+Selfless_Spirit_Kurzick_ID = Skill.GetID("Selfless_Spirit_kurzick")
+Selfless_Spirit_Luxon_ID = Skill.GetID("Selfless_Spirit_luxon")
 
 _MAX_HERO_POSITIONS = 8
 _UA_SOURCE_SCAN_MS = 1000
@@ -26,7 +33,10 @@ DEBUG_LOGS: bool = False
 class Unyielding_Aura_Drop(BuildMgr):
     """Mo/Me mimicry-UA variant that actively drops the copied aura.
 
-    Root cause for the sibling ``Unyielding_Aura`` build: on a dead party
+    The normal UA source bar (``Unyielding_Aura``) lives in this module
+    below so the pair stays together.
+
+    Root cause for the sibling ``Unyielding_Aura_Mimicry`` build: on a dead party
     member it only returned ``False`` (refused to recast). A maintained
     enchantment does not end that way, so the resurrect end-effect never
     fired. This variant issues a real ``DropBuff`` through the owning
@@ -37,6 +47,10 @@ class Unyielding_Aura_Drop(BuildMgr):
     (Arcane Mimicry) as a fallback while the live buff identity is
     confirmed in-client. See the UA widget's "no droppable buff found"
     warning for the diagnostic counterpart.
+
+    Carries OwUTMw2CXiuMjIHMDIIY6LuC0DA (Ebon Escape, Orison of Healing,
+    Seed of Life, Power Drain, Arcane Mimicry, Cure Hex, Healer's Boon,
+    Selfless Spirit).
     """
 
     def __init__(self, match_only: bool = False):
@@ -44,7 +58,17 @@ class Unyielding_Aura_Drop(BuildMgr):
             name="Unyielding Aura Drop",
             required_primary=Profession.Monk,
             required_secondary=Profession.Mesmer,
+            template_code="OwUTMw2CXiuMjIHMDIIY6LuC0DA",
             required_skills=[Arcane_Mimicry_ID, Healers_Boon_ID],
+            optional_skills=[
+                Ebon_Escape_ID,
+                Orison_of_Healing_ID,
+                Seed_of_Life_ID,
+                Power_Drain_ID,
+                Cure_Hex_ID,
+                Selfless_Spirit_Kurzick_ID,
+                Selfless_Spirit_Luxon_ID,
+            ],
         )
         if match_only:
             return
@@ -284,3 +308,113 @@ class Unyielding_Aura_Drop(BuildMgr):
             self._log_debug(f"tick: mimicry blocked for source {source_id}")
             return False
         return True
+
+
+class Unyielding_Aura(BuildMgr):
+    """Monk-primary bar that carries Unyielding Aura itself.
+
+    Normal (non-mimicry) counterpart to the Mo/Me mimicry builds above:
+    maintains the elite on self, actively drops it through the owning
+    Effects queue when a dead party member is in spellcast range, and
+    recasts it on self once ready. Mirrors
+    Widgets/Guild Wars/Unyielding Aura.py. Merged into this module so the
+    UA source bar and its mimicry pair live together; the registry
+    discovers both classes independently.
+
+    Carries OwUTMw2CXqBcjIHkuMD4ioLihAA (Patient Spirit, Dwayna's Kiss,
+    Seed of Life, Ebon Escape, Power Drain, Divine Healing,
+    Heaven's Delight, Unyielding Aura) as its template, but declares only
+    Unyielding Aura itself: every declared skill is masked from the HeroAI
+    fallback each tick, so declaring the support set would silence all
+    fallback healing while local logic only casts UA.
+    """
+
+    def __init__(self, match_only: bool = False):
+        super().__init__(
+            name="Unyielding Aura",
+            required_primary=Profession.Monk,
+            template_code="OwUTMw2CXqBcjIHkuMD4ioLihAA",
+            required_skills=[Unyielding_Aura_ID],
+        )
+        if match_only:
+            return
+
+        self.SetFallback("HeroAI", HeroAI_Build(standalone_fallback=True))
+        self.SetSkillCastingFn(self._run_local_skill_logic)
+        self._last_drop_tick_ms: int = 0
+        self._debug_enabled: bool = DEBUG_LOGS
+        self._debug_last_log_ms: int = 0
+        self._debug_log_interval_ms: int = 1000
+
+    def _log_debug(self, message: str) -> None:
+        if not self._debug_enabled:
+            return
+        now_ms = int(PySystem.get_tick_count64())
+        if now_ms - self._debug_last_log_ms < self._debug_log_interval_ms:
+            return
+        self._debug_last_log_ms = now_ms
+        self._debug(message)
+
+    def _drop_suppressed(self) -> bool:
+        if self._last_drop_tick_ms == 0:
+            return False
+        return int(PySystem.get_tick_count64()) - self._last_drop_tick_ms < _DROP_SUPPRESS_MS
+
+    def _find_maintained_ua_buff(self, player_id: int) -> int:
+        from Py4GWCoreLib import GLOBAL_CACHE
+
+        try:
+            buffs = list(GLOBAL_CACHE.Effects.GetBuffs(player_id) or [])
+        except Exception:
+            return 0
+        for buff in buffs:
+            if int(getattr(buff, "skill_id", 0) or 0) == int(Unyielding_Aura_ID):
+                return int(getattr(buff, "buff_id", 0) or 0)
+        return 0
+
+    def _dead_party_member_in_range(self) -> bool:
+        return bool(Routines.Party.GetDeadPartyMemberID(max_distance=Range.Spellcast.value))
+
+    def _run_local_skill_logic(self):
+        if not Routines.Checks.Skills.CanCast():
+            self._log_debug("tick: blocked, CanCast=False")
+            return False
+
+        player_id = Player.GetAgentID()
+
+        if Routines.Checks.Agents.HasEffect(player_id, Unyielding_Aura_ID):
+            if self._dead_party_member_in_range():
+                from Py4GWCoreLib import GLOBAL_CACHE
+
+                buff_id = self._find_maintained_ua_buff(player_id)
+                if not buff_id:
+                    self._log_debug("tick: party member dead in Spellcast range, UA drop failed (no buff)")
+                    return False
+                try:
+                    GLOBAL_CACHE.Effects.DropBuff(int(buff_id))
+                except Exception as exc:
+                    self._log_debug(f"DropBuff({buff_id}) failed: {exc}")
+                    return False
+                self._last_drop_tick_ms = int(PySystem.get_tick_count64())
+                self._debug(f"Dropped Unyielding Aura (buff {buff_id}): dead party member in Spellcast range.")
+                return True
+            self._log_debug("tick: UA effect active, nothing to do")
+            return False
+
+        if self._drop_suppressed():
+            self._log_debug("tick: drop suppress window, holding recast")
+            return False
+
+        if not self.IsSkillEquipped(Unyielding_Aura_ID):
+            return False
+        self._log_debug(
+            f"casting Unyielding Aura on self "
+            f"(slot={int(SkillBar.GetSlotBySkillID(Unyielding_Aura_ID) or 0)})"
+        )
+        return (
+            yield from self.CastSkillID(
+                skill_id=Unyielding_Aura_ID,
+                target_agent_id=player_id,
+                aftercast_delay=250,
+            )
+        )

@@ -2752,6 +2752,42 @@ def _sort_storage_items(available_storage_bags):
 	return moved_items, stack_merge_actions, len(remaining_wrong_entries), model_sort_actions + compact_actions
 
 
+def _run_legacy_sort(available_storage_bags):
+	"""Run the legacy synchronous (blocking) sort to completion in a single call.
+
+	This is the pre-async-task behavior the Sort button used before: placement,
+	stack merges, model-ID ordering and compaction all run inline, and every
+	move is queued onto the ACTION queue up front. Reports the result to the
+	console so a run is never silent.
+	"""
+	global _cache_needs_refresh
+	global _sort_progress_ratio
+	global _sort_progress_text
+	global _sort_done_until
+
+	try:
+		moved_items, stack_merge_actions, remaining_wrong, ordered_actions = _sort_storage_items(
+			available_storage_bags
+		)
+	except Exception as exc:
+		ConsoleLog(MODULE_NAME, f"Sort failed: {exc}", Console.MessageType.Error)
+		return
+
+	_cache_needs_refresh = True
+	_sort_progress_ratio = 1.0
+	if remaining_wrong > 0:
+		_sort_progress_text = f"Done with {remaining_wrong} misplaced"
+	else:
+		_sort_progress_text = "Done"
+	_sort_done_until = time.monotonic() + 2.0
+	ConsoleLog(
+		MODULE_NAME,
+		f"Sort done: {moved_items} moved | {stack_merge_actions} stack merges "
+		f"| {ordered_actions} ordered | {remaining_wrong} misplaced.",
+		Console.MessageType.Info,
+	)
+
+
 def _get_available_storage_bags(anniversary_slot_unlocked: bool):
 	"""Return the list of storage pane enums that are actually available in the current session.
 
@@ -3137,23 +3173,12 @@ def _draw_window():
 		_cache_needs_refresh = False
 	available_storage_bags = _cached_available_bags
 	_draw_storage_hover_modelid_tooltip(available_storage_bags)
-	if _sort_task_state is None:
-		if PyImGui.button("Sort"):
-			_start_sort_task(available_storage_bags)
-		if SHOW_DEBUG:
-			PyImGui.same_line(0, 8)
-			if PyImGui.button("Read MaterialStorage"):
-				_log_material_storage_counts_to_console()
-	else:
-		PyImGui.begin_disabled(True)
-		PyImGui.button("Sort")
-		if SHOW_DEBUG:
-			PyImGui.same_line(0, 8)
-			PyImGui.button("Read MaterialStorage")
-		PyImGui.end_disabled()
-
-	if _sort_task_state is not None:
-		_process_sort_task()
+	if PyImGui.button("Sort"):
+		_run_legacy_sort(available_storage_bags)
+	if SHOW_DEBUG:
+		PyImGui.same_line(0, 8)
+		if PyImGui.button("Read MaterialStorage"):
+			_log_material_storage_counts_to_console()
 
 	PyImGui.separator()
 

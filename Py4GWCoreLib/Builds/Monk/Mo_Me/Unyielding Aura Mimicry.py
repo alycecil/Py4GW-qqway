@@ -22,10 +22,10 @@ _UA_SOURCE_SCAN_MS = 1000
 DEBUG_LOGS: bool = False
 
 
-class Unyielding_Aura(BuildMgr):
+class Unyielding_Aura_Mimicry(BuildMgr):
     def __init__(self, match_only: bool = False):
         super().__init__(
-            name="Unyielding Aura",
+            name="Unyielding Aura Mimicry",
             required_primary=Profession.Monk,
             required_secondary=Profession.Mesmer,
             required_skills=[Arcane_Mimicry_ID, Healers_Boon_ID],

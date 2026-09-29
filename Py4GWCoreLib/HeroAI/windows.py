@@ -304,6 +304,9 @@ class HeroAI_Windows():
         "SkalefinSoup": ButtonColor(button_color = Color(68, 85, 142, 255),hovered_color = Color(255, 255, 107, 255),active_color = Color(106, 139, 51, 255), texture_path="Assets\\Textures\\Consumables\\Trimmed\\Bowl_of_Skalefin_Soup.png"),
         "PahnaiSalad": ButtonColor(button_color = Color(113, 43, 25, 255),hovered_color = Color(185, 157, 90, 255),active_color = Color(137, 175, 10, 255), texture_path="Assets\\Textures\\Consumables\\Trimmed\\Pahnai_Salad.png"),
         "WarSupplies": ButtonColor(button_color = Color(51, 26, 13, 255),hovered_color = Color(113, 43, 25, 255),active_color = Color(202, 115, 77, 255), texture_path="Assets\\Textures\\Consumables\\Trimmed\\War_Supplies.png"),
+        # No trimmed icon exists for these yet, so they render as text buttons below.
+        "HerosTrifecta": ButtonColor(button_color = Color(129, 33, 188, 255),hovered_color = Color(165, 100, 200, 255),active_color = Color(135, 225, 230, 255)),
+        "EmpoweringFeast": ButtonColor(button_color = Color(239, 174, 33, 255),hovered_color = Color(206, 178, 148, 255),active_color = Color(239, 77, 16, 255)),
         "Alcohol": ButtonColor(button_color = Color(58, 41, 50, 255),hovered_color = Color(169, 145, 111, 255),active_color = Color(173, 173, 156, 255), texture_path="Assets\\Textures\\Consumables\\Trimmed\\Dwarven_Ale.png"),
         "Blank": ButtonColor(button_color= Color(0, 0, 0, 0), hovered_color=Color(0, 0, 0, 0), active_color=Color(0, 0, 0, 0)),
     }
@@ -917,6 +920,41 @@ class HeroAI_Windows():
                 GLOBAL_CACHE.ShMem.SendMessage(sender_email, account.AccountEmail, SharedCommandType.PCon, params)
             HeroAI_Windows._last_pcon_post_ms = now_ms
 
+        def _post_single_carrier_pcon_message(params):
+            # Party-wide effect: exactly one account pops, the one holding the most.
+            self_account = GLOBAL_CACHE.ShMem.GetAccountDataFromEmail(cached_data.account_email)
+            if not self_account:
+                return
+
+            now_ms = int(Utils.GetBaseTimestamp())
+            if now_ms - HeroAI_Windows._last_pcon_post_ms < 100:
+                return
+
+            model_id = int(params[0])
+            sender_email = cached_data.account_email
+            try:
+                best_count = int(GLOBAL_CACHE.Inventory.GetModelCount(model_id) or 0)
+            except Exception:
+                best_count = 0
+            best_email = sender_email
+            for account in cached_data.party:
+                email = account.AccountEmail
+                if email == sender_email:
+                    continue
+                try:
+                    count = int(GLOBAL_CACHE.ShMem.GetAccountInventoryModelCount(email, model_id) or 0)
+                except Exception:
+                    count = 0
+                if count > best_count:
+                    best_count = count
+                    best_email = email
+            if best_count <= 0:
+                ConsoleLog("Messaging", "No party member holds the requested PCon.")
+                return
+            ConsoleLog("Messaging", f"Sending single-carrier Pcon Message to  {best_email}")
+            GLOBAL_CACHE.ShMem.SendMessage(sender_email, best_email, SharedCommandType.PCon, params)
+            HeroAI_Windows._last_pcon_post_ms = now_ms
+
         if ImGui.colored_button(f"{IconsFontAwesome5.ICON_TIMES}##commands_resign", HeroAI_Windows.ButtonColors["Resign"].button_color, HeroAI_Windows.ButtonColors["Resign"].hovered_color, HeroAI_Windows.ButtonColors["Resign"].active_color):
         #if PyImGui.button(f"{IconsFontAwesome5.ICON_TIMES}##commands_resign"):
             accounts = cached_data.party.accounts.values()
@@ -1011,6 +1049,11 @@ class HeroAI_Windows():
                 _post_pcon_message((ModelID.Armor_Of_Salvation.value, GLOBAL_CACHE.Skill.GetID("Armor_of_Salvation_item_effect"), 0, 0))
             PyImGui.pop_style_color(3)
             ImGui.show_tooltip("Armor of Salvation")
+
+            PyImGui.same_line(0,-1)
+            if ImGui.colored_button("Trifecta##Trifecta_unique_name", HeroAI_Windows.ButtonColors["HerosTrifecta"].button_color, HeroAI_Windows.ButtonColors["HerosTrifecta"].hovered_color, HeroAI_Windows.ButtonColors["HerosTrifecta"].active_color):
+                _post_single_carrier_pcon_message((ModelID.Heros_Trifecta.value, 0, 0, 0))
+            ImGui.show_tooltip("Hero's Trifecta (Essence + Grail + Armor, one pop covers the party)")
             
             PyImGui.same_line(0,-1)
             PyImGui.text("|")
@@ -1124,6 +1167,11 @@ class HeroAI_Windows():
                 _post_pcon_message((ModelID.War_Supplies.value, GLOBAL_CACHE.Skill.GetID("Well_Supplied"), 0, 0))
             PyImGui.pop_style_color(3)
             ImGui.show_tooltip("War Supplies")
+
+            PyImGui.same_line(0,-1)
+            if ImGui.colored_button("Feast##Feast_unique_name", HeroAI_Windows.ButtonColors["EmpoweringFeast"].button_color, HeroAI_Windows.ButtonColors["EmpoweringFeast"].hovered_color, HeroAI_Windows.ButtonColors["EmpoweringFeast"].active_color):
+                _post_pcon_message((ModelID.Empowering_Feast.value, 0, 0, 0))
+            ImGui.show_tooltip("Empowering Feast (Cupcake + Apple + Egg + Corn + Pie, party-wide)")
             
     @staticmethod
     def DrawDebugWindow(cached_data:CacheData):

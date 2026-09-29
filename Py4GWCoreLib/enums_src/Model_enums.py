@@ -1208,6 +1208,7 @@ class ModelID(IntEnum):
     Eaglecrest_Axe = 1985
     Emerald_Blade = 1976
     Enchanted_Lodestone = 431
+    Empowering_Feast = 38618
     Elemental_Crystal_Shard = 38302
     Elemental_Keystone = 38301
     Enchanted_Vine = 834
@@ -1332,6 +1333,7 @@ class ModelID(IntEnum):
     Heket_Warrior_Mini = 22760
     Heleynes_Insight = 36676
     Heros_Handbook = 26899
+    Heros_Trifecta = 38619
     Heros_Zaishen_Strongbox = 36666
     Herring_Mini_Black_Moa_Chick_Incubator = 26502
     High_Priest_Zhang_Mini = 36649

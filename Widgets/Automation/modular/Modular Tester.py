@@ -15,6 +15,7 @@ from Py4GWCoreLib import ImGui
 from Py4GWCoreLib.botting_tree_src.ui import BottingTreeUIMovePathMixin
 from Py4GWCoreLib.modular import BTRecipeRunner
 from Py4GWCoreLib.modular import RecipeSpec
+from Py4GWCoreLib.modular.hero_setup import draw_configure_teams_section
 from Py4GWCoreLib.modular.paths import modular_data_root
 from Py4GWCoreLib.modular.ui_scope import child_scope
 from Py4GWCoreLib.modular.ui_scope import disabled_scope
@@ -872,6 +873,9 @@ def _draw_right_panel() -> None:
         with tab_item_scope("Step Detail") as tab_visible:
             if tab_visible:
                 _draw_step_detail()
+        with tab_item_scope("Team") as tab_visible:
+            if tab_visible:
+                draw_configure_teams_section(ui_id="modular_tester")
 
 
 def _draw_main_layout() -> None:
