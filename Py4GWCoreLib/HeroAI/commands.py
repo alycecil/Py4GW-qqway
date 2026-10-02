@@ -131,6 +131,14 @@ class HeroAICommands:
         
         return False
     
+    def send_dialog_to_target(self, accounts: list[AccountStruct], agent_id: int, dialog_id: int):
+        sender_email = Player.GetAccountEmail()
+        if agent_id == 0 or dialog_id == 0:
+            return
+
+        for account in accounts:
+            GLOBAL_CACHE.ShMem.SendMessage(sender_email, account.AccountEmail, SharedCommandType.SendDialogToTarget, (agent_id, dialog_id, 0, 0))
+
     def send_automatic_dialog(self, accounts: list[AccountStruct], button_number: int):
         sender_email = Player.GetAccountEmail()
         own_map_id = Map.GetMapID()

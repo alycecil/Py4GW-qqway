@@ -2283,15 +2283,32 @@ def draw_dialog_overlay(cached_data: CacheData, messages: list[tuple[int, Shared
         sorted_frames = sorted(frame_coords, key=lambda x: (x[1][1], x[1][0]))  # Sort by Y, then X
                
         for i, (frame_id, frame) in enumerate(sorted_frames):                
-            if ImGui.is_mouse_in_rect((frame[0], frame[1], frame[2] - frame[0], frame[3] - frame[1]), mouse_pos):                                
-                if is_left_mouse_clicked() and pyimgui_io.key_ctrl:
+            if ImGui.is_mouse_in_rect((frame[0], frame[1], frame[2] - frame[0], frame[3] - frame[1]), mouse_pos):
+                ImGui.begin_tooltip()
+                ImGui.text_colored(f"Ctrl + Click to select on all accounts.", gray_color.color_tuple, 12)
+                ImGui.end_tooltip()
+
+                if PyImGui.is_mouse_clicked(0) and pyimgui_io.key_ctrl:
                     accounts = [acc for acc in cached_data.party.accounts.values() if acc.AccountEmail != cached_data.account_email]
-                    commands.send_automatic_dialog(accounts, i)
+                    if not accounts:
+                        return
+                    # Prefer the full order: walk followers to the NPC and send
+                    # the raw dialog id. Falls back to the button-index order
+                    # when the Dialog surface has no data (followers must then
+                    # already have the same dialog open).
+                    try:
+                        from Py4GWCoreLib import Dialog
+                        active = Dialog.get_active_dialog()
+                        agent_id = int(getattr(active, "agent_id", 0) or 0) if active is not None else 0
+                        buttons = [b for b in Dialog.get_active_dialog_buttons() if getattr(b, "dialog_id", 0) != 0]
+                        dialog_id = int(buttons[i].dialog_id) if 0 <= i < len(buttons) else 0
+                    except Exception:
+                        agent_id, dialog_id = 0, 0
+                    if agent_id and dialog_id:
+                        commands.send_dialog_to_target(accounts, agent_id, dialog_id)
+                    else:
+                        commands.send_automatic_dialog(accounts, i)
                     return
-                else:
-                    ImGui.begin_tooltip()
-                    ImGui.text_colored(f"Ctrl + Click to select on all accounts.", gray_color.color_tuple, 12)
-                    ImGui.end_tooltip()
 
     pass
 
