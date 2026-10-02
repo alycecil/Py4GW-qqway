@@ -191,7 +191,7 @@ class MapUtilitiesController:
         mask = "hh:mm:ss:ms" if self._instance_uptime > 3600000 else "mm:ss:ms"
         text = FormatTime(self._instance_uptime, mask)
         PyImGui.set_next_window_pos(style.x, style.y)
-        if PyImGui.begin("Instance Timer##MapUtilitiesInstance", self._overlay_flags(False)):
+        if PyImGui.begin("Instance Timer##MapUtilitiesInstance", self._overlay_flags()):
             ImGui.push_font("Regular", style.font_size)
             PyImGui.push_style_color(PyImGui.ImGuiCol.Text, _normalise_color(style.color))
             PyImGui.text(text)
