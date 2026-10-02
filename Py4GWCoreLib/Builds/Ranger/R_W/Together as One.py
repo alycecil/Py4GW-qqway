@@ -5,6 +5,7 @@ from Py4GWCoreLib import Range
 from Py4GWCoreLib import Agent, Party, Player
 from Py4GWCoreLib.Skill import Skill
 from Py4GWCoreLib.Builds.Any.HeroAI import HeroAI_Build
+from Py4GWCoreLib.Builds.Skills.ranger.Expertise import should_hold_tao_for_heroic_refrain
 from Py4GWCoreLib.Builds.Skills import SkillsTemplate
 
 
@@ -27,7 +28,9 @@ class Together_as_One(BuildMgr):
     2 is the elite shout: it is instant with no aftercast, so it fires
     with aftercast_delay=0 whenever it is not up. This deliberately
     bypasses the shared Expertise.Together_as_One helper, which waits
-    250ms aftercast. Priority 3 is Never Rampage Alone, re-cast on
+    250ms aftercast. The shout is held while Heroic Refrain outlasts it:
+    letting TaO! lapse refreshes Refrain to full length, and TaO! is
+    re-cast once it falls off. Priority 3 is Never Rampage Alone, re-cast on
     recharge while the pet is alive with aftercast_delay=0. Priority 4
     is Run as One, re-cast whenever its effect lapses. Priority 5 is
     the sword rotation
@@ -129,8 +132,11 @@ class Together_as_One(BuildMgr):
         # Re-shout on recharge while a living ally is in earshot even
         # when the effect is already up on us: the shout also lands on
         # nearby party members, so holding a recharge wastes their buff.
+        # Exception: while Heroic Refrain outlasts TaO!, hold the re-shout
+        # (even for allies) so TaO! lapses and refreshes Refrain to full.
         if (
             self.IsSkillEquipped(Together_as_one_ID)
+            and not should_hold_tao_for_heroic_refrain(player_id)
             and (
                 not Routines.Checks.Agents.HasEffect(player_id, Together_as_one_ID)
                 or self._ally_in_shout_range(player_id)
