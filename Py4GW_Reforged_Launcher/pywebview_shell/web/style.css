@@ -1136,6 +1136,17 @@ body.drawer-open #drawer {
   border-top: 1px solid var(--border-soft, #20233f);
   flex-shrink: 0;
 }
+/* Four buttons (Delete/Clone/Cancel/Save) in a 320px drawer with 16px
+   footer insets leaves ~288px -- the shared 16px horizontal button padding
+   overflowed that and pushed Save partly off-screen. 12px here reclaims
+   32px total, scoped to this footer so every other .ghost-btn/.primary-btn
+   in the app keeps its own padding. */
+#drawer-footer .ghost-btn,
+#drawer-footer .primary-btn,
+#drawer-footer .danger-btn {
+  padding-left: 12px;
+  padding-right: 12px;
+}
 .ghost-btn,
 .primary-btn,
 .danger-btn {

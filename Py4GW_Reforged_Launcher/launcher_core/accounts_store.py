@@ -581,23 +581,26 @@ def build_profile_clone(source: GameProfile, existing_names: set[str]) -> GamePr
     """In-memory duplicate of `source`: every launch-relevant field copied
     verbatim (including the opaque DPAPI `password_protected` blob, which is
     just bytes to copy on the same machine/user -- no re-encryption needed),
-    same team memberships, fresh `id`, uniquified `name`. Mutable list
-    fields are copied, not shared, so editing the clone's gMod plugin list
-    can never mutate the source's. Not persisted -- the caller saves."""
+    fresh `id`, uniquified `name`. Team memberships are deliberately NOT
+    copied -- a clone is a starting point, not a second seat in the source's
+    teams, so it lands teamless (the unassigned bucket: visible under ALL as
+    "No team" until the user assigns it). Mutable list fields are copied,
+    not shared, so editing the clone's gMod plugin list can never mutate
+    the source's. Not persisted -- the caller saves."""
     return dataclasses.replace(
         source,
         id=uuid.uuid4().hex,
         name=unique_clone_name(source.name, existing_names),
-        team_ids=list(source.team_ids),
+        team_ids=[],
         gmod_plugin_paths=list(source.gmod_plugin_paths),
     )
 
 
 def clone_profile(profile_id: str, path: Path | str | None = None) -> GameProfile | None:
     """Duplicate one profile and persist the roster. Returns the new clone,
-    or None when no profile with `profile_id` exists. The clone keeps the
-    source's team memberships (so it shows up wherever the source did) and
-    its preserved unknown/legacy fields (copied in _EXTRA_FIELDS_CACHE under
+    or None when no profile with `profile_id` exists. The clone starts with
+    no team memberships (see build_profile_clone) but keeps the source's
+    preserved unknown/legacy fields (copied in _EXTRA_FIELDS_CACHE under
     the new id, otherwise the next save would silently drop them for the
     clone while keeping them for the source)."""
     profiles = load_profiles(path)

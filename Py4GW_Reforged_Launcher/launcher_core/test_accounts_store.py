@@ -776,12 +776,12 @@ class TestCloneProfile(unittest.TestCase):
         self.assertEqual(clone.gmod_plugin_paths, ["C:/mods/one.tpf"])
         self.assertEqual(clone.script_path, "autorun.py")
 
-    def test_clone_keeps_password_blob_and_team_memberships(self):
+    def test_clone_keeps_password_blob_but_starts_teamless(self):
         self._write_owned_roster()
         clone = accounts_store.clone_profile("source-id-1", self.path)
         assert clone is not None
         self.assertEqual(clone.password_protected, "fake-blob-same-machine")
-        self.assertEqual(sorted(clone.team_ids), ["Alpha", "Beta"])
+        self.assertEqual(clone.team_ids, [])
 
     def test_clone_name_uniquifies_against_existing_copies(self):
         self._write_owned_roster()
@@ -851,6 +851,7 @@ class TestCloneProfile(unittest.TestCase):
         profiles = accounts_store.load_profiles(self.path)
         source = next(p for p in profiles if p.id == "source-id-1")
         clone = accounts_store.build_profile_clone(source, {p.name for p in profiles})
+        self.assertEqual(clone.team_ids, [])
         clone.gmod_plugin_paths.append("C:/mods/two.tpf")
         clone.team_ids.append("Gamma")
         self.assertEqual(source.gmod_plugin_paths, ["C:/mods/one.tpf"])
@@ -860,12 +861,17 @@ class TestCloneProfile(unittest.TestCase):
         self._write_owned_roster()
         clone = accounts_store.clone_profile("source-id-1", self.path)
         assert clone is not None
+        raw = json.loads(self.path.read_text(encoding="utf-8"))
+        unassigned = raw.get(accounts_store._UNASSIGNED_TEAM_KEY, [])
+        self.assertEqual([a["id"] for a in unassigned], [clone.id])
         reloaded = accounts_store.load_profiles(self.path)
         by_id = {p.id: p for p in reloaded}
         self.assertIn(clone.id, by_id)
         self.assertEqual(by_id[clone.id].name, "Main Char (copy)")
-        self.assertEqual(sorted(by_id[clone.id].team_ids), ["Alpha", "Beta"])
+        self.assertEqual(by_id[clone.id].team_ids, [])
         self.assertEqual(by_id[clone.id].password_protected, "fake-blob-same-machine")
+        # And the source is untouched by the whole operation.
+        self.assertEqual(sorted(by_id["source-id-1"].team_ids), ["Alpha", "Beta"])
 
 
 if __name__ == "__main__":
