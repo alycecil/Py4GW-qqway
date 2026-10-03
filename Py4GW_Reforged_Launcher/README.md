@@ -47,6 +47,9 @@ any of these.)
 - **Multibox team launch** — group accounts into named teams, launch a
   whole team with a paced, staggered login sequence (anti-bot-safe timing,
   not a naive loop).
+- **Clone a profile** — duplicate any account/config from its edit drawer
+  (every setting, team membership, and saved password carried over) and
+  land directly in the copy to tweak what differs.
 - **gMod injection** — per-profile mod lists (add/remove `.tpf` files in
   the Mods tab), independent per account even when several accounts share
   one GW install. Opt-in alongside Py4GW injection, not a replacement.

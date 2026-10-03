@@ -800,6 +800,35 @@ class TestCloneProfile(unittest.TestCase):
         assert clone is not None
         self.assertEqual(clone.name, "Profile (copy)")
 
+    def test_distinct_file_ids_with_identical_content_stay_separate(self):
+        """The load-bearing rule clone relies on: two entries that both
+        carry this app's own distinct ids are two distinct profiles, even
+        when executable_path + character_name still agree (a fresh clone
+        before the user edits it). Id-less legacy entries still merge via
+        content keys (see TestDuplicateDedup) -- this only covers the
+        both-ids-present case."""
+        data = {
+            "Alpha": [
+                {
+                    "id": "id-one",
+                    "name": "Same",
+                    "character_name": "Same Char",
+                    "email": "same@fake.com",
+                    "gw_path": "C:/Games/GW1/Client 00/Gw.exe",
+                },
+                {
+                    "id": "id-two",
+                    "name": "Same",
+                    "character_name": "Same Char",
+                    "email": "same@fake.com",
+                    "gw_path": "C:/Games/GW1/Client 00/Gw.exe",
+                },
+            ]
+        }
+        self.path.write_text(json.dumps(data), encoding="utf-8")
+        profiles = accounts_store.load_profiles(self.path)
+        self.assertEqual({p.id for p in profiles}, {"id-one", "id-two"})
+
     def test_clone_unknown_id_returns_none_and_writes_nothing(self):
         self._write_owned_roster()
         before = self.path.read_text(encoding="utf-8")

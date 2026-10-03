@@ -244,6 +244,13 @@ def _dedup_keys(p: GameProfile) -> list[tuple]:
     "(unnamed)" profile (confirmed via _parse_raw_traced's own trace:
     `merged_via_key: 'exe_char'`). Guarded the same way the email key
     already is.
+
+    Clone support (see _parse_raw_traced's merge loop): these content keys
+    are consulted in order after the `id` key, and the loop skips a
+    content-key match when both sides carry distinct file-backed ids -- so
+    a freshly cloned profile (same executable_path + character_name as its
+    source until the user edits it) survives reloads as its own profile
+    instead of being folded back into the source.
     """
     keys: list[tuple] = [("id", p.id)]
     if p.executable_path:
@@ -274,6 +281,9 @@ def _parse_raw_traced(
     ordered_profiles: list[GameProfile] = []
     teams: list[Team] = []
     trace: list[dict] = []
+    # Ids that arrived in the raw file itself (not freshly generated for an
+    # id-less legacy entry) -- see the content-key skip in the merge loop.
+    file_backed_ids: set[str] = set()
 
     if not isinstance(raw, dict):
         return [], [], []
@@ -290,15 +300,35 @@ def _parse_raw_traced(
                 trace.append({"team_fingerprint": _fingerprint(team_name), "outcome": "skipped_not_a_dict"})
                 continue
             profile, extras = _account_from_dict(account)
+            # Same truthiness _account_from_dict itself uses to decide the
+            # id came from the file rather than being freshly generated.
+            incoming_has_file_id = bool(account.get("id"))
             keys = _dedup_keys(profile)
 
             existing = None
             matched_via = None
             for key in keys:
-                existing = existing_by_key.get(key)
-                if existing is not None:
-                    matched_via = key[0]
-                    break
+                candidate = existing_by_key.get(key)
+                if candidate is None:
+                    continue
+                if (
+                    key[0] != "id"
+                    and incoming_has_file_id
+                    and candidate.id in file_backed_ids
+                    and candidate.id != profile.id
+                ):
+                    # Clone support: two entries that both carry this app's
+                    # own distinct ids are two distinct profiles, even when
+                    # their content keys still agree (a fresh clone shares
+                    # its source's executable_path + character_name until
+                    # the user edits it -- merging here would silently
+                    # delete the clone on the very next load). Content-key
+                    # merging stays for id-less legacy entries, where it's
+                    # the only signal available.
+                    continue
+                existing = candidate
+                matched_via = key[0]
+                break
 
             entry: dict[str, Any] = {
                 "team_fingerprint": _fingerprint(team_name),
@@ -322,6 +352,8 @@ def _parse_raw_traced(
                 entry["profile_id"] = profile.id[:8]
                 entry["py4gw_dll_path_set"] = bool(profile.py4gw_dll_path)
                 entry["gmod_dll_path_set"] = bool(profile.gmod_dll_path)
+                if incoming_has_file_id:
+                    file_backed_ids.add(profile.id)
                 profile.team_ids = [team_name] if is_real_team else []
                 for key in keys:
                     existing_by_key[key] = profile
