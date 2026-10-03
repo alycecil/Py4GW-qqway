@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from Py4GWCoreLib.BuildMgr import BuildCoroutine
-from Py4GWCoreLib import Player, Range, Routines
+from Py4GWCoreLib import Player, Profession, Range, Routines
+from Py4GWCoreLib.Agent import Agent
 from Py4GWCoreLib.Skill import Skill
 
 if TYPE_CHECKING:
@@ -57,6 +58,76 @@ class Motivation:
     #region H
     def Hasty_Refrain(self, *, max_target_range: float | None = None) -> BuildCoroutine:
         return (yield from self.build.SpreadEchoToAlly(Skill.GetID("Hasty_Refrain"), max_range=max_target_range))
+    #endregion
+
+    #region I
+    def Inspirational_Speech(
+        self,
+        *,
+        required_profession: Profession = Profession.Necromancer,
+        required_skill_id: int | list[int] | tuple[int, ...] | set[int] | None = None,
+        prefer_secondary: Profession | int | None = Profession.Dervish,
+    ) -> BuildCoroutine:
+        """Feed adrenaline strikes to melee Necromancers.
+
+        Mirrors ``DeathMagic.Dark_Aura`` targeting: allies of
+        ``required_profession`` carrying ``required_skill_id`` (Soul Taker by
+        default), with ``prefer_secondary`` (Dervish by default, i.e. the N/D
+        scythe melees) ordered first. Cannot self-target, so ``other_ally``
+        is always set.
+        """
+        inspirational_speech_id: int = Skill.GetID("Inspirational_Speech")
+        if required_skill_id is None:
+            required_skill_ids: tuple[int, ...] = (Skill.GetID("Soul_Taker"),)
+        elif isinstance(required_skill_id, (list, tuple, set, frozenset)):
+            required_skill_ids = tuple(int(skill_id) for skill_id in required_skill_id if int(skill_id) != 0)
+        elif int(required_skill_id) != 0:
+            required_skill_ids = (int(required_skill_id),)
+        else:
+            required_skill_ids = tuple()
+
+        if not self.build.IsSkillEquipped(inspirational_speech_id):
+            return False
+        if not (self.build.IsInAggro() or self.build.IsCloseToAggro()):
+            return False
+
+        candidates = Routines.Targeting.TargetAlliesByProfession(
+            required_profession,
+            required_skill_id=required_skill_ids,
+            other_ally=True,
+            distance=Range.Spellcast.value,
+        )
+        if not candidates:
+            return False
+
+        if prefer_secondary is not None:
+            try:
+                prefer_secondary_id = int(prefer_secondary)
+            except (TypeError, ValueError):
+                prefer_secondary_id = 0
+            if prefer_secondary_id:
+                preferred = []
+                rest = []
+                for candidate_id in candidates:
+                    _, secondary = Agent.GetProfessions(candidate_id)
+                    if int(secondary or 0) == prefer_secondary_id:
+                        preferred.append(candidate_id)
+                    else:
+                        rest.append(candidate_id)
+                candidates = preferred + rest
+                if not candidates:
+                    return False
+
+        target_agent_id = int(candidates[0] or 0)
+        if not target_agent_id:
+            return False
+
+        return (yield from self.build.CastSkillIDAndRestoreTarget(
+            skill_id=inspirational_speech_id,
+            target_agent_id=target_agent_id,
+            log=False,
+            aftercast_delay=250,
+        ))
     #endregion
 
     #region L

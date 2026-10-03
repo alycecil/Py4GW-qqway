@@ -12,6 +12,7 @@ Soul_Taker_ID = Skill.GetID("Soul_Taker")
 Foul_Feast_ID = Skill.GetID("Foul_Feast")
 Great_Dwarf_Weapon_ID = Skill.GetID("Great_Dwarf_Weapon")
 Stand_Your_Ground_ID = Skill.GetID("Stand_Your_Ground")
+Inspirational_Speech_ID = Skill.GetID("Inspirational_Speech")
 
 
 class Dark_Aura_Battery(BuildMgr):
@@ -26,13 +27,16 @@ class Dark_Aura_Battery(BuildMgr):
                 Blood_is_Power_ID,
                 Foul_Feast_ID,
                 Great_Dwarf_Weapon_ID,
+                Inspirational_Speech_ID,
             ],
-            # NOTE: Inspirational Speech, "Help Me!" and Ebon Escape are
-            # deliberately NOT listed here. Supported skills are masked from
-            # the HeroAI fallback, and none of the three has local logic —
-            # listing them would orphan the ally buffs and the emergency
-            # shadow step. Unlisted, the fallback keeps firing them per its
-            # own targeting data.
+            # NOTE: "Help Me!" and Ebon Escape are deliberately NOT listed
+            # here. Supported skills are masked from the HeroAI fallback, and
+            # neither of the two has local logic — listing them would orphan
+            # the ally buff and the emergency shadow step. Unlisted, the
+            # fallback keeps firing them per its own targeting data.
+            # Inspirational Speech used to live in that fallback-only group
+            # (lowest-ally targeting); it now has local N/D-melee preference
+            # below, mirroring Dark Aura's Soul Taker filter.
             optional_skills=[
                 Stand_Your_Ground_ID,
             ],
@@ -66,6 +70,15 @@ class Dark_Aura_Battery(BuildMgr):
         # Battery feed: energy to the target ally with its own HP-safety
         # floors and throttle inside.
         if self.IsSkillEquipped(Blood_is_Power_ID) and (yield from self.skills.Necromancer.BloodMagic.Blood_is_Power()):
+            return True
+
+        # Adrenaline feed: same pool Dark Aura uses (Necro + Soul Taker),
+        # N/D scythe melees first. Aggro/close gating lives inside.
+        if self.IsSkillEquipped(Inspirational_Speech_ID) and (
+            yield from self.skills.Paragon.Motivation.Inspirational_Speech(
+                required_skill_id=Soul_Taker_ID
+            )
+        ):
             return True
 
         if not self.IsInAggro():

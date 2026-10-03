@@ -10,22 +10,35 @@ from Py4GWCoreLib.Party import Party
 from Py4GWCoreLib.Player import Player
 from Py4GWCoreLib.Skill import Skill
 from Py4GWCoreLib.Skillbar import SkillBar
+from Py4GWCoreLib.Builds.Skills import HexRemovalPriority, SkillsTemplate
 
 
 Arcane_Mimicry_ID = Skill.GetID("Arcane_Mimicry")
 Unyielding_Aura_ID = Skill.GetID("Unyielding_Aura")
-Healers_Boon_ID = Skill.GetID("Healer's_Boon")
+Healers_Boon_ID = Skill.GetID("Healers_Boon")
 Ebon_Escape_ID = Skill.GetID("Ebon_Escape")
 Orison_of_Healing_ID = Skill.GetID("Orison_of_Healing")
 Seed_of_Life_ID = Skill.GetID("Seed_of_Life")
 Power_Drain_ID = Skill.GetID("Power_Drain")
 Cure_Hex_ID = Skill.GetID("Cure_Hex")
+Dwaynas_Kiss_ID = Skill.GetID("Dwaynas_Kiss")
+Patient_Spirit_ID = Skill.GetID("Patient_Spirit")
+Divine_Healing_ID = Skill.GetID("Divine_Healing")
+Heavens_Delight_ID = Skill.GetID("Heavens_Delight")
 Selfless_Spirit_Kurzick_ID = Skill.GetID("Selfless_Spirit_kurzick")
 Selfless_Spirit_Luxon_ID = Skill.GetID("Selfless_Spirit_luxon")
 
 _MAX_HERO_POSITIONS = 8
 _UA_SOURCE_SCAN_MS = 1000
 _DROP_SUPPRESS_MS = 3000
+
+# Heal-chain tuning for the Unyielding_Aura source bar below. All HP values
+# are fractions (0.0-1.0); energy values are fractions of max energy.
+_GRAVE_WOUND_HP = 0.60
+_MEDIUM_WOUND_HP = 0.80
+_COMBO_MIN_ENERGY_PCT = 0.30
+_POWER_DRAIN_ENERGY_PCT = 0.50
+_PARTY_WIDE_AVG_HP = 0.90
 
 DEBUG_LOGS: bool = False
 
@@ -36,8 +49,8 @@ class Unyielding_Aura_Drop(BuildMgr):
     The normal UA source bar (``Unyielding_Aura``) lives in this module
     below so the pair stays together.
 
-    Root cause for the sibling ``Unyielding_Aura_Mimicry`` build: on a dead party
-    member it only returned ``False`` (refused to recast). A maintained
+    Root cause for the former sibling ``Unyielding_Aura_Mimicry`` build
+    (since removed): on a dead party member it only returned ``False`` (refused to recast). A maintained
     enchantment does not end that way, so the resurrect end-effect never
     fired. This variant issues a real ``DropBuff`` through the owning
     ``GLOBAL_CACHE.Effects`` queue before falling back to the same
@@ -50,7 +63,15 @@ class Unyielding_Aura_Drop(BuildMgr):
 
     Carries OwUTMw2CXiuMjIHMDIIY6LuC0DA (Ebon Escape, Orison of Healing,
     Seed of Life, Power Drain, Arcane Mimicry, Cure Hex, Healer's Boon,
-    Selfless Spirit).
+    Selfless Spirit). Dwayna's Kiss is supported in the Orison slot when
+    the bar carries it instead.
+
+    Tick priority: drop the copy to resurrect, maintain Healer's Boon,
+    maintain a directly-equipped UA, acquire the copy via Mimicry, then
+    work the support chain (Power Drain interrupt, Cure Hex tiers, Seed
+    of Life, Dwayna's Kiss, Orison, Ebon Escape rescue, Selfless Spirit
+    upkeep). The post-drop suppress window gates Mimicry acquisition
+    only; everything else stays live.
     """
 
     def __init__(self, match_only: bool = False):
@@ -59,10 +80,12 @@ class Unyielding_Aura_Drop(BuildMgr):
             required_primary=Profession.Monk,
             required_secondary=Profession.Mesmer,
             template_code="OwUTMw2CXiuMjIHMDIIY6LuC0DA",
-            required_skills=[Arcane_Mimicry_ID, Healers_Boon_ID],
+            required_skills=[Arcane_Mimicry_ID],
             optional_skills=[
+                Healers_Boon_ID,
                 Ebon_Escape_ID,
                 Orison_of_Healing_ID,
+                Dwaynas_Kiss_ID,
                 Seed_of_Life_ID,
                 Power_Drain_ID,
                 Cure_Hex_ID,
@@ -75,6 +98,7 @@ class Unyielding_Aura_Drop(BuildMgr):
 
         self.SetFallback("HeroAI", HeroAI_Build(standalone_fallback=True))
         self.SetSkillCastingFn(self._run_local_skill_logic)
+        self.skills: SkillsTemplate = SkillsTemplate(self)
         self._ua_source_agent_id: int = 0
         self._ua_source_next_scan_ms: int = 0
         self._last_drop_tick_ms: int = 0
@@ -236,6 +260,36 @@ class Unyielding_Aura_Drop(BuildMgr):
     def _dead_party_member_in_range(self) -> bool:
         return bool(Routines.Party.GetDeadPartyMemberID(max_distance=Range.Spellcast.value))
 
+    def _lowest_injured_ally(self, player_id: int, threshold: float, include_self: bool) -> int:
+        """Lowest-health living ally in Spellcast range below threshold, else 0."""
+        try:
+            player_x, player_y = Player.GetXY()
+            allies = (
+                Routines.Agents.GetFilteredAllyArray(
+                    player_x,
+                    player_y,
+                    Range.Spellcast.value,
+                    other_ally=not include_self,
+                )
+                or []
+            )
+        except Exception:
+            return 0
+        best_id = 0
+        best_hp = float(threshold)
+        for ally_id in allies:
+            ally_id = int(ally_id)
+            if ally_id == 0 or not Agent.IsAlive(ally_id):
+                continue
+            hp = float(Agent.GetHealth(ally_id))
+            if hp < best_hp:
+                best_id, best_hp = ally_id, hp
+        if include_self and Agent.IsAlive(player_id):
+            own_hp = float(Agent.GetHealth(player_id))
+            if own_hp < best_hp:
+                return player_id
+        return best_id
+
     def _run_local_skill_logic(self):
         if not Routines.Checks.Skills.CanCast():
             self._log_debug("tick: blocked, CanCast=False")
@@ -251,17 +305,25 @@ class Unyielding_Aura_Drop(BuildMgr):
             self._log_debug("tick: party member dead in Spellcast range, UA drop failed")
             return False
 
-        if self._drop_suppressed():
-            self._log_debug("tick: drop suppress window, holding mimicry")
-            return False
+        # Healer's Boon upkeep. Sits ahead of mimicry acquisition so a
+        # lapsed Boon is re-cast even while the copied aura is up, in or
+        # out of combat.
+        if self.IsSkillEquipped(Healers_Boon_ID):
+            if not Routines.Checks.Agents.HasEffect(player_id, Healers_Boon_ID):
+                self._log_debug("tick: Healer's Boon lapsed, re-casting")
+                return (
+                    yield from self.CastSkillID(
+                        skill_id=Healers_Boon_ID,
+                        log=False,
+                        aftercast_delay=250,
+                    )
+                )
 
         if self.IsSkillEquipped(Unyielding_Aura_ID):
-            # While a party member is dead within cast range we must not
-            # maintain Unyielding Aura. The drop above already ended it;
-            # this guard only stops an immediate recast.
-            if self._dead_party_member_in_range():
-                self._log_debug("tick: party member dead in Spellcast range, not maintaining UA")
-                return False
+            # Cast whenever the effect is missing, even with a dead party
+            # member present: the drop block above ends it for the rez on
+            # the following ticks. Refusing here would deadlock - never
+            # maintaining means never dropping means never rezzing.
             if not Routines.Checks.Agents.HasEffect(player_id, Unyielding_Aura_ID):
                 self._log_debug(
                     f"casting Unyielding Aura on self "
@@ -277,37 +339,134 @@ class Unyielding_Aura_Drop(BuildMgr):
             self._log_debug("tick: UA copied and effect active, nothing to do")
             return False
 
-        # Already maintaining UA: the effect is up on us, so there is no need
-        # to re-copy the elite yet. Only re-mimic once the effect has lapsed.
-        if self._is_maintaining_ua(player_id):
+        # Mimicry acquisition is the primary job, but it never preempts the
+        # support chain below: failures fall through to healing instead of
+        # aborting the tick. The drop-suppress window gates only this block,
+        # so UA, Boon, and support all stay live right after a drop.
+        if not self._is_maintaining_ua(player_id):
+            if self._drop_suppressed():
+                self._log_debug("tick: drop suppress window, holding mimicry")
+            else:
+                # Arcane Mimicry is only ever cast on the party monk whose
+                # skillbar actually carries Unyielding Aura - never on any
+                # other ally.
+                source_id = self.GetUnyieldingAuraSource()
+                if not source_id:
+                    source_id = self._get_fallback_monk_target()
+                    if source_id:
+                        self._log_debug(f"tick: no UA on any bar, falling back to mimicry on monk {source_id}")
+
+                if not source_id:
+                    self._log_debug("tick: no UA source or fallback monk found, skipping mimicry")
+                else:
+                    me_x, me_y = Player.GetXY()
+                    source_x, source_y = Agent.GetXY(source_id)
+                    if ((source_x - me_x) ** 2 + (source_y - me_y) ** 2) ** 0.5 > Range.Spellcast.value:
+                        self._log_debug(f"tick: UA source {source_id} out of Spellcast range")
+                    elif (
+                        yield from self.CastSkillIDAndRestoreTarget(
+                            skill_id=Arcane_Mimicry_ID,
+                            target_agent_id=source_id,
+                            aftercast_delay=250,
+                        )
+                    ):
+                        return True
+                    else:
+                        self._log_debug(f"tick: mimicry blocked for source {source_id}")
+        else:
             self._log_debug("tick: UA effect active, skipping mimicry")
-            return False
 
-        # Arcane Mimicry is only ever cast on the party monk whose skillbar
-        # actually carries Unyielding Aura - never on any other ally.
-        source_id = self.GetUnyieldingAuraSource()
-        if not source_id:
-            source_id = self._get_fallback_monk_target()
-            if not source_id:
-                self._log_debug("tick: no UA source or fallback monk found, skipping")
-                return False
-            self._log_debug(f"tick: no UA on any bar, falling back to mimicry on monk {source_id}")
+        # Support chain. Time-sensitive protection first (interrupt, hex
+        # removal), then heals, rescue, and energy upkeep. Helpers resolve
+        # their own targets and return False when nothing needs doing.
+        if self.IsSkillEquipped(Power_Drain_ID) and (
+            yield from self.skills.Mesmer.InspirationMagic.Power_Drain()
+        ):
+            return True
 
-        me_x, me_y = Player.GetXY()
-        source_x, source_y = Agent.GetXY(source_id)
-        if ((source_x - me_x) ** 2 + (source_y - me_y) ** 2) ** 0.5 > Range.Spellcast.value:
-            self._log_debug(f"tick: UA source {source_id} out of Spellcast range")
-            return False
+        if self.IsSkillEquipped(Cure_Hex_ID) and (
+            yield from self.skills.Monk.HealingPrayers.Cure_Hex(min_priority=HexRemovalPriority.HIGH)
+        ):
+            return True
 
-        cast = yield from self.CastSkillIDAndRestoreTarget(
-            skill_id=Arcane_Mimicry_ID,
-            target_agent_id=source_id,
-            aftercast_delay=250,
-        )
-        if not cast:
-            self._log_debug(f"tick: mimicry blocked for source {source_id}")
-            return False
-        return True
+        if self.IsSkillEquipped(Seed_of_Life_ID) and (
+            yield from self.skills.Monk.NoAttribute.Seed_of_Life()
+        ):
+            return True
+
+        if self.IsSkillEquipped(Dwaynas_Kiss_ID) and (
+            yield from self.skills.Monk.HealingPrayers.Dwaynas_Kiss()
+        ):
+            return True
+
+        if self.IsSkillEquipped(Orison_of_Healing_ID):
+            orison_target = self._lowest_injured_ally(player_id, 0.80, include_self=True)
+            if orison_target and (
+                yield from self.CastSkillIDAndRestoreTarget(
+                    skill_id=Orison_of_Healing_ID,
+                    target_agent_id=orison_target,
+                    log=False,
+                    aftercast_delay=250,
+                )
+            ):
+                return True
+
+        if self.IsSkillEquipped(Ebon_Escape_ID):
+            ebon_target = self._lowest_injured_ally(player_id, 0.60, include_self=False)
+            if ebon_target and (
+                yield from self.CastSkillIDAndRestoreTarget(
+                    skill_id=Ebon_Escape_ID,
+                    target_agent_id=ebon_target,
+                    log=False,
+                    aftercast_delay=250,
+                )
+            ):
+                return True
+
+        # Out of combat, Ebon Escape is a catch-up step via the shared PvE
+        # helper (shadow step to the party leader when lagging).
+        if self.IsSkillEquipped(Ebon_Escape_ID) and (
+            yield from self.skills.Any.PvE.Ebon_Escape_CatchUp()
+        ):
+            return True
+
+        player_energy_pct = float(Agent.GetEnergy(player_id))
+        # Selfless Spirit is combat-only upkeep: out of combat the energy
+        # regen is not worth the cast, so both variants hold until aggro.
+        if self.IsInAggro() and self.IsSkillEquipped(Selfless_Spirit_Kurzick_ID):
+            if not Routines.Checks.Agents.HasEffect(
+                player_id, Selfless_Spirit_Kurzick_ID
+            ) and player_energy_pct < 0.50:
+                self._log_debug("tick: energy low, maintaining Selfless Spirit")
+                return (
+                    yield from self.CastSkillID(
+                        skill_id=Selfless_Spirit_Kurzick_ID,
+                        log=False,
+                        aftercast_delay=250,
+                    )
+                )
+        if self.IsInAggro() and self.IsSkillEquipped(Selfless_Spirit_Luxon_ID):
+            if not Routines.Checks.Agents.HasEffect(player_id, Selfless_Spirit_Luxon_ID):
+                self._log_debug("tick: maintaining Selfless Spirit")
+                return (
+                    yield from self.CastSkillID(
+                        skill_id=Selfless_Spirit_Luxon_ID,
+                        log=False,
+                        aftercast_delay=250,
+                    )
+                )
+
+        if player_energy_pct >= 0.50 and self.IsSkillEquipped(Cure_Hex_ID) and (
+            yield from self.skills.Monk.HealingPrayers.Cure_Hex(min_priority=HexRemovalPriority.MEDIUM)
+        ):
+            return True
+
+        if player_energy_pct >= 0.70 and self.IsSkillEquipped(Cure_Hex_ID) and (
+            yield from self.skills.Monk.HealingPrayers.Cure_Hex()
+        ):
+            return True
+
+        return False
 
 
 class Unyielding_Aura(BuildMgr):
@@ -323,10 +482,18 @@ class Unyielding_Aura(BuildMgr):
 
     Carries OwUTMw2CXqBcjIHkuMD4ioLihAA (Patient Spirit, Dwayna's Kiss,
     Seed of Life, Ebon Escape, Power Drain, Divine Healing,
-    Heaven's Delight, Unyielding Aura) as its template, but declares only
-    Unyielding Aura itself: every declared skill is masked from the HeroAI
-    fallback each tick, so declaring the support set would silence all
-    fallback healing while local logic only casts UA.
+    Heaven's Delight, Unyielding Aura) as its template, and declares the
+    support set as optional skills so local logic owns their priority:
+    every declared skill is masked from the HeroAI fallback each tick.
+    Required stays Unyielding Aura alone so the build still matches any
+    Monk-primary bar carrying the elite.
+
+    Tick priority: drop UA to resurrect, maintain UA on self, then work
+    the heal chain - Seed of Life first (primary party-wide heal), grave
+    wounds via the Patient Spirit + Ebon Escape combo when energy allows
+    (single Dwayna's Kiss when it does not), medium wounds via Patient
+    Spirit alone, Power Drain below half energy, Divine Healing and
+    Heaven's Delight while the earshot party average sags.
     """
 
     def __init__(self, match_only: bool = False):
@@ -335,12 +502,22 @@ class Unyielding_Aura(BuildMgr):
             required_primary=Profession.Monk,
             template_code="OwUTMw2CXqBcjIHkuMD4ioLihAA",
             required_skills=[Unyielding_Aura_ID],
+            optional_skills=[
+                Patient_Spirit_ID,
+                Dwaynas_Kiss_ID,
+                Seed_of_Life_ID,
+                Ebon_Escape_ID,
+                Power_Drain_ID,
+                Divine_Healing_ID,
+                Heavens_Delight_ID,
+            ],
         )
         if match_only:
             return
 
         self.SetFallback("HeroAI", HeroAI_Build(standalone_fallback=True))
         self.SetSkillCastingFn(self._run_local_skill_logic)
+        self.skills: SkillsTemplate = SkillsTemplate(self)
         self._last_drop_tick_ms: int = 0
         self._debug_enabled: bool = DEBUG_LOGS
         self._debug_last_log_ms: int = 0
@@ -375,6 +552,66 @@ class Unyielding_Aura(BuildMgr):
     def _dead_party_member_in_range(self) -> bool:
         return bool(Routines.Party.GetDeadPartyMemberID(max_distance=Range.Spellcast.value))
 
+    def _lowest_injured_ally(self, player_id: int, threshold: float, include_self: bool) -> int:
+        """Lowest-health living ally in Spellcast range below threshold, else 0."""
+        try:
+            player_x, player_y = Player.GetXY()
+            allies = (
+                Routines.Agents.GetFilteredAllyArray(
+                    player_x,
+                    player_y,
+                    Range.Spellcast.value,
+                    other_ally=not include_self,
+                )
+                or []
+            )
+        except Exception:
+            return 0
+        best_id = 0
+        best_hp = float(threshold)
+        for ally_id in allies:
+            ally_id = int(ally_id)
+            if ally_id == 0 or not Agent.IsAlive(ally_id):
+                continue
+            hp = float(Agent.GetHealth(ally_id))
+            if hp < best_hp:
+                best_id, best_hp = ally_id, hp
+        if include_self and Agent.IsAlive(player_id):
+            own_hp = float(Agent.GetHealth(player_id))
+            if own_hp < best_hp:
+                return player_id
+        return best_id
+
+    def _party_average_hp_in_earshot(self, player_id: int) -> float | None:
+        """Mean HP fraction of living allies in Earshot (self included), else None."""
+        try:
+            player_x, player_y = Player.GetXY()
+            allies = (
+                Routines.Agents.GetFilteredAllyArray(
+                    player_x,
+                    player_y,
+                    Range.Earshot.value,
+                    other_ally=True,
+                )
+                or []
+            )
+        except Exception:
+            return None
+        total_hp = 0.0
+        count = 0
+        for ally_id in allies:
+            ally_id = int(ally_id)
+            if ally_id == 0 or ally_id == player_id or not Agent.IsAlive(ally_id):
+                continue
+            total_hp += float(Agent.GetHealth(ally_id))
+            count += 1
+        if Agent.IsAlive(player_id):
+            total_hp += float(Agent.GetHealth(player_id))
+            count += 1
+        if count == 0:
+            return None
+        return total_hp / count
+
     def _run_local_skill_logic(self):
         if not Routines.Checks.Skills.CanCast():
             self._log_debug("tick: blocked, CanCast=False")
@@ -389,32 +626,132 @@ class Unyielding_Aura(BuildMgr):
                 buff_id = self._find_maintained_ua_buff(player_id)
                 if not buff_id:
                     self._log_debug("tick: party member dead in Spellcast range, UA drop failed (no buff)")
-                    return False
-                try:
-                    GLOBAL_CACHE.Effects.DropBuff(int(buff_id))
-                except Exception as exc:
-                    self._log_debug(f"DropBuff({buff_id}) failed: {exc}")
-                    return False
-                self._last_drop_tick_ms = int(PySystem.get_tick_count64())
-                self._debug(f"Dropped Unyielding Aura (buff {buff_id}): dead party member in Spellcast range.")
-                return True
-            self._log_debug("tick: UA effect active, nothing to do")
-            return False
-
-        if self._drop_suppressed():
-            self._log_debug("tick: drop suppress window, holding recast")
-            return False
-
-        if not self.IsSkillEquipped(Unyielding_Aura_ID):
-            return False
-        self._log_debug(
-            f"casting Unyielding Aura on self "
-            f"(slot={int(SkillBar.GetSlotBySkillID(Unyielding_Aura_ID) or 0)})"
-        )
-        return (
-            yield from self.CastSkillID(
-                skill_id=Unyielding_Aura_ID,
-                target_agent_id=player_id,
-                aftercast_delay=250,
+                else:
+                    try:
+                        GLOBAL_CACHE.Effects.DropBuff(int(buff_id))
+                    except Exception as exc:
+                        self._log_debug(f"DropBuff({buff_id}) failed: {exc}")
+                        buff_id = 0
+                    if buff_id:
+                        self._last_drop_tick_ms = int(PySystem.get_tick_count64())
+                        self._debug(
+                            f"Dropped Unyielding Aura (buff {buff_id}): dead party member in Spellcast range."
+                        )
+                        return True
+            else:
+                self._log_debug("tick: UA up, working support chain")
+        elif not self._drop_suppressed() and self.IsSkillEquipped(Unyielding_Aura_ID):
+            self._log_debug(
+                f"casting Unyielding Aura on self "
+                f"(slot={int(SkillBar.GetSlotBySkillID(Unyielding_Aura_ID) or 0)})"
             )
-        )
+            if (
+                yield from self.CastSkillID(
+                    skill_id=Unyielding_Aura_ID,
+                    target_agent_id=player_id,
+                    aftercast_delay=250,
+                )
+            ):
+                return True
+            self._log_debug("tick: UA recast failed, working support chain")
+        else:
+            self._log_debug("tick: UA not up (suppressed or unequipped), working support chain")
+
+        # Seed of Life is the primary party-wide heal. The helper resolves
+        # its own spike target and goes quiet when nothing needs it.
+        if self.IsSkillEquipped(Seed_of_Life_ID) and (
+            yield from self.skills.Monk.NoAttribute.Seed_of_Life()
+        ):
+            return True
+
+        player_energy_pct = float(Agent.GetEnergy(player_id))
+
+        # Grave wounds: Patient Spirit + Ebon Escape combo when energy
+        # allows for two casts (Patient lands first, Ebon follows next
+        # tick once Patient is on the target); a single Dwayna's Kiss
+        # when it does not. Dwayna's Kiss cannot self-target, so a grave
+        # self-wound falls through to Patient Spirit below.
+        grave_target = self._lowest_injured_ally(player_id, _GRAVE_WOUND_HP, include_self=False)
+        if grave_target:
+            if player_energy_pct >= _COMBO_MIN_ENERGY_PCT:
+                if self.IsSkillEquipped(Patient_Spirit_ID) and not Routines.Checks.Agents.HasEffect(
+                    grave_target, Patient_Spirit_ID
+                ):
+                    if (
+                        yield from self.CastSkillIDAndRestoreTarget(
+                            skill_id=Patient_Spirit_ID,
+                            target_agent_id=grave_target,
+                            log=False,
+                            aftercast_delay=250,
+                        )
+                    ):
+                        return True
+                if self.IsSkillEquipped(Ebon_Escape_ID) and (
+                    yield from self.CastSkillIDAndRestoreTarget(
+                        skill_id=Ebon_Escape_ID,
+                        target_agent_id=grave_target,
+                        log=False,
+                        aftercast_delay=250,
+                    )
+                ):
+                    return True
+            if self.IsSkillEquipped(Dwaynas_Kiss_ID) and (
+                yield from self.skills.Monk.HealingPrayers.Dwaynas_Kiss()
+            ):
+                return True
+
+        # Medium wounds: Patient Spirit alone. Targets already carrying it
+        # are skipped so the delayed heal is never overwritten early.
+        patient_target = self._lowest_injured_ally(player_id, _MEDIUM_WOUND_HP, include_self=True)
+        if patient_target and not Routines.Checks.Agents.HasEffect(patient_target, Patient_Spirit_ID):
+            if self.IsSkillEquipped(Patient_Spirit_ID) and (
+                yield from self.CastSkillIDAndRestoreTarget(
+                    skill_id=Patient_Spirit_ID,
+                    target_agent_id=patient_target,
+                    log=False,
+                    aftercast_delay=250,
+                )
+            ):
+                return True
+
+        # Energy upkeep: actively refill below half. The helper only fires
+        # on an enemy casting a spell or chant in Spellcast range.
+        if self.IsSkillEquipped(Power_Drain_ID) and (
+            yield from self.skills.Mesmer.InspirationMagic.Power_Drain(
+                energy_threshold_pct=_POWER_DRAIN_ENERGY_PCT
+            )
+        ):
+            return True
+
+        # Party-wide top-up: Divine Healing then Heaven's Delight whenever
+        # the earshot average sags. Both heal self plus the party, so self
+        # is a valid anchor target.
+        party_avg_hp = self._party_average_hp_in_earshot(player_id)
+        if party_avg_hp is not None and party_avg_hp < _PARTY_WIDE_AVG_HP:
+            if self.IsSkillEquipped(Divine_Healing_ID) and (
+                yield from self.CastSkillIDAndRestoreTarget(
+                    skill_id=Divine_Healing_ID,
+                    target_agent_id=player_id,
+                    log=False,
+                    aftercast_delay=250,
+                )
+            ):
+                return True
+            if self.IsSkillEquipped(Heavens_Delight_ID) and (
+                yield from self.CastSkillIDAndRestoreTarget(
+                    skill_id=Heavens_Delight_ID,
+                    target_agent_id=player_id,
+                    log=False,
+                    aftercast_delay=250,
+                )
+            ):
+                return True
+
+        # Out-of-combat catch-up: shadow step to the party leader when
+        # lagging behind, via the shared PvE helper.
+        if self.IsSkillEquipped(Ebon_Escape_ID) and (
+            yield from self.skills.Any.PvE.Ebon_Escape_CatchUp()
+        ):
+            return True
+
+        return False

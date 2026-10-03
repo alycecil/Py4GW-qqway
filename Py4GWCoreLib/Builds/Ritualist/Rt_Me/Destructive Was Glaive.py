@@ -1,4 +1,4 @@
-from Py4GWCoreLib import AgentArray, BuildMgr, Profession, Range, Routines, Utils
+from Py4GWCoreLib import AgentArray, BuildMgr, Profession, Range, Routines
 from Py4GWCoreLib.Agent import Agent
 from Py4GWCoreLib.Player import Player
 from Py4GWCoreLib.Skill import Skill
@@ -20,6 +20,13 @@ Power_Drain_ID = Skill.GetID("Power_Drain")
 Fragility_ID = Skill.GetID("Fragility")
 
 
+# Energy kept unspent so an Ebon Escape emergency bail or a Mantra of
+# Frost refresh can always fire. Every cast below honors this except
+# the emergency Escape, the Mantra refresh, and Power Drain (which
+# refills energy instead of spending it).
+ENERGY_RESERVE = 10
+
+
 class Destructive_Was_Glaive(BuildMgr):
     """Rt/Me Destructive Was Glaive farmer and its variants.
 
@@ -28,20 +35,20 @@ class Destructive_Was_Glaive(BuildMgr):
     of Frost up at all times, in and out of combat.
 
     Priority 1 is Ebon Escape as an emergency bail when our own health
-    or the step target's health drops below 40%. Priority 2 is Mantra
-    of Frost upkeep. Priority 3 is Ebon Vanguard Assassin Support:
-    more allies on the field keeps us alive, so it outranks damage.
-    Priority 4 is Ebon Escape as a gap-closer: when nothing is in spell
-    range but an ally already stands among enemies, shadow step to them
-    instead of standing around.     Priority 5 is Destructive Was Glaive. It is an item spell with
-    touch range: walk to the most clustered foe like a melee skill,
-    cast to pick the ashes up, carry them into the pack, and recast to
-    detonate the held ashes onto nearby foes while holding fresh ones.
-    Recasting with no enemies nearby wastes the blast, so the recast
-    only fires standing in the pack; other spells cast freely while
-    carrying (they do not drop the ashes, and gain the armor penetration
-    bonus). Everything after that is the remaining attacks as
-    available: Spirit Rift, Ancestors' Rage, Ebon Battle Standard of
+    or the step target's health drops below 40%. Priority 2 is Ebon
+    Vanguard Assassin Support: open with extra bodies, more allies on
+    the field keeps us alive, so it outranks everything but the
+    emergency bail. Priority 3 is Mantra of Frost upkeep. Priority 4
+    is Ebon Escape as a gap-closer: when nothing is in spell range but
+    an ally already stands among enemies, shadow step to them instead
+    of standing around. Priority 5 is Destructive Was Glaive. Every
+    cast drops the held ashes onto nearby foes and puts fresh ones in
+    hand, so the first cast (empty hands) fires immediately from range
+    while recasts only fire standing in the pack; carrying walks toward
+    the biggest available group. Other spells cast freely while
+    carrying (they do not drop the ashes, and gain the armor
+    penetration bonus). Everything after that is the remaining attacks
+    as available: Spirit Rift, Ancestors' Rage, Ebon Battle Standard of
     Wisdom, Essence Strike, Empathy, Power Drain, Fragility. Flesh of My
     Flesh is left to the HeroAI fallback, which only casts it on actual
     deaths.
@@ -98,6 +105,13 @@ class Destructive_Was_Glaive(BuildMgr):
         self.SetSkillCastingFn(self._run_local_skill_logic)
         self.skills: SkillsTemplate = SkillsTemplate(self)
 
+    def _keep_energy_reserve(self, skill_id: int) -> bool:
+        """True if casting skill_id still leaves the energy reserve."""
+        player_id = Player.GetAgentID()
+        current = Agent.GetEnergy(player_id) * Agent.GetMaxEnergy(player_id)
+        cost = Routines.Checks.Skills.GetEnergyCostWithEffects(skill_id, player_id)
+        return (current - cost) >= ENERGY_RESERVE
+
     def _run_local_skill_logic(self):
         # NOTE: every block chains with `and` so that a failed cast
         # attempt (e.g. skill still on recharge) falls through to the next
@@ -107,13 +121,22 @@ class Destructive_Was_Glaive(BuildMgr):
 
         player_id = Player.GetAgentID()
         in_aggro = bool(self.IsInAggro())
-        close_to_aggro = in_aggro or bool(self.IsCloseToAggro())
 
         # Priority 1: Ebon Escape emergency bail.
         if (yield from self._ebon_escape_emergency()):
             return True
 
-        # Priority 2: Mantra of Frost shell, in and out of combat.
+        # Priority 2: open with extra bodies. No aggro gate on purpose:
+        # the helper only fires on a clustered enemy in spellcast range,
+        # so this pre-summons on approach and keeps summons rolling.
+        if (
+            self.IsSkillEquipped(Ebon_Vanguard_Assassin_Support_ID)
+            and self._keep_energy_reserve(Ebon_Vanguard_Assassin_Support_ID)
+            and (yield from self.skills.Any.PvE.Ebon_Vanguard_Assassin_Support())
+        ):
+            return True
+
+        # Priority 3: Mantra of Frost shell, in and out of combat.
         if (
             self.IsSkillEquipped(Mantra_of_Frost_ID)
             and not Routines.Checks.Agents.HasEffect(player_id, Mantra_of_Frost_ID)
@@ -127,16 +150,17 @@ class Destructive_Was_Glaive(BuildMgr):
         ):
             return True
 
-        # Priority 3: more allies keeps us alive.
-        if (
-            close_to_aggro
-            and self.IsSkillEquipped(Ebon_Vanguard_Assassin_Support_ID)
-            and (yield from self.skills.Any.PvE.Ebon_Vanguard_Assassin_Support())
-        ):
-            return True
-
         # Priority 4: Ebon Escape gap-closer onto an ally already in the pack.
         if in_aggro and (yield from self._ebon_escape_gap_close()):
+            return True
+
+        # Priority 4b: Ebon Escape travel. Out of combat, shadow step to
+        # the party leader when lagging behind, via the shared PvE helper.
+        if (
+            not in_aggro
+            and self.IsSkillEquipped(Ebon_Escape_ID)
+            and (yield from self.skills.Any.PvE.Ebon_Escape_CatchUp())
+        ):
             return True
 
         if not in_aggro:
@@ -152,8 +176,10 @@ class Destructive_Was_Glaive(BuildMgr):
         if self.IsSkillEquipped(Ancestors_Rage_ID) and (yield from self._cast_ancestors_rage()):
             return True
 
-        if self.IsSkillEquipped(Ebon_Battle_Standard_of_Wisdom_ID) and (
-            yield from self.skills.Any.NoAttribute.Ebon_Battle_Standard_of_Wisdom()
+        if (
+            self.IsSkillEquipped(Ebon_Battle_Standard_of_Wisdom_ID)
+            and self._keep_energy_reserve(Ebon_Battle_Standard_of_Wisdom_ID)
+            and (yield from self.skills.Any.NoAttribute.Ebon_Battle_Standard_of_Wisdom())
         ):
             return True
 
@@ -187,6 +213,8 @@ class Destructive_Was_Glaive(BuildMgr):
 
     def _cast_clustered_spell(self, skill_id: int):
         """Cast an AoE spell at the most clustered enemy."""
+        if not self._keep_energy_reserve(skill_id):
+            return False
         target_agent_id = self._resolve_attack_target(skill_id, "EnemyClustered")
         if not target_agent_id:
             return False
@@ -201,6 +229,8 @@ class Destructive_Was_Glaive(BuildMgr):
 
     def _cast_single_target_spell(self, skill_id: int, target_type: str):
         """Cast a single-target spell, restoring the previous target after."""
+        if not self._keep_energy_reserve(skill_id):
+            return False
         target_agent_id = self._resolve_attack_target(skill_id, target_type)
         if not target_agent_id:
             return False
@@ -248,6 +278,8 @@ class Destructive_Was_Glaive(BuildMgr):
             return False
         if not self.CanCastSkillID(Destructive_Was_Glaive_ID):
             return False
+        if not self._keep_energy_reserve(Destructive_Was_Glaive_ID):
+            return False
         return (
             yield from self.CastSkillID(
                 skill_id=Destructive_Was_Glaive_ID,
@@ -259,13 +291,12 @@ class Destructive_Was_Glaive(BuildMgr):
     def _cast_destructive_was_glaive(self):
         """Carry-and-detonate loop for the ashes.
 
-        Not holding: walk to the most clustered foe (touch range, like a
-        melee skill) and cast to pick the ashes up. Holding: carry them
-        to the biggest available pack (see
-        _destructive_was_glaive_holding) and recast there to drop the
-        held ashes onto nearby foes while holding fresh ones. Other
-        spells do not drop the ashes, so the rest of the chain fires
-        freely in both states.
+        Every cast drops the held ashes and puts fresh ones in hand.
+        Empty hands: cast immediately from range, nothing to drop so no
+        walking. Holding: carry them to the biggest available pack (see
+        _destructive_was_glaive_holding) and recast there. Other spells
+        do not drop the ashes, so the rest of the chain fires freely in
+        both states.
         """
         player_id = Player.GetAgentID()
         if Agent.IsHoldingItem(player_id):
@@ -273,16 +304,14 @@ class Destructive_Was_Glaive(BuildMgr):
 
         if not self.CanCastSkillID(Destructive_Was_Glaive_ID):
             return False
+        if not self._keep_energy_reserve(Destructive_Was_Glaive_ID):
+            return False
 
+        # Empty hands: nothing to drop, so cast immediately from range.
+        # No walking: positioning only matters while carrying.
         target_agent_id = self._resolve_attack_target(Destructive_Was_Glaive_ID, "EnemyClustered")
         if not target_agent_id:
             return False
-
-        player_pos = Player.GetXY()
-        if Utils.Distance(player_pos, Agent.GetXY(target_agent_id)) > Range.Adjacent.value:
-            target_x, target_y = Agent.GetXY(target_agent_id)
-            Player.Move(target_x, target_y)
-            return True
 
         return (
             yield from self.CastSkillID(
@@ -297,6 +326,8 @@ class Destructive_Was_Glaive(BuildMgr):
         if not self.IsInAggro():
             return False
         if not self.CanCastSkillID(Ancestors_Rage_ID):
+            return False
+        if not self._keep_energy_reserve(Ancestors_Rage_ID):
             return False
 
         player_pos = Player.GetXY()
@@ -389,6 +420,8 @@ class Destructive_Was_Glaive(BuildMgr):
         recharge is saved for emergencies whenever fighting normally.
         """
         if not self.IsSkillEquipped(Ebon_Escape_ID):
+            return False
+        if not self._keep_energy_reserve(Ebon_Escape_ID):
             return False
 
         if Routines.Agents.GetNearestEnemy(Range.Spellcast.value):

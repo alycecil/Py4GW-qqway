@@ -152,6 +152,13 @@ class Contagion(BuildMgr):
         if (yield from self._ebon_escape_cluster()):
             return True
 
+        # Ebon Escape (travel): out of combat, shadow step to the party
+        # leader when lagging behind, via the shared PvE helper.
+        if self.IsSkillEquipped(EBON_ESCAPE_ID) and (
+            yield from self.skills.Any.PvE.Ebon_Escape_CatchUp()
+        ):
+            return True
+
         # Death's Charge: gap-close onto the most clustered foe (> 500 away,
         # within spellcast). Run before the nearby-gated block so the step
         # brings those skills into range.

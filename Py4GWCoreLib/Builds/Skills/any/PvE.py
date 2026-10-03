@@ -200,6 +200,41 @@ class PvE:
             aftercast_delay=250,
         ))
 
+    def Ebon_Escape_CatchUp(self) -> BuildCoroutine:
+        """Out-of-combat catch-up: shadow step to the party leader when lagging.
+
+        Fires only past Nearby range (no stepping while stacked) and inside
+        Spellcast range so the recharge is never wasted on an unreachable
+        leader. In-combat rescue stays with each build's own logic.
+        """
+        from Py4GWCoreLib import Agent
+        from Py4GWCoreLib.Party import Party
+
+        ebon_escape_id: int = Skill.GetID("Ebon_Escape")
+
+        if not self.build.IsSkillEquipped(ebon_escape_id):
+            return False
+        if self.build.IsInAggro():
+            return False
+
+        player_id = Player.GetAgentID()
+        leader_id = int(Party.GetPartyLeaderID() or 0)
+        if not leader_id or leader_id == player_id or not Agent.IsAlive(leader_id):
+            return False
+
+        player_x, player_y = Player.GetXY()
+        leader_x, leader_y = Agent.GetXY(leader_id)
+        leader_dist = ((leader_x - player_x) ** 2 + (leader_y - player_y) ** 2) ** 0.5
+        if not (Range.Nearby.value < leader_dist <= Range.Spellcast.value):
+            return False
+
+        return (yield from self.build.CastSkillIDAndRestoreTarget(
+            skill_id=ebon_escape_id,
+            target_agent_id=leader_id,
+            log=False,
+            aftercast_delay=250,
+        ))
+
     @coordinates_whiteboard_skill_target(Skill.GetID("Technobabble"))
     def Technobabble(self) -> BuildCoroutine:
         from Py4GWCoreLib import Agent, AgentArray, GLOBAL_CACHE, Player
