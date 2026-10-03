@@ -154,8 +154,9 @@ class Destructive_Was_Glaive(BuildMgr):
         if in_aggro and (yield from self._ebon_escape_gap_close()):
             return True
 
-        # Priority 4b: Ebon Escape travel. Out of combat, shadow step to
-        # the party leader when lagging behind, via the shared PvE helper.
+        # Priority 4b: Ebon Escape travel. Out of combat, shadow step toward
+        # the party (relay ally closest to the leader) and keep pathing to
+        # the leader, via the shared PvE helper.
         if (
             not in_aggro
             and self.IsSkillEquipped(Ebon_Escape_ID)

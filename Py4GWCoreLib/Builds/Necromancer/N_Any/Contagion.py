@@ -152,8 +152,9 @@ class Contagion(BuildMgr):
         if (yield from self._ebon_escape_cluster()):
             return True
 
-        # Ebon Escape (travel): out of combat, shadow step to the party
-        # leader when lagging behind, via the shared PvE helper.
+        # Ebon Escape (travel): out of combat, shadow step toward the party
+        # (relay ally closest to the leader) and keep pathing to the leader,
+        # via the shared PvE helper.
         if self.IsSkillEquipped(EBON_ESCAPE_ID) and (
             yield from self.skills.Any.PvE.Ebon_Escape_CatchUp()
         ):

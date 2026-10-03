@@ -201,11 +201,14 @@ class PvE:
         ))
 
     def Ebon_Escape_CatchUp(self) -> BuildCoroutine:
-        """Out-of-combat catch-up: shadow step to the party leader when lagging.
+        """Out-of-combat catch-up: shadow step toward the party leader when lagging.
 
-        Fires only past Nearby range (no stepping while stacked) and inside
-        Spellcast range so the recharge is never wasted on an unreachable
-        leader. In-combat rescue stays with each build's own logic.
+        Fires only past Nearby range (no stepping while stacked). Targets the
+        in-reach ally closest to the leader — the leader itself when inside
+        Spellcast range, otherwise a relay ally — so the recharge is never
+        wasted on an unreachable leader. After a successful step, issues a
+        move order toward the leader so the character keeps pathing instead
+        of standing still. In-combat rescue stays with each build's own logic.
         """
         from Py4GWCoreLib import Agent
         from Py4GWCoreLib.Party import Party
@@ -225,15 +228,51 @@ class PvE:
         player_x, player_y = Player.GetXY()
         leader_x, leader_y = Agent.GetXY(leader_id)
         leader_dist = ((leader_x - player_x) ** 2 + (leader_y - player_y) ** 2) ** 0.5
-        if not (Range.Nearby.value < leader_dist <= Range.Spellcast.value):
+        if leader_dist <= Range.Nearby.value:
             return False
 
-        return (yield from self.build.CastSkillIDAndRestoreTarget(
+        allies = Routines.Agents.GetFilteredAllyArray(
+            player_x,
+            player_y,
+            Range.Spellcast.value,
+            other_ally=True,
+        ) or []
+        best_target_id = 0
+        best_leader_dist = float(leader_dist)
+        best_self_dist = float("inf")
+        for ally_id in allies:
+            ally_id = int(ally_id or 0)
+            if not ally_id or ally_id == player_id or not Agent.IsAlive(ally_id):
+                continue
+            ally_x, ally_y = Agent.GetXY(ally_id)
+            self_dist = ((ally_x - player_x) ** 2 + (ally_y - player_y) ** 2) ** 0.5
+            if self_dist > Range.Spellcast.value:
+                continue
+            to_leader = ((ally_x - leader_x) ** 2 + (ally_y - leader_y) ** 2) ** 0.5
+            if to_leader < best_leader_dist or (
+                to_leader == best_leader_dist and self_dist < best_self_dist
+            ):
+                best_target_id = ally_id
+                best_leader_dist = float(to_leader)
+                best_self_dist = float(self_dist)
+
+        if not best_target_id:
+            return False
+
+        cast = yield from self.build.CastSkillIDAndRestoreTarget(
             skill_id=ebon_escape_id,
-            target_agent_id=leader_id,
+            target_agent_id=best_target_id,
             log=False,
             aftercast_delay=250,
-        ))
+        )
+        if not cast:
+            return False
+
+        # Keep pathing toward the leader after the jump; without this the
+        # character idles at the landing spot until the next move order.
+        leader_x, leader_y = Agent.GetXY(leader_id)
+        Player.Move(leader_x, leader_y)
+        return True
 
     @coordinates_whiteboard_skill_target(Skill.GetID("Technobabble"))
     def Technobabble(self) -> BuildCoroutine:

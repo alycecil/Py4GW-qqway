@@ -13,6 +13,7 @@ Foul_Feast_ID = Skill.GetID("Foul_Feast")
 Great_Dwarf_Weapon_ID = Skill.GetID("Great_Dwarf_Weapon")
 Stand_Your_Ground_ID = Skill.GetID("Stand_Your_Ground")
 Inspirational_Speech_ID = Skill.GetID("Inspirational_Speech")
+Ebon_Escape_ID = Skill.GetID("Ebon_Escape")
 
 
 class Dark_Aura_Battery(BuildMgr):
@@ -31,9 +32,11 @@ class Dark_Aura_Battery(BuildMgr):
             ],
             # NOTE: "Help Me!" and Ebon Escape are deliberately NOT listed
             # here. Supported skills are masked from the HeroAI fallback, and
-            # neither of the two has local logic — listing them would orphan
+            # rescue targeting for both lives there — listing them would orphan
             # the ally buff and the emergency shadow step. Unlisted, the
-            # fallback keeps firing them per its own targeting data.
+            # fallback keeps firing them per its own targeting data. Ebon
+            # Escape travel (out-of-combat catch-up) is handled locally via
+            # the shared PvE helper below.
             # Inspirational Speech used to live in that fallback-only group
             # (lowest-ally targeting); it now has local N/D-melee preference
             # below, mirroring Dark Aura's Soul Taker filter.
@@ -78,6 +81,15 @@ class Dark_Aura_Battery(BuildMgr):
             yield from self.skills.Paragon.Motivation.Inspirational_Speech(
                 required_skill_id=Soul_Taker_ID
             )
+        ):
+            return True
+
+        # Travel: out of combat, shadow step toward the party (relay ally
+        # closest to the leader) and keep pathing to the leader, via the
+        # shared PvE helper. Sits ahead of the aggro gate so catch-up fires
+        # between fights; in-combat rescue stays with the HeroAI fallback.
+        if self.IsSkillEquipped(Ebon_Escape_ID) and (
+            yield from self.skills.Any.PvE.Ebon_Escape_CatchUp()
         ):
             return True
 
