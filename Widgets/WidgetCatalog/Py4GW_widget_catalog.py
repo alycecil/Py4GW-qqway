@@ -7,7 +7,7 @@ from tkinter import filedialog
 import PyImGui
 import PySystem
 
-from Py4GWCoreLib import ColorPalette, IconsFontAwesome5, Py4GW
+from Py4GWCoreLib import ColorPalette, IconsFontAwesome5, Py4GW, GLOBAL_CACHE, Player, SharedCommandType
 from Py4GWCoreLib.ImGui import ImGui
 from Py4GWCoreLib.py4gwcorelib_src.Settings import Settings
 from Py4GWCoreLib.enums_src.IO_enums import ImGuiKey, Key
@@ -90,6 +90,7 @@ class detail_header_vars:
     total_width_min: float = 443.0
     favorite_width: float = 40.0
     config_width: float = 40.0
+    all_width: float = 40.0
     name_width: float = 355.0
 
 
@@ -213,6 +214,7 @@ class detail_header_snapshot:
     total_width_min: float = 443.0
     favorite_width: float = 56.0
     config_width: float = 56.0
+    all_width: float = 56.0
     name_width: float = 180.0
 
 
@@ -743,13 +745,14 @@ class WidgetCatalogDetailPanel:
 
         return best
 
-    def _column_widths(self, total_width: float) -> tuple[float, float, float]:
+    def _column_widths(self, total_width: float) -> tuple[float, float, float, float]:
         detail_header = self.window.ui_catalog.detail.header
         total_width = self._clamp_dimension(total_width)
         favorite_width = min(self._clamp_non_negative(detail_header.favorite_width), max(total_width - 1.0, 0.0))
         config_width = min(self._clamp_non_negative(detail_header.config_width), max(total_width - 1.0 - favorite_width, 0.0))
-        name_width = max(total_width - favorite_width - config_width, 1.0)
-        return name_width, favorite_width, config_width
+        all_width = min(self._clamp_non_negative(detail_header.all_width), max(total_width - 1.0 - favorite_width - config_width, 0.0))
+        name_width = max(total_width - favorite_width - config_width - all_width, 1.0)
+        return name_width, favorite_width, config_width, all_width
 
     def _draw_header_row(self, total_width: float, row_height: float) -> None:
         total_width = self._clamp_dimension(total_width)
@@ -758,7 +761,7 @@ class WidgetCatalogDetailPanel:
             ImGui.dummy(total_width, max(row_height, 1.0))
             return
         x, y = PyImGui.get_cursor_screen_pos()
-        name_width, favorite_width, config_width = self._column_widths(total_width)
+        name_width, favorite_width, config_width, all_width = self._column_widths(total_width)
         bg = Color(36, 49, 64, 255)
         border = Color(70, 70, 70, 180)
 
@@ -772,6 +775,7 @@ class WidgetCatalogDetailPanel:
             ("Name", name_width),
             ("Fav", favorite_width),
             ("Cfg", config_width),
+            ("All", all_width),
         ]:
             if width >= 12.0:
                 PyImGui.draw_list_add_text(col_x + 6.0, text_y, text_color, label)
@@ -848,6 +852,8 @@ class WidgetCatalogDetailPanel:
         config_uv0: tuple[float, float] = (0.0, 0.0),
         config_uv1: tuple[float, float] = (1.0, 1.0),
         on_config_click=None,
+        on_all_click=None,
+        all_tooltip: str | None = None,
     ) -> bool:
         detail_rows = self.window.ui_catalog.detail.rows
         total_width = self._clamp_dimension(total_width)
@@ -855,7 +861,7 @@ class WidgetCatalogDetailPanel:
         if total_width < self.MIN_ROW_RENDER_WIDTH or row_height < self.MIN_ROW_RENDER_HEIGHT:
             ImGui.dummy(max(total_width, 1.0), max(row_height, 1.0))
             return False
-        name_width, favorite_width, config_width = self._column_widths(total_width)
+        name_width, favorite_width, config_width, all_width = self._column_widths(total_width)
         x, y = PyImGui.get_cursor_screen_pos()
         row_bg = Color(22, 22, 28, 210)
         hover_bg = Color(32, 38, 46, 230)
@@ -925,6 +931,22 @@ class WidgetCatalogDetailPanel:
                 on_config_click()
         else:
             ImGui.dummy(max(config_width, 0.0), row_height)
+        current_x += config_width
+
+        PyImGui.set_cursor_screen_pos((current_x, y))
+        if on_all_click and all_width > 1.0:
+            button_height = min(max(row_height - detail_rows.icon_padding, 1.0), detail_rows.icon_size_max, row_height)
+            icon_width, _ = PyImGui.calc_text_size(IconsFontAwesome5.ICON_USERS)
+            button_width = min(icon_width + 12.0, all_width)
+            offset_x = max((all_width - button_width) * 0.5, 0.0)
+            offset_y = max((row_height - button_height) * 0.5, 0.0)
+            PyImGui.set_cursor_screen_pos((current_x + offset_x, y + offset_y))
+            if ImGui.button(f"{IconsFontAwesome5.ICON_USERS}##{row_id}_all", width=button_width, height=button_height):
+                on_all_click()
+            if all_tooltip:
+                ImGui.show_tooltip(all_tooltip)
+        else:
+            ImGui.dummy(max(all_width, 0.0), row_height)
 
         PyImGui.set_cursor_screen_pos((x, y))
         ImGui.dummy(total_width, row_height)
@@ -1022,7 +1044,7 @@ class WidgetCatalogDetailPanel:
         if content_avail_width < 8.0 or content_avail_height < max(row_height, self._clamp_dimension(detail_header.row_height)):
             ImGui.end_child()
             return
-        configured_total_width = detail_header.name_width + detail_header.favorite_width + detail_header.config_width
+        configured_total_width = detail_header.name_width + detail_header.favorite_width + detail_header.config_width + detail_header.all_width
         if content_avail_width < 80.0:
             total_width = max(content_avail_width, 1.0)
         else:
@@ -1070,6 +1092,12 @@ class WidgetCatalogDetailPanel:
                     config_uv0=config_uv0,
                     config_uv1=config_uv1,
                     on_config_click=(lambda w=widget: w.set_configuring(not w.configuring)) if has_config else None,
+                    on_all_click=lambda w=widget: self.window._set_widget_active_all(w, not w.enabled),
+                    all_tooltip=(
+                        "Disable this widget on all connected clients."
+                        if widget.enabled
+                        else "Enable this widget on all connected clients."
+                    ),
                 )
                 if hovered:
                     self.window._draw_widget_hover_card(widget)
@@ -1245,6 +1273,7 @@ class WidgetCatalogWindow:
         self._write_ini_value_immediately(self.ini_key, "detail_total_width_min", float(detail_header.total_width_min), section="Detail Panel", name="total_width_min")
         self._write_ini_value_immediately(self.ini_key, "detail_favorite_width", float(detail_header.favorite_width), section="Detail Panel", name="favorite_width")
         self._write_ini_value_immediately(self.ini_key, "detail_config_width", float(detail_header.config_width), section="Detail Panel", name="config_width")
+        self._write_ini_value_immediately(self.ini_key, "detail_all_width", float(detail_header.all_width), section="Detail Panel", name="all_width")
         self._write_ini_value_immediately(self.ini_key, "detail_name_width", float(detail_header.name_width), section="Detail Panel", name="name_width")
 
         self._write_ini_value_immediately(self.ini_key, "detail_row_height", float(detail_rows.row_height), section="Detail Panel", name="row_height")
@@ -1305,6 +1334,7 @@ class WidgetCatalogWindow:
         self.setup_snapshot.detail_header.total_width_min = float(self.ui_catalog.detail.header.total_width_min)
         self.setup_snapshot.detail_header.favorite_width = float(self.ui_catalog.detail.header.favorite_width)
         self.setup_snapshot.detail_header.config_width = float(self.ui_catalog.detail.header.config_width)
+        self.setup_snapshot.detail_header.all_width = float(self.ui_catalog.detail.header.all_width)
         self.setup_snapshot.detail_header.name_width = float(self.ui_catalog.detail.header.name_width)
         self.setup_snapshot.detail_rows.row_height = float(self.ui_catalog.detail.rows.row_height)
         self.setup_snapshot.detail_rows.icon_padding = float(self.ui_catalog.detail.rows.icon_padding)
@@ -1338,6 +1368,7 @@ class WidgetCatalogWindow:
         self.ui_catalog.detail.header.total_width_min = max(1.0, float(self.setup_snapshot.detail_header.total_width_min))
         self.ui_catalog.detail.header.favorite_width = max(1.0, float(self.setup_snapshot.detail_header.favorite_width))
         self.ui_catalog.detail.header.config_width = max(1.0, float(self.setup_snapshot.detail_header.config_width))
+        self.ui_catalog.detail.header.all_width = max(1.0, float(self.setup_snapshot.detail_header.all_width))
         self.ui_catalog.detail.header.name_width = max(1.0, float(self.setup_snapshot.detail_header.name_width))
         self.ui_catalog.detail.rows.row_height = max(1.0, float(self.setup_snapshot.detail_rows.row_height))
         self.ui_catalog.detail.rows.icon_padding = max(0.0, float(self.setup_snapshot.detail_rows.icon_padding))
@@ -1415,6 +1446,7 @@ class WidgetCatalogWindow:
             self.ui_catalog.detail.header.total_width_min = cfg.get_float("Detail Panel", "total_width_min", float(self.ui_catalog.detail.header.total_width_min))
             self.ui_catalog.detail.header.favorite_width = cfg.get_float("Detail Panel", "favorite_width", float(self.ui_catalog.detail.header.favorite_width))
             self.ui_catalog.detail.header.config_width = cfg.get_float("Detail Panel", "config_width", float(self.ui_catalog.detail.header.config_width))
+            self.ui_catalog.detail.header.all_width = cfg.get_float("Detail Panel", "all_width", float(self.ui_catalog.detail.header.all_width))
             self.ui_catalog.detail.header.name_width = cfg.get_float("Detail Panel", "name_width", float(self.ui_catalog.detail.header.name_width))
             self.ui_catalog.detail.rows.row_height = cfg.get_float("Detail Panel", "row_height", float(self.ui_catalog.detail.rows.row_height))
             self.ui_catalog.detail.rows.icon_padding = cfg.get_float("Detail Panel", "icon_padding", float(self.ui_catalog.detail.rows.icon_padding))
@@ -1521,6 +1553,60 @@ class WidgetCatalogWindow:
             self.widget_manager._set_widget_state(widget.plain_name, state=True)
         else:
             self.widget_manager._request_disable_widget(widget)
+
+    def _set_widget_active_all(self, widget : Widget, active: bool) -> None:
+        # Per-row "All" button: same local behavior as _set_widget_active,
+        # plus a ShMem broadcast so every other connected client enables or
+        # disables the same widget. Receivers apply it through
+        # Messaging.EnableWidget / Messaging.DisableWidget.
+        # System-widget disables still go through the confirmation modal; the
+        # broadcast is sent only after the user confirms there.
+        if active:
+            self.widget_manager._set_widget_state(widget.plain_name, state=True)
+            self._send_widget_state_to_all_clients(widget.plain_name, True)
+        else:
+            self.widget_manager._request_disable_widget(widget, broadcast=True)
+
+    def _send_widget_state_to_all_clients(self, plain_name: str, enabled: bool) -> int:
+        # Library modules (WidgetManager) load once per client boot, while this
+        # widget script re-execs on every Reload. Prefer the canonical
+        # WidgetHandler broadcast when the running manager already has it;
+        # otherwise send directly through the long-standing ShMem API so the
+        # button works without a client restart.
+        try:
+            broadcast = getattr(self.widget_manager, "_broadcast_widget_state", None)
+            if callable(broadcast):
+                sent = int(cast(int, broadcast(str(plain_name), bool(enabled))))
+                self._log_broadcast_result(str(plain_name), bool(enabled), sent)
+                return sent
+        except Exception as exc:
+            PySystem.Console.Log("Widgets", f"Manager broadcast failed for '{plain_name}', trying direct send: {exc}", PySystem.Console.MessageType.Warning)
+
+        try:
+            own_email = Player.GetAccountEmail()
+            if not own_email:
+                return 0
+            command = SharedCommandType.EnableWidget if enabled else SharedCommandType.DisableWidget
+            sent = 0
+            for acc in GLOBAL_CACHE.ShMem.GetAllAccountData():
+                receiver = str(getattr(acc, "AccountEmail", "") or "")
+                if not receiver or receiver == own_email:
+                    continue
+                if GLOBAL_CACHE.ShMem.SendMessage(own_email, receiver, command, ExtraData=(str(plain_name),)) >= 0:
+                    sent += 1
+            self._log_broadcast_result(str(plain_name), bool(enabled), sent)
+            return sent
+        except Exception as exc:
+            PySystem.Console.Log("Widgets", f"Failed to broadcast widget state '{plain_name}': {exc}", PySystem.Console.MessageType.Warning)
+            return 0
+
+    @staticmethod
+    def _log_broadcast_result(plain_name: str, enabled: bool, sent: int) -> None:
+        action = "Enabled" if enabled else "Disabled"
+        if sent > 0:
+            PySystem.Console.Log("Widgets", f"{action} '{plain_name}' on this client and {sent} other client(s).", PySystem.Console.MessageType.Info)
+        else:
+            PySystem.Console.Log("Widgets", f"{action} '{plain_name}' on this client. No other clients found.", PySystem.Console.MessageType.Warning)
 
     @staticmethod
     def _center_cursor_y(content_height: float) -> None:
@@ -2666,6 +2752,12 @@ class WidgetCatalogWindow:
                     detail_header.config_width = max(1.0, config_width)
                     self._save_ui_catalog_config()
                 ImGui.show_tooltip("Width of the detail list config column.")
+
+                all_width = ImGui.slider_float("All Clients Column Width", float(detail_header.all_width), 16.0, 140.0)
+                if all_width != float(detail_header.all_width):
+                    detail_header.all_width = max(1.0, all_width)
+                    self._save_ui_catalog_config()
+                ImGui.show_tooltip("Width of the detail list all-clients broadcast column.")
 
                 name_width = ImGui.slider_float("Name Column Width", float(detail_header.name_width), 80.0, 400.0)
                 if name_width != float(detail_header.name_width):

@@ -25,6 +25,9 @@ Dwaynas_Kiss_ID = Skill.GetID("Dwaynas_Kiss")
 Patient_Spirit_ID = Skill.GetID("Patient_Spirit")
 Divine_Healing_ID = Skill.GetID("Divine_Healing")
 Heavens_Delight_ID = Skill.GetID("Heavens_Delight")
+Peace_and_Harmony_ID = Skill.GetID("Peace_and_Harmony")
+Lightbringer_Signet_ID = Skill.GetID("Lightbringer_Signet")
+Blessed_Aura_ID = Skill.GetID("Blessed_Aura")
 Selfless_Spirit_Kurzick_ID = Skill.GetID("Selfless_Spirit_kurzick")
 Selfless_Spirit_Luxon_ID = Skill.GetID("Selfless_Spirit_luxon")
 
@@ -32,7 +35,7 @@ _MAX_HERO_POSITIONS = 8
 _UA_SOURCE_SCAN_MS = 1000
 _DROP_SUPPRESS_MS = 3000
 
-# Heal-chain tuning for the Unyielding_Aura source bar below. All HP values
+# Shared heal-chain tuning for both UA builds in this module. All HP values
 # are fractions (0.0-1.0); energy values are fractions of max energy.
 _GRAVE_WOUND_HP = 0.60
 _MEDIUM_WOUND_HP = 0.80
@@ -64,13 +67,17 @@ class Unyielding_Aura_Drop(BuildMgr):
     Carries OwUTMw2CXiuMjIHMDIIY6LuC0DA (Ebon Escape, Orison of Healing,
     Seed of Life, Power Drain, Arcane Mimicry, Cure Hex, Healer's Boon,
     Selfless Spirit). Dwayna's Kiss is supported in the Orison slot when
-    the bar carries it instead.
+    the bar carries it instead. Also supports OwUS0YITBBZEXEdR5gKEXcAE
+    (Arcane Mimicry, Orison of Healing, Divine Healing, Heaven's Delight,
+    Seed of Life, Peace and Harmony, Lightbringer Signet, Blessed Aura).
 
-    Tick priority: drop the copy to resurrect, maintain Healer's Boon,
-    maintain a directly-equipped UA, acquire the copy via Mimicry, then
-    work the support chain (Power Drain interrupt, Cure Hex tiers, Seed
-    of Life, Dwayna's Kiss, Orison, Ebon Escape rescue, Selfless Spirit
-    upkeep). The post-drop suppress window gates Mimicry acquisition
+    Tick priority: drop the copy to resurrect, maintain Healer's Boon and
+    Blessed Aura, maintain a directly-equipped UA, acquire the copy via
+    Mimicry, then work the support chain (Power Drain interrupt, Peace
+    and Harmony mass removal, Cure Hex tiers, Seed of Life, Dwayna's
+    Kiss, Orison, Ebon Escape rescue, Divine Healing / Heaven's Delight
+    party-wide top-up, Selfless Spirit upkeep, Lightbringer Signet
+    energy). The post-drop suppress window gates Mimicry acquisition
     only; everything else stays live.
     """
 
@@ -83,12 +90,17 @@ class Unyielding_Aura_Drop(BuildMgr):
             required_skills=[Arcane_Mimicry_ID],
             optional_skills=[
                 Healers_Boon_ID,
+                Blessed_Aura_ID,
                 Ebon_Escape_ID,
                 Orison_of_Healing_ID,
                 Dwaynas_Kiss_ID,
                 Seed_of_Life_ID,
                 Power_Drain_ID,
                 Cure_Hex_ID,
+                Peace_and_Harmony_ID,
+                Divine_Healing_ID,
+                Heavens_Delight_ID,
+                Lightbringer_Signet_ID,
                 Selfless_Spirit_Kurzick_ID,
                 Selfless_Spirit_Luxon_ID,
             ],
@@ -290,6 +302,36 @@ class Unyielding_Aura_Drop(BuildMgr):
                 return player_id
         return best_id
 
+    def _party_average_hp_in_earshot(self, player_id: int) -> float | None:
+        """Mean HP fraction of living allies in Earshot (self included), else None."""
+        try:
+            player_x, player_y = Player.GetXY()
+            allies = (
+                Routines.Agents.GetFilteredAllyArray(
+                    player_x,
+                    player_y,
+                    Range.Earshot.value,
+                    other_ally=True,
+                )
+                or []
+            )
+        except Exception:
+            return None
+        total_hp = 0.0
+        count = 0
+        for ally_id in allies:
+            ally_id = int(ally_id)
+            if ally_id == 0 or ally_id == player_id or not Agent.IsAlive(ally_id):
+                continue
+            total_hp += float(Agent.GetHealth(ally_id))
+            count += 1
+        if Agent.IsAlive(player_id):
+            total_hp += float(Agent.GetHealth(player_id))
+            count += 1
+        if count == 0:
+            return None
+        return total_hp / count
+
     def _run_local_skill_logic(self):
         if not Routines.Checks.Skills.CanCast():
             self._log_debug("tick: blocked, CanCast=False")
@@ -314,6 +356,21 @@ class Unyielding_Aura_Drop(BuildMgr):
                 return (
                     yield from self.CastSkillID(
                         skill_id=Healers_Boon_ID,
+                        log=False,
+                        aftercast_delay=250,
+                    )
+                )
+
+        # Blessed Aura upkeep. Same slot as Boon: a maintained enchantment
+        # the bar is designed around, so it is kept up whenever missing and
+        # stretches subsequently cast monk enchantments (Seed, Peace and
+        # Harmony) by ~30%.
+        if self.IsSkillEquipped(Blessed_Aura_ID):
+            if not Routines.Checks.Agents.HasEffect(player_id, Blessed_Aura_ID):
+                self._log_debug("tick: Blessed Aura lapsed, re-casting")
+                return (
+                    yield from self.CastSkillID(
+                        skill_id=Blessed_Aura_ID,
                         log=False,
                         aftercast_delay=250,
                     )
@@ -384,6 +441,29 @@ class Unyielding_Aura_Drop(BuildMgr):
         ):
             return True
 
+        # Peace and Harmony mass removal. Elite: strips up to 7 conditions
+        # and hexes off one ally plus 3s of 90% faster expiry. Triggered
+        # only on stacked condi+hex targets, so Cure Hex below still owns
+        # hex-only cases.
+        if self.IsSkillEquipped(Peace_and_Harmony_ID):
+            peace_and_harmony = self.GetCustomSkill(Peace_and_Harmony_ID)
+            peace_target = self.ResolvePreferredAllyTarget(
+                Peace_and_Harmony_ID,
+                peace_and_harmony,
+                validator=lambda agent_id: Agent.IsAlive(agent_id)
+                and Routines.Checks.Agents.IsConditioned(agent_id)
+                and Routines.Checks.Agents.IsHexed(agent_id),
+            )
+            if peace_target and (
+                yield from self.CastSkillIDAndRestoreTarget(
+                    skill_id=Peace_and_Harmony_ID,
+                    target_agent_id=peace_target,
+                    log=False,
+                    aftercast_delay=250,
+                )
+            ):
+                return True
+
         if self.IsSkillEquipped(Cure_Hex_ID) and (
             yield from self.skills.Monk.HealingPrayers.Cure_Hex(min_priority=HexRemovalPriority.HIGH)
         ):
@@ -430,6 +510,30 @@ class Unyielding_Aura_Drop(BuildMgr):
         ):
             return True
 
+        # Party-wide top-up (51 each at Divine Favor 12): Divine Healing
+        # then Heaven's Delight whenever the earshot average sags. Both
+        # heal self plus the party, so self is a valid anchor target.
+        party_avg_hp = self._party_average_hp_in_earshot(player_id)
+        if party_avg_hp is not None and party_avg_hp < _PARTY_WIDE_AVG_HP:
+            if self.IsSkillEquipped(Divine_Healing_ID) and (
+                yield from self.CastSkillIDAndRestoreTarget(
+                    skill_id=Divine_Healing_ID,
+                    target_agent_id=player_id,
+                    log=False,
+                    aftercast_delay=250,
+                )
+            ):
+                return True
+            if self.IsSkillEquipped(Heavens_Delight_ID) and (
+                yield from self.CastSkillIDAndRestoreTarget(
+                    skill_id=Heavens_Delight_ID,
+                    target_agent_id=player_id,
+                    log=False,
+                    aftercast_delay=250,
+                )
+            ):
+                return True
+
         player_energy_pct = float(Agent.GetEnergy(player_id))
         # Selfless Spirit is combat-only upkeep: out of combat the energy
         # regen is not worth the cast, so both variants hold until aggro.
@@ -451,6 +555,20 @@ class Unyielding_Aura_Drop(BuildMgr):
                 return (
                     yield from self.CastSkillID(
                         skill_id=Selfless_Spirit_Luxon_ID,
+                        log=False,
+                        aftercast_delay=250,
+                    )
+                )
+
+        # Free energy, but only inside the area of a demonic servant of
+        # Abaddon. Energy-gated so a fizzle outside demon areas costs at most
+        # one cast per recharge cycle.
+        if self.IsInAggro() and self.IsSkillEquipped(Lightbringer_Signet_ID):
+            if player_energy_pct < 0.85:
+                self._log_debug("tick: energy low, casting Lightbringer Signet")
+                return (
+                    yield from self.CastSkillID(
+                        skill_id=Lightbringer_Signet_ID,
                         log=False,
                         aftercast_delay=250,
                     )

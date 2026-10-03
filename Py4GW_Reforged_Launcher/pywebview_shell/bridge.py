@@ -1384,6 +1384,26 @@ class ShellBridge:
         result = window.create_file_dialog(webview.FileDialog.OPEN, file_types=file_types)
         return result[0] if result else None
 
+    def clone_profile(self, profile_id: str) -> dict:
+        """Duplicate one profile -- every field copied (executable path,
+        toggles, DLL paths, gMod plugins, team memberships, even the saved
+        password blob, which stays valid since DPAPI is per-user/machine),
+        fresh id, name suffixed " (copy)". Thin wrapper: the real copy
+        logic lives in accounts_store.clone_profile (the owning store layer,
+        which also carries over the source's preserved unknown/legacy
+        fields); this only strips password_protected for the render layer,
+        same as save_profile/list_profiles.
+        """
+        try:
+            clone = accounts_store.clone_profile(profile_id)
+        except OSError as e:
+            return {"ok": False, "error": str(e)}
+        if clone is None:
+            return {"ok": False, "error": "Profile not found"}
+        result = clone.to_dict()
+        result.pop("password_protected", None)
+        return {"ok": True, "profile": result}
+
     def delete_profile(self, profile_id: str) -> bool:
         """Permanently remove a profile from every team it belonged to.
         Only the right call while viewing ALL -- see remove_profile_from_team

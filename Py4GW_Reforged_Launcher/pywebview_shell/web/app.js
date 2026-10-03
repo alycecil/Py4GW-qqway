@@ -1538,10 +1538,13 @@ function openEditDrawer(profileId) {
   // viewing a specific team -> "Remove" (profile survives elsewhere);
   // viewing ALL -> real "Delete" (removes the profile everywhere).
   const deleteBtn = document.getElementById("edit-delete-btn");
+  const cloneBtn = document.getElementById("edit-clone-btn");
   if (!p) {
     deleteBtn.style.display = "none";
+    cloneBtn.style.display = "none";
   } else {
     deleteBtn.style.display = "inline-block";
+    cloneBtn.style.display = "inline-block";
     deleteBtn.textContent = activeTeamId === "ALL" ? "Delete" : "Remove";
     // RELAY 073: team-view "Remove" only detaches from the current team (the
     // profile survives in ALL and any other teams) -- Chris's read was that
@@ -1710,6 +1713,23 @@ async function onEditDeleteClick() {
   }
   closeDrawer();
   await loadData();
+}
+
+async function onEditCloneClick() {
+  if (!editingProfileId) return;
+  const res = await window.pywebview.api.clone_profile(editingProfileId);
+  if (!res || !res.ok) {
+    await openConfirmModal({
+      title: "Clone failed",
+      message: (res && res.error) || "Could not duplicate this profile.",
+      confirmLabel: "OK",
+    });
+    return;
+  }
+  // Land directly in the copy's edit drawer -- a clone is a starting point,
+  // not a finished profile (same email/character as the source until changed).
+  await loadData();
+  openEditDrawer(res.profile.id);
 }
 
 // ---------- Add to Team (bulk, RELAY 011) ----------

@@ -705,5 +705,139 @@ class TestGitTrackingCheck(unittest.TestCase):
             shutil.rmtree(no_git_dir, ignore_errors=True)
 
 
+class TestCloneProfile(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.path = Path(self.tmpdir.name) / "accounts.json"
+
+    def tearDown(self):
+        self.tmpdir.cleanup()
+
+    def _write_owned_roster(self):
+        """Already-owned profiles (ids present): no DLL autofill, no
+        encryption -- fully deterministic input for clone assertions."""
+        data = {
+            "Alpha": [
+                {
+                    "id": "source-id-1",
+                    "name": "Main Char",
+                    "character_name": "Main Char",
+                    "email": "main@fake.com",
+                    "password_protected": "fake-blob-same-machine",
+                    "gw_path": "C:/Games/GW1/Client 00/Gw.exe",
+                    "extra_args": "-windowed",
+                    "inject_py4gw": True,
+                    "py4gw_dll_path": "C:/fake/Py4GW.dll",
+                    "inject_gmod": True,
+                    "gmod_dll_path": "C:/fake/gMod.dll",
+                    "gmod_mods": ["C:/mods/one.tpf"],
+                    "script_path": "autorun.py",
+                    "auto_login_enabled": True,
+                    "auto_select_character_enabled": True,
+                    "gw_client_name": "Legacy Field",
+                }
+            ],
+            "Beta": [
+                {
+                    "id": "source-id-1",
+                    "name": "Main Char",
+                    "character_name": "Main Char",
+                    "email": "main@fake.com",
+                    "password_protected": "fake-blob-same-machine",
+                    "gw_path": "C:/Games/GW1/Client 00/Gw.exe",
+                    "extra_args": "-windowed",
+                    "inject_py4gw": True,
+                    "py4gw_dll_path": "C:/fake/Py4GW.dll",
+                    "inject_gmod": True,
+                    "gmod_dll_path": "C:/fake/gMod.dll",
+                    "gmod_mods": ["C:/mods/one.tpf"],
+                    "script_path": "autorun.py",
+                    "auto_login_enabled": True,
+                    "auto_select_character_enabled": True,
+                    "gw_client_name": "Legacy Field",
+                }
+            ],
+        }
+        self.path.write_text(json.dumps(data), encoding="utf-8")
+
+    def test_clone_copies_fields_with_fresh_id_and_copy_name(self):
+        self._write_owned_roster()
+        clone = accounts_store.clone_profile("source-id-1", self.path)
+        assert clone is not None
+        self.assertNotEqual(clone.id, "source-id-1")
+        self.assertEqual(clone.name, "Main Char (copy)")
+        self.assertEqual(clone.character_name, "Main Char")
+        self.assertEqual(clone.email, "main@fake.com")
+        self.assertEqual(clone.executable_path, "C:/Games/GW1/Client 00/Gw.exe")
+        self.assertEqual(clone.launch_arguments, "-windowed")
+        self.assertTrue(clone.py4gw_enabled)
+        self.assertEqual(clone.py4gw_dll_path, "C:/fake/Py4GW.dll")
+        self.assertTrue(clone.gmod_enabled)
+        self.assertEqual(clone.gmod_plugin_paths, ["C:/mods/one.tpf"])
+        self.assertEqual(clone.script_path, "autorun.py")
+
+    def test_clone_keeps_password_blob_and_team_memberships(self):
+        self._write_owned_roster()
+        clone = accounts_store.clone_profile("source-id-1", self.path)
+        assert clone is not None
+        self.assertEqual(clone.password_protected, "fake-blob-same-machine")
+        self.assertEqual(sorted(clone.team_ids), ["Alpha", "Beta"])
+
+    def test_clone_name_uniquifies_against_existing_copies(self):
+        self._write_owned_roster()
+        first = accounts_store.clone_profile("source-id-1", self.path)
+        assert first is not None
+        self.assertEqual(first.name, "Main Char (copy)")
+        second = accounts_store.clone_profile("source-id-1", self.path)
+        assert second is not None
+        self.assertEqual(second.name, "Main Char (copy 2)")
+        self.assertNotEqual(first.id, second.id)
+
+    def test_clone_blank_name_falls_back_to_profile(self):
+        data = {"Alpha": [{"id": "blank-id", "name": "", "character_name": ""}]}
+        self.path.write_text(json.dumps(data), encoding="utf-8")
+        clone = accounts_store.clone_profile("blank-id", self.path)
+        assert clone is not None
+        self.assertEqual(clone.name, "Profile (copy)")
+
+    def test_clone_unknown_id_returns_none_and_writes_nothing(self):
+        self._write_owned_roster()
+        before = self.path.read_text(encoding="utf-8")
+        self.assertIsNone(accounts_store.clone_profile("no-such-id", self.path))
+        self.assertEqual(self.path.read_text(encoding="utf-8"), before)
+
+    def test_clone_preserves_unknown_legacy_fields(self):
+        self._write_owned_roster()
+        clone = accounts_store.clone_profile("source-id-1", self.path)
+        assert clone is not None
+        raw = json.loads(self.path.read_text(encoding="utf-8"))
+        all_accounts = [a for accounts in raw.values() for a in accounts]
+        clone_dicts = [a for a in all_accounts if a.get("id") == clone.id]
+        self.assertTrue(clone_dicts, "clone must be persisted")
+        for entry in clone_dicts:
+            self.assertEqual(entry.get("gw_client_name"), "Legacy Field")
+
+    def test_clone_mutable_lists_are_independent_copies(self):
+        self._write_owned_roster()
+        profiles = accounts_store.load_profiles(self.path)
+        source = next(p for p in profiles if p.id == "source-id-1")
+        clone = accounts_store.build_profile_clone(source, {p.name for p in profiles})
+        clone.gmod_plugin_paths.append("C:/mods/two.tpf")
+        clone.team_ids.append("Gamma")
+        self.assertEqual(source.gmod_plugin_paths, ["C:/mods/one.tpf"])
+        self.assertEqual(sorted(source.team_ids), ["Alpha", "Beta"])
+
+    def test_clone_survives_save_reload_round_trip(self):
+        self._write_owned_roster()
+        clone = accounts_store.clone_profile("source-id-1", self.path)
+        assert clone is not None
+        reloaded = accounts_store.load_profiles(self.path)
+        by_id = {p.id: p for p in reloaded}
+        self.assertIn(clone.id, by_id)
+        self.assertEqual(by_id[clone.id].name, "Main Char (copy)")
+        self.assertEqual(sorted(by_id[clone.id].team_ids), ["Alpha", "Beta"])
+        self.assertEqual(by_id[clone.id].password_protected, "fake-blob-same-machine")
+
+
 if __name__ == "__main__":
     unittest.main()

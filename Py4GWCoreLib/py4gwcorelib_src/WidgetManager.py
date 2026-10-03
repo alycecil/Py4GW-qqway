@@ -714,6 +714,7 @@ class WidgetHandler:
         self._initialized = True
         self.config_vars: list[WidgetConfigVars] = []
         self._pending_disable_widget: Widget | None = None
+        self._pending_disable_broadcast: bool = False
         
         
         
@@ -782,18 +783,36 @@ class WidgetHandler:
         if cv:
             self._manager_cfg().set(cv.section, "enabled", state)
 
+    def _broadcast_widget_state(self, plain_name: str, enabled: bool) -> int:
+        # Multibox helper: tell every other connected client to enable/disable
+        # the same widget. Receivers apply it through Messaging.EnableWidget /
+        # Messaging.DisableWidget. Local state is always applied by the caller.
+        try:
+            own_email = Player.GetAccountEmail()
+            if not own_email:
+                return 0
+            command = SharedCommandType.EnableWidget if enabled else SharedCommandType.DisableWidget
+            sent = 0
+            for acc in GLOBAL_CACHE.ShMem.GetAllAccountData():
+                receiver = str(getattr(acc, "AccountEmail", "") or "")
+                if not receiver or receiver == own_email:
+                    continue
+                if GLOBAL_CACHE.ShMem.SendMessage(own_email, receiver, command, ExtraData=(plain_name,)) >= 0:
+                    sent += 1
+            return sent
+        except Exception as exc:
+            PySystem.Console.Log("WidgetHandler", f"Failed to broadcast widget state '{plain_name}': {exc}", PySystem.Console.MessageType.Warning)
+            return 0
+
     def _request_disable_widget(self, widget: Widget, broadcast: bool = False):
         if widget.category == "System":
             self._pending_disable_widget = widget
+            self._pending_disable_broadcast = broadcast
             return
 
         self.disable_widget(widget.plain_name)
         if broadcast:
-            for acc in GLOBAL_CACHE.ShMem.GetAllAccountData():
-                if acc.AccountEmail == Player.GetAccountEmail():
-                    continue
-                
-                GLOBAL_CACHE.ShMem.SendMessage(Player.GetAccountEmail(), acc.AccountEmail, SharedCommandType.DisableWidget, ExtraData=(widget.plain_name,))
+            self._broadcast_widget_state(widget.plain_name, False)
 
     def _draw_pending_disable_confirmation(self):
         if self._pending_disable_widget:
@@ -844,12 +863,16 @@ class WidgetHandler:
                 PyImGui.columns(2, "widget_manager_confirmation_buttons", False)
                 if ImGui.button("Cancel", -1, 0):
                     self._pending_disable_widget = None
+                    self._pending_disable_broadcast = False
                     PyImGui.close_current_popup()
 
                 PyImGui.next_column()
                 if ImGui.button("Disable", -1, 0):
                     self.disable_widget(widget.plain_name)
+                    if self._pending_disable_broadcast:
+                        self._broadcast_widget_state(widget.plain_name, False)
                     self._pending_disable_widget = None
+                    self._pending_disable_broadcast = False
                     PyImGui.close_current_popup()
                 PyImGui.end_columns()
 
@@ -1196,6 +1219,29 @@ class WidgetHandler:
         self._set_widget_state(name, False)
         if name == "HeroAI" or str(name).replace("\\", "/").endswith("/HeroAI.py"):
             self._force_heroai_player_options(False)
+
+    def enable_widget_all(self, name: str) -> None:
+        # Enable locally, then broadcast EnableWidget to all other clients.
+        self.enable_widget(name)
+        widget = self._get_widget_by_plain_name(name)
+        self._broadcast_widget_state(widget.plain_name if widget else str(name), True)
+
+    def disable_widget_all(self, name: str) -> None:
+        # Disable locally, then broadcast DisableWidget to all other clients.
+        # System widgets still go through the disable-confirmation modal; the
+        # broadcast is sent only after the user confirms there.
+        widget = self._get_widget_by_plain_name(name)
+        if widget is not None and widget.category == "System":
+            self._request_disable_widget(widget, broadcast=True)
+            return
+        self.disable_widget(name)
+        self._broadcast_widget_state(widget.plain_name if widget else str(name), False)
+
+    def set_widget_state_all(self, name: str, enabled: bool) -> None:
+        if enabled:
+            self.enable_widget_all(name)
+        else:
+            self.disable_widget_all(name)
 
     def _force_heroai_player_options(self, enabled: bool):
         try:

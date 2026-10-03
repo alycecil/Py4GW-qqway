@@ -40,8 +40,10 @@ selectable team in the UI -- just a storage bucket, matching the same
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import json
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -526,6 +528,55 @@ def save_teams(teams: list[Team], path: Path | str | None = None) -> None:
     resolved = Path(path) if path is not None else default_accounts_path()
     profiles = load_profiles(resolved)  # preserve account data
     _write(profiles, teams, resolved)
+
+
+def unique_clone_name(base_name: str, existing_names: set[str]) -> str:
+    """`<base> (copy)`, `<base> (copy 2)`, ... -- first candidate no existing
+    profile name already uses. Names are display-only (identity is `id`), so
+    this is purely a convenience so a fresh clone doesn't sit in the roster
+    indistinguishable from its source until the user renames it."""
+    base = (base_name or "").strip() or "Profile"
+    candidate = f"{base} (copy)"
+    if candidate not in existing_names:
+        return candidate
+    n = 2
+    while f"{base} (copy {n})" in existing_names:
+        n += 1
+    return f"{base} (copy {n})"
+
+
+def build_profile_clone(source: GameProfile, existing_names: set[str]) -> GameProfile:
+    """In-memory duplicate of `source`: every launch-relevant field copied
+    verbatim (including the opaque DPAPI `password_protected` blob, which is
+    just bytes to copy on the same machine/user -- no re-encryption needed),
+    same team memberships, fresh `id`, uniquified `name`. Mutable list
+    fields are copied, not shared, so editing the clone's gMod plugin list
+    can never mutate the source's. Not persisted -- the caller saves."""
+    return dataclasses.replace(
+        source,
+        id=uuid.uuid4().hex,
+        name=unique_clone_name(source.name, existing_names),
+        team_ids=list(source.team_ids),
+        gmod_plugin_paths=list(source.gmod_plugin_paths),
+    )
+
+
+def clone_profile(profile_id: str, path: Path | str | None = None) -> GameProfile | None:
+    """Duplicate one profile and persist the roster. Returns the new clone,
+    or None when no profile with `profile_id` exists. The clone keeps the
+    source's team memberships (so it shows up wherever the source did) and
+    its preserved unknown/legacy fields (copied in _EXTRA_FIELDS_CACHE under
+    the new id, otherwise the next save would silently drop them for the
+    clone while keeping them for the source)."""
+    profiles = load_profiles(path)
+    source = next((p for p in profiles if p.id == profile_id), None)
+    if source is None:
+        return None
+    clone = build_profile_clone(source, {p.name for p in profiles})
+    profiles.append(clone)
+    _EXTRA_FIELDS_CACHE[clone.id] = dict(_EXTRA_FIELDS_CACHE.get(source.id, {}))
+    save_profiles(profiles, path)
+    return clone
 
 
 def save_accounts(profiles: list[GameProfile], teams: list[Team], path: Path | str | None = None) -> None:
