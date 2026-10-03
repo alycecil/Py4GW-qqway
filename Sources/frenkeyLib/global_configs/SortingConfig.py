@@ -8,7 +8,7 @@ from typing import Any, ClassVar, Optional, Self, cast
 
 from Sources.frenkeyLib.global_configs.Condition import BaseCondition, ConditionEvaluationContext
 from Sources.frenkeyLib.global_configs.Rule import ConditionOperator, CustomRule
-from Py4GWCoreLib.enums_src.GameData_enums import DyeColor
+from Py4GWCoreLib.enums_src.GameData_enums import Attribute, DyeColor
 from Py4GWCoreLib.enums_src.Item_enums import Bags, ItemType, Rarity
 from Py4GWCoreLib.enums_src.Model_enums import ModelID
 from Sources.frenkeyLib.item_data.item_snapshot import ItemSnapshot
@@ -18,6 +18,8 @@ class SortField(StrEnum):
     ModelId = 'ModelId'
     Rarity = 'Rarity'
     Profession = 'Profession'
+    Requirement = 'Requirement'
+    Attribute = 'Attribute'
     Quantity = 'Quantity'
     Value = 'Value'
     Color = 'Color'
@@ -85,6 +87,11 @@ class SortArgument:
             return item_type_order.index(item.item_type)
         if self.field == SortField.Profession:
             return int(item.profession)
+        if self.field == SortField.Requirement:
+            return int(item.requirement)
+        if self.field == SortField.Attribute:
+            # Attributed weapons first (False < True), then by attribute value.
+            return (item.attribute == Attribute.None_, int(item.attribute.value))
         if self.field == SortField.ModelId:
             return int(item.model_id)
         if self.field == SortField.Rarity:
