@@ -119,17 +119,20 @@ class Communing:
         if model is not None:
             matching_spirits = self._get_owned_spirits({model}, Range.Spellcast.value)
 
-        if remaining_ms <= 5000:
-            if not matching_spirits:
-                return False
+        if not matching_spirits:
+            # Spirit dead or missing: recast immediately while Soul Twisting
+            # is up. Charge conservation below only applies when a spirit
+            # already exists — an unprotected party is never worth saving a
+            # charge for.
+            pass
+        elif remaining_ms <= 5000:
             lowest_hp = min(Agent.GetHealth(spirit_id) for spirit_id in matching_spirits)
             if lowest_hp >= 0.80:
                 return False
         else:
-            if matching_spirits:
-                lowest_hp = min(Agent.GetHealth(spirit_id) for spirit_id in matching_spirits)
-                if lowest_hp >= 0.30:
-                    return False
+            lowest_hp = min(Agent.GetHealth(spirit_id) for spirit_id in matching_spirits)
+            if lowest_hp >= 0.30:
+                return False
 
         return (yield from self.build.CastSkillID(
             skill_id=skill_id,

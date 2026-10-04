@@ -38,8 +38,8 @@ class SpawningPower:
     #region B
     def Boon_of_Creation(self) -> BuildCoroutine:
         boon_of_creation_id: int = Skill.GetID("Boon_of_Creation")
-        if not (self.build.IsInAggro() or self.build.IsCloseToAggro()):
-            return False
+        # No aggro gate: Boon discounts binding rituals, so it is maintained
+        # at all times so Winter/Shelter/Union casts already benefit from it.
         return (yield from self._maintain_self_effect(boon_of_creation_id, renew_before_ms=4000))
     #endregion
 

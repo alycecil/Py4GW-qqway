@@ -645,19 +645,15 @@ class NoAttribute:
         )
         lowest_spirit_health = min((Agent.GetHealth(spirit_id) for spirit_id in spirits), default=1.0)
         needs_heal = in_aggro and lowest_spirit_health < heal_threshold
-        if in_aggro:
-            # In combat, keep spirits tight: pull them once any core spirit leaves Nearby.
-            should_reposition = any(
-                Range.Nearby.value < distance <= Range.Compass.value
-                for distance in spirit_distances
-            )
-            mode_label = "aggro-nearby"
-        else:
-            should_reposition = any(
-                Range.Spirit.value < distance <= Range.Compass.value
-                for distance in spirit_distances
-            )
-            mode_label = "ooc-compass"
+        # Reposition whenever any core spirit leaves earshot, in or out of
+        # combat — Earshot (1012) is the radius that matters for spirit
+        # coverage, so lagging spirits get pulled while travelling as well
+        # as while fighting. Heal logic above is unchanged.
+        should_reposition = any(
+            distance > Range.Earshot.value
+            for distance in spirit_distances
+        )
+        mode_label = "earshot"
 
         if not (should_reposition or needs_heal):
             nearest_distance = min(spirit_distances) if spirit_distances else 0.0

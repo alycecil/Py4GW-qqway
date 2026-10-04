@@ -22,6 +22,7 @@ I_Am_Unstoppable_ID = Skill.GetID("I_Am_Unstoppable")
 Air_of_Superiority_ID = Skill.GetID("Air_of_Superiority")
 Remove_Hex_ID = Skill.GetID("Remove_Hex")
 Edge_of_Extinction_ID = Skill.GetID("Edge_of_Extinction")
+Winter_ID = Skill.GetID("Winter")
 
 
 @dataclass(slots=True)
@@ -56,6 +57,7 @@ class Soul_Twisting(BuildMgr):
                 Air_of_Superiority_ID,
                 Remove_Hex_ID,
                 Edge_of_Extinction_ID,
+                Winter_ID,
             ],
         )
         if match_only:
@@ -79,6 +81,7 @@ class Soul_Twisting(BuildMgr):
             Air_of_Superiority_ID,
             Remove_Hex_ID,
             Edge_of_Extinction_ID,
+            Winter_ID,
         ])
         self.SetSkillCastingFn(self._run_local_skill_logic)
         self.skills: SkillsTemplate = SkillsTemplate(self)
@@ -94,6 +97,22 @@ class Soul_Twisting(BuildMgr):
         if not Routines.Checks.Skills.CanCast():
             yield from Routines.Yield.wait(100)
             return False
+
+        # Always-up upkeep: Boon discounts binding rituals, Winter is kept
+        # up at all times, and Summon Spirits pulls any spirit out of
+        # earshot (plus the existing heal trigger). These run while
+        # travelling so spirits are in place before aggro.
+        if (yield from self.skills.Ritualist.SpawningPower.Boon_of_Creation()):
+            return True
+
+        if self.IsSkillEquipped(Winter_ID) and (yield from self.skills.Ranger.WildernessSurvival.Winter()):
+            return True
+
+        if self.IsSkillEquipped(Summon_Spirits_kurzick_ID) and (yield from self.skills.Any.NoAttribute.Summon_Spirits_kurzick()):
+            return True
+
+        if self.IsSkillEquipped(Summon_Spirits_luxon_ID) and (yield from self.skills.Any.NoAttribute.Summon_Spirits_luxon()):
+            return True
 
         snapshot = self._get_bar_snapshot()
         if not snapshot.close_to_aggro:
@@ -115,16 +134,7 @@ class Soul_Twisting(BuildMgr):
         if snapshot.in_aggro and (yield from self.skills.Any.NoAttribute.I_Am_Unstoppable()):
             return True
 
-        if (yield from self.skills.Ritualist.SpawningPower.Boon_of_Creation()):
-            return True
-
         if (yield from self.skills.Ritualist.SpawningPower.Soul_Twisting()):
-            return True
-
-        if self.IsSkillEquipped(Summon_Spirits_kurzick_ID) and (yield from self.skills.Any.NoAttribute.Summon_Spirits_kurzick()):
-            return True
-
-        if self.IsSkillEquipped(Summon_Spirits_luxon_ID) and (yield from self.skills.Any.NoAttribute.Summon_Spirits_luxon()):
             return True
 
         if (yield from self.skills.Ritualist.Communing.Shelter()):
