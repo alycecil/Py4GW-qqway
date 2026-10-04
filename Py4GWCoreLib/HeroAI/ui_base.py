@@ -82,6 +82,7 @@ class HeroAI_BaseUI:
     _build_match_timer = ThrottledTimer(750)
     _build_match_rows: list[tuple[int, str, int, int, str, str, str]] = []
     _build_match_signature_cache: dict[int, tuple[tuple[int, int, tuple[int, ...]], tuple[int, str, int, int, str, str, str]]] = {}
+    _build_match_registry_generation: int = -1
     _build_registry = None
     _supported_build_selected_key = ""
     _supported_build_selected_skill_id = 0
@@ -839,6 +840,15 @@ class HeroAI_BaseUI:
     def _refresh_build_match_rows(cached_data: CacheData) -> None:
         if not HeroAI_BaseUI._build_match_timer.IsExpired() and HeroAI_BaseUI._build_match_rows:
             return
+
+        from Py4GWCoreLib.BuildMgr import BuildRegistry
+
+        # Hot reload busts the row cache: signatures only cover professions
+        # and skills, so without this the tab would keep showing pre-reload
+        # matches forever.
+        if HeroAI_BaseUI._build_match_registry_generation != BuildRegistry.Generation():
+            HeroAI_BaseUI._build_match_registry_generation = BuildRegistry.Generation()
+            HeroAI_BaseUI._build_match_signature_cache.clear()
 
         rows: list[tuple[int, str, int, int, str, str, str]] = []
         registry = HeroAI_BaseUI._get_build_registry()

@@ -80,6 +80,14 @@ class Ineptitude(BuildMgr):
         ):
             return True
 
+        # Ward upkeep early: a long fire-and-forget buff that gets replanted
+        # when the fight moves (see the helper), so it never starves
+        # behind the interrupt chain.
+        if self.IsSkillEquipped(Ebon_Battle_Standard_of_Wisdom_ID) and (
+            yield from self.skills.Any.NoAttribute.Ebon_Battle_Standard_of_Wisdom()
+        ):
+            return True
+
         if not snapshot.in_aggro:
             return False
 

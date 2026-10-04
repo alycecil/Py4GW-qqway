@@ -5,6 +5,8 @@ from Py4GWCoreLib.Skill import Skill
 from Py4GWCoreLib.Builds.Any.HeroAI import HeroAI_Build
 from Py4GWCoreLib.Builds.Skills import SkillsTemplate
 
+import PySystem
+
 
 Destructive_Was_Glaive_ID = Skill.GetID("Destructive_Was_Glaive")
 Spirit_Rift_ID = Skill.GetID("Spirit_Rift")
@@ -106,6 +108,7 @@ class Destructive_Was_Glaive(BuildMgr):
         )
         self.SetSkillCastingFn(self._run_local_skill_logic)
         self.skills: SkillsTemplate = SkillsTemplate(self)
+        self._ancestors_rage_last_cast: dict[int, int] = {}
 
     def _keep_energy_reserve(self, skill_id: int) -> bool:
         """True if casting skill_id still leaves the energy reserve."""
@@ -359,7 +362,14 @@ class Destructive_Was_Glaive(BuildMgr):
         )
 
     def _cast_ancestors_rage(self):
-        """Ancestors' Rage on a martial ally, preferring one already fighting."""
+        """Ancestors' Rage, aggressively: self when pressured, else pack allies.
+
+        Self-cast the moment any live enemy is adjacent to us. Otherwise
+        take the martial ally in Spellcast range with the most adjacent
+        enemies (minimum two) that neither carries the effect nor was
+        raged in the last 2s, so recasts spread across the front line
+        instead of hammering one target.
+        """
         if not self.IsInAggro():
             return False
         if not self.CanCastSkillID(Ancestors_Rage_ID):
@@ -367,7 +377,23 @@ class Destructive_Was_Glaive(BuildMgr):
         if not self._keep_energy_reserve(Ancestors_Rage_ID):
             return False
 
+        player_id = Player.GetAgentID()
+        now_ms = int(PySystem.get_tick_count64())
         player_pos = Player.GetXY()
+
+        if not Routines.Checks.Agents.HasEffect(player_id, Ancestors_Rage_ID):
+            if self._count_live_enemies(player_pos[0], player_pos[1], Range.Adjacent.value) > 0:
+                if (
+                    yield from self.CastSkillIDAndRestoreTarget(
+                        skill_id=Ancestors_Rage_ID,
+                        target_agent_id=player_id,
+                        log=False,
+                        aftercast_delay=250,
+                    )
+                ):
+                    self._ancestors_rage_last_cast[player_id] = now_ms
+                    return True
+
         allies = Routines.Agents.GetFilteredAllyArray(
             player_pos[0],
             player_pos[1],
@@ -375,31 +401,35 @@ class Destructive_Was_Glaive(BuildMgr):
             other_ally=True,
         )
 
-        fallback_ally_id = 0
+        best_ally_id = 0
+        best_enemy_count = 1
         for ally_id in allies or []:
             ally_id = int(ally_id)
             if not Agent.IsAlive(ally_id) or not Agent.IsMartial(ally_id):
                 continue
             if Routines.Checks.Agents.HasEffect(ally_id, Ancestors_Rage_ID):
                 continue
-            if Agent.IsAttacking(ally_id):
-                fallback_ally_id = 0
-                break
-            if not fallback_ally_id:
-                fallback_ally_id = ally_id
-        else:
-            ally_id = fallback_ally_id
+            if now_ms - int(self._ancestors_rage_last_cast.get(ally_id, 0) or 0) < 2000:
+                continue
+            ally_x, ally_y = Agent.GetXY(ally_id)
+            enemy_count = self._count_live_enemies(ally_x, ally_y, Range.Adjacent.value)
+            if enemy_count > best_enemy_count:
+                best_enemy_count = enemy_count
+                best_ally_id = ally_id
 
-        if not ally_id:
+        if not best_ally_id:
             return False
-        return (
+        if (
             yield from self.CastSkillIDAndRestoreTarget(
                 skill_id=Ancestors_Rage_ID,
-                target_agent_id=ally_id,
+                target_agent_id=best_ally_id,
                 log=False,
                 aftercast_delay=250,
             )
-        )
+        ):
+            self._ancestors_rage_last_cast[best_ally_id] = now_ms
+            return True
+        return False
 
     def _ebon_escape_target(self):
         """Ally (never self) in spellcast range standing among the most enemies.

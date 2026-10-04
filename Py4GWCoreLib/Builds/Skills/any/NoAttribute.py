@@ -25,6 +25,7 @@ class NoAttribute:
         self._party_shout_throttles: dict[int, ThrottledTimer] = {}
         self._iau_last_kd_ms: int = 0
         self._iau_recent_kd_window_ms: int = 1500
+        self._ebsow_plant_xy: tuple[float, float] | None = None
 
     #region B
     def Breath_of_the_Great_Dwarf(self) -> BuildCoroutine:
@@ -317,7 +318,21 @@ class NoAttribute:
             aftercast_delay=250,
         ))
 
-    def Ebon_Battle_Standard_of_Wisdom(self) -> BuildCoroutine:
+    def Ebon_Battle_Standard_of_Wisdom(
+        self,
+        *,
+        replant_window_ms: int = 8000,
+        replant_move_radius: float | None = None,
+    ) -> BuildCoroutine:
+        """Plant the Wisdom ward, replanting it when the fight moves.
+
+        The ward is stationary with a ~14-20s life: standing still keeps
+        the plain missing-effect upkeep, but once the caster has moved
+        past replant_move_radius (default Nearby) from the plant spot
+        with less than replant_window_ms left, the ward is left behind
+        and gets replanted at the new feet. Records the plant position
+        on every successful cast.
+        """
         ebon_battle_standard_of_wisdom_id: int = Skill.GetID("Ebon_Battle_Standard_of_Wisdom")
         player_agent_id = Player.GetAgentID()
 
@@ -327,8 +342,26 @@ class NoAttribute:
             return False
         if not self.build.IsInAggro():
             return False
+
         if Routines.Checks.Agents.HasEffect(player_agent_id, ebon_battle_standard_of_wisdom_id):
-            return False
+            remaining_ms = int(
+                GLOBAL_CACHE.Effects.GetEffectTimeRemaining(
+                    player_agent_id,
+                    ebon_battle_standard_of_wisdom_id,
+                )
+                or 0
+            )
+            if remaining_ms > replant_window_ms:
+                return False
+            plant_xy = self._ebsow_plant_xy
+            if plant_xy is not None:
+                move_radius = float(Range.Nearby.value if replant_move_radius is None else replant_move_radius)
+                player_x, player_y = Player.GetXY()
+                moved = ((player_x - plant_xy[0]) ** 2 + (player_y - plant_xy[1]) ** 2) ** 0.5
+                if moved <= move_radius:
+                    return False
+            else:
+                return False
 
         ally_array = Routines.Targeting.GetAllAlliesArray(Range.Spellcast.value)
         ally_array = AgentArray.Filter.ByCondition(
@@ -338,11 +371,14 @@ class NoAttribute:
         if len(ally_array or []) < 2:
             return False
 
-        return (yield from self.build.CastSkillID(
+        cast = yield from self.build.CastSkillID(
             skill_id=ebon_battle_standard_of_wisdom_id,
             log=False,
             aftercast_delay=250,
-        ))
+        )
+        if cast:
+            self._ebsow_plant_xy = Player.GetXY()
+        return cast
     #endregion
 
     #region I
