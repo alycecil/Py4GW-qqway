@@ -19,6 +19,7 @@ class HeroAI_Build(BuildMgr):
         self._tick_coroutine: Iterator[Any] | None = None
         self._tick_phase: bool | None = None
         self._tick_contract_signature: tuple[int, ...] | None = None
+        self._build_generation: int = BuildRegistry.Generation()
         if match_only:
             self._build_registry = None
             self._contract_map_signature = None
@@ -91,6 +92,14 @@ class HeroAI_Build(BuildMgr):
         if cached_data is not None:
             self.set_cached_data(cached_data)
         cached_data = self._get_cached_data()
+
+        # Hot reload: a bumped registry generation means build modules were
+        # reimported under us. Drop the stale contract (old classes) and the
+        # in-flight tick so the next lines below re-resolve from new code.
+        if self._build_generation != BuildRegistry.Generation():
+            self._build_generation = BuildRegistry.Generation()
+            self._reset_contract()
+            self.ResetTickExecution()
 
         if not Map.IsExplorable():
             self._reset_contract()

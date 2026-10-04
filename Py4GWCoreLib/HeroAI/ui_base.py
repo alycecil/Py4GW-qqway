@@ -1266,6 +1266,15 @@ class HeroAI_BaseUI:
             return
 
         PyImGui.text("Browse supported builds and inspect what the matcher can inherit from.")
+        if PyImGui.button("Reload build modules##reload_supported_build_modules"):
+            from Py4GWCoreLib.BuildMgr import BuildRegistry
+
+            report = BuildRegistry.ReloadBuildModules()
+            ConsoleLog(
+                "HeroAI",
+                f"Reloaded {len(report['reloaded'])} build modules, skipped {len(report['skipped'])}. "
+                "Live contracts pick up the new code on their next tick.",
+            )
         PyImGui.separator()
 
         avail_x, _avail_y = PyImGui.get_content_region_avail()

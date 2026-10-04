@@ -49,7 +49,9 @@ class Destructive_Was_Glaive(BuildMgr):
     carrying (they do not drop the ashes, and gain the armor
     penetration bonus). Everything after that is the remaining attacks
     as available: Spirit Rift, Ancestors' Rage, Ebon Battle Standard of
-    Wisdom, Essence Strike, Empathy, Power Drain, Fragility. Flesh of My
+    Wisdom, Essence Strike, Empathy, Power Drain, Fragility. Terminal
+    fallback is Essence Strike on the nearest foe in range, then wand
+    auto-attack, so the bar never stands idle while aggro holds. Flesh of My
     Flesh is left to the HeroAI fallback, which only casts it on actual
     deaths.
 
@@ -202,6 +204,26 @@ class Destructive_Was_Glaive(BuildMgr):
         ):
             return True
 
+        # Terminal anti-idle: Essence Strike is cheap and always equipped,
+        # so spend it on the nearest foe in range when nothing else
+        # qualified (the mid-chain cast above needs an injured target).
+        # Wand auto-attack after that, so the bar never stands idle while
+        # aggro holds. Both no-op while carrying the ashes.
+        if self.IsSkillEquipped(Essence_Strike_ID) and self._keep_energy_reserve(Essence_Strike_ID):
+            essence_target = self._nearest_attackable_enemy()
+            if essence_target and (
+                yield from self.CastSkillIDAndRestoreTarget(
+                    skill_id=Essence_Strike_ID,
+                    target_agent_id=essence_target,
+                    log=False,
+                    aftercast_delay=250,
+                )
+            ):
+                return True
+
+        if (yield from self.AutoAttack(target_type="EnemyClustered")):
+            return True
+
         return False
 
     def _resolve_attack_target(self, skill_id: int, target_type: str) -> int:
@@ -258,6 +280,16 @@ class Destructive_Was_Glaive(BuildMgr):
         player_pos = Player.GetXY()
         return self._count_live_enemies(player_pos[0], player_pos[1], Range.Nearby.value)
 
+    def _nearest_attackable_enemy(self) -> int:
+        """Nearest living enemy in Spellcast range (blacklist-aware), else 0."""
+        try:
+            target_id = int(Routines.Agents.GetNearestEnemy(Range.Spellcast.value) or 0)
+        except Exception:
+            return 0
+        if not target_id or not Agent.IsAlive(target_id):
+            return 0
+        return target_id
+
     def _destructive_was_glaive_holding(self):
         """Carry state: walk to the biggest pack, detonate once inside it.
 
@@ -309,8 +341,12 @@ class Destructive_Was_Glaive(BuildMgr):
             return False
 
         # Empty hands: nothing to drop, so cast immediately from range.
-        # No walking: positioning only matters while carrying.
+        # No walking: positioning only matters while carrying. Clustered
+        # is preferred, but a lone foe still eats the blast instead of
+        # the bot standing idle.
         target_agent_id = self._resolve_attack_target(Destructive_Was_Glaive_ID, "EnemyClustered")
+        if not target_agent_id:
+            target_agent_id = self._nearest_attackable_enemy()
         if not target_agent_id:
             return False
 

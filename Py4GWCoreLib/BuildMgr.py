@@ -7,6 +7,8 @@ import inspect
 import math
 from pathlib import Path
 import random
+import sys
+import weakref
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 import PySystem
@@ -2123,6 +2125,7 @@ class BuildRegistry:
         self._cached_match_only_matchable_builds: list[BuildMgr] | None = None
         self._cached_runtime_fallback_builds: list[BuildMgr] | None = None
         self._cached_match_only_fallback_builds: list[BuildMgr] | None = None
+        BuildRegistry._instances.add(self)
 
     @classmethod
     def _scan_build_types(cls) -> list[type[BuildMgr]]:
@@ -2161,6 +2164,104 @@ class BuildRegistry:
     @classmethod
     def ClearCache(cls) -> None:
         cls._cached_build_types = None
+
+    # Hot-reload support. Every registry instance registers itself here so a
+    # reload can sweep all per-instance caches; live HeroAI contracts notice
+    # the generation bump in EnsureBuildContract and re-resolve from the new
+    # classes on their next tick.
+    _generation: int = 0
+    _instances: weakref.WeakSet = weakref.WeakSet()
+
+    @classmethod
+    def Generation(cls) -> int:
+        return int(cls._generation)
+
+    def ClearInstanceCaches(self) -> None:
+        self._runtime_build_instances = {}
+        self._match_only_build_instances = {}
+        self._cached_runtime_builds = None
+        self._cached_match_only_builds = None
+        self._cached_runtime_matchable_builds = None
+        self._cached_match_only_matchable_builds = None
+        self._cached_runtime_fallback_builds = None
+        self._cached_match_only_fallback_builds = None
+
+    @classmethod
+    def ReloadBuildModules(cls) -> dict[str, list[str]]:
+        """Reimport the Builds subtree from disk so edits take effect live.
+
+        Modules reload deepest-first so helpers refresh before the builds
+        importing them. Each file is compile-checked first: a module with a
+        syntax error is skipped (old code keeps running) and reported.
+        Modules whose file vanished are dropped from sys.modules. Type and
+        instance caches are cleared and the generation bumps so live HeroAI
+        contracts re-resolve on their next tick.
+
+        Returns {"reloaded": [...], "skipped": [...], "dropped": [...]} with
+        fully-qualified module names. Never raises: per-module failures land
+        in "skipped".
+        """
+        from Py4GWCoreLib.py4gwcorelib_src.Console import ConsoleLog
+
+        prefix = "Py4GWCoreLib.Builds."
+        reloaded: list[str] = []
+        skipped: list[str] = []
+
+        try:
+            builds_pkg = importlib.import_module("Py4GWCoreLib.Builds")
+            pkg_path = Path(builds_pkg.__path__[0])
+        except Exception as exc:
+            ConsoleLog("BuildRegistry", f"Hot reload aborted, cannot locate Builds package: {exc}")
+            return {"reloaded": reloaded, "skipped": skipped, "dropped": []}
+
+        on_disk = {".".join(("Py4GWCoreLib", "Builds", *rel.parts)) for rel in (p.relative_to(pkg_path).with_suffix("") for p in pkg_path.rglob("*.py")) if rel.name != "__init__"}
+        live = sorted(
+            (name for name in sys.modules if name == "Py4GWCoreLib.Builds" or name.startswith(prefix)),
+            key=lambda name: name.count("."),
+            reverse=True,
+        )
+        for module_name in live:
+            module = sys.modules.get(module_name)
+            if module_name != "Py4GWCoreLib.Builds" and module_name not in on_disk:
+                try:
+                    filename = getattr(module, "__file__", "") or ""
+                    if filename and not Path(filename).exists():
+                        del sys.modules[module_name]
+                        reloaded.append(f"{module_name} (dropped)")
+                        continue
+                except Exception:
+                    pass
+            if module is None:
+                continue
+            filename = getattr(module, "__file__", "") or ""
+            if filename.endswith(".py"):
+                try:
+                    with open(filename, "r", encoding="utf-8") as handle:
+                        compile(handle.read(), filename, "exec")
+                except Exception as exc:
+                    skipped.append(f"{module_name}: {exc}")
+                    continue
+            try:
+                importlib.reload(module)
+                reloaded.append(module_name)
+            except Exception as exc:
+                skipped.append(f"{module_name}: {exc}")
+
+        cls.ClearCache()
+        for registry in list(cls._instances):
+            try:
+                registry.ClearInstanceCaches()
+            except Exception:
+                pass
+        cls._generation += 1
+
+        ConsoleLog(
+            "BuildRegistry",
+            f"Hot reload generation {cls._generation}: {len(reloaded)} reloaded, {len(skipped)} skipped.",
+        )
+        for entry in skipped:
+            ConsoleLog("BuildRegistry", f"Hot reload skipped {entry}")
+        return {"reloaded": reloaded, "skipped": skipped, "dropped": []}
 
     def _call_build_ctor(self, build_type: type[BuildMgr], *args: Any, **kwargs: Any) -> BuildMgr | None:
         try:
