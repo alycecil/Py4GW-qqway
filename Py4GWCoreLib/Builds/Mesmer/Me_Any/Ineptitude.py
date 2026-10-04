@@ -91,6 +91,13 @@ class Ineptitude(BuildMgr):
         if not snapshot.in_aggro:
             return False
 
+        # Ineptitude outranks the whole spam chain: it fires on recharge,
+        # ahead of Power Drain, Drain Enchantment, Clumsiness and the
+        # Assassin support. A fizzling skill below can never pin it again:
+        # every tick offers Ineptitude its cast before anything else.
+        if (yield from self.skills.Mesmer.IllusionMagic.Ineptitude()):
+            return True
+
         if (yield from self.skills.Mesmer.InspirationMagic.Power_Drain(energy_threshold_pct=0.30)):
             return True
 
@@ -101,9 +108,6 @@ class Ineptitude(BuildMgr):
             return True
 
         if self.IsSkillEquipped(Ebon_Vanguard_Assassin_Support_ID) and (yield from self.skills.Any.PvE.Ebon_Vanguard_Assassin_Support()):
-            return True
-
-        if (yield from self.skills.Mesmer.IllusionMagic.Ineptitude()):
             return True
 
         if (yield from self.skills.Mesmer.InspirationMagic.Power_Drain(energy_threshold_pct=0.50)):

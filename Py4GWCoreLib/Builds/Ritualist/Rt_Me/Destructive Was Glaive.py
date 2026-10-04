@@ -169,7 +169,15 @@ class Destructive_Was_Glaive(BuildMgr):
         ):
             return True
 
+        # EBSoW plants on approach, ahead of the aggro gate: the helper fires
+        # pre-engagement via IsCloseToAggro so the ward is up at the opening.
         if not in_aggro:
+            if (
+                self.IsSkillEquipped(Ebon_Battle_Standard_of_Wisdom_ID)
+                and self._keep_energy_reserve(Ebon_Battle_Standard_of_Wisdom_ID)
+                and (yield from self.skills.Any.NoAttribute.Ebon_Battle_Standard_of_Wisdom())
+            ):
+                return True
             return False
 
         # Priority 5: Destructive Was Glaive carry-and-detonate loop.

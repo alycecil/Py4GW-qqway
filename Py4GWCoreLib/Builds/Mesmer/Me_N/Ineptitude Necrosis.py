@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from Py4GWCoreLib import Profession, Range, Routines, BuildMgr
+from Py4GWCoreLib import Agent, Profession, Range, Routines, BuildMgr
 from Py4GWCoreLib.Skill import Skill
 from Py4GWCoreLib.Builds.Any.HeroAI import HeroAI as HeroAIBuild
 from Py4GWCoreLib.Builds.Skills import SkillsTemplate
@@ -108,10 +108,32 @@ class Ineptitude_Necrosis(BuildMgr):
         ):
             return True
 
+        # Ineptitude outranks the whole spam chain: it fires on recharge,
+        # ahead of Power Drain, Clumsiness and Conundrum.
+        if (yield from self.skills.Mesmer.IllusionMagic.Ineptitude()):
+            return True
+
         if (yield from self.skills.Mesmer.InspirationMagic.Power_Drain(energy_threshold_pct=0.30)):
             return True
 
-        if (yield from self.skills.Mesmer.IllusionMagic.Ineptitude()):
+        # Same-anchor follow-up: Fragility splashes to foes adjacent to its
+        # target, so land it on the pack anchor Ineptitude just took. Skips
+        # targets already carrying it instead of stacking.
+        ineptitude_target = int(self.skills.Mesmer.IllusionMagic.last_ineptitude_target_id or 0)
+        if (
+            self.IsSkillEquipped(Fragility_ID)
+            and ineptitude_target
+            and Agent.IsAlive(ineptitude_target)
+            and not Routines.Checks.Agents.HasEffect(ineptitude_target, Fragility_ID)
+            and (
+                yield from self.CastSkillIDAndRestoreTarget(
+                    skill_id=Fragility_ID,
+                    target_agent_id=ineptitude_target,
+                    log=False,
+                    aftercast_delay=250,
+                )
+            )
+        ):
             return True
 
         if (yield from self.skills.Mesmer.IllusionMagic.Signet_of_Clumsiness()):
@@ -158,16 +180,20 @@ class Ineptitude_Necrosis(BuildMgr):
         )
 
     def _cast_necrosis(self):
-        """Necrosis only pays out on a hexed or conditioned foe."""
+        # Necrosis only pays out on a hexed or conditioned foe, so resolve
+        # a fresh target every tick: the old sticky _resolve_target handed
+        # back whatever the bar was chewing on (usually unhexed), and the
+        # old HexedOrEnchanted type never matched conditioned foes at all.
+        # Anchor the biggest cluster around a hexed or conditioned foe;
+        # hold on clean fields.
         if not self.CanCastSkillID(Necrosis_ID):
             return False
-        target_acquired, _ = self._resolve_target("EnemyHexedOrEnchantedClustered")
-        if not target_acquired:
-            return False
-        target_agent_id = self.current_target_id
-        if not (
-            Routines.Checks.Agents.IsHexed(target_agent_id) or Routines.Checks.Agents.IsConditioned(target_agent_id)
-        ):
+        target_agent_id = Routines.Targeting.PickClusteredTarget(
+            cluster_radius=Range.Nearby.value,
+            preferred_condition=lambda agent_id: Agent.IsHexed(agent_id) or Agent.IsConditioned(agent_id),
+            filter_radius=Range.Spellcast.value,
+        )
+        if not target_agent_id:
             return False
         return (
             yield from self.CastSkillIDAndRestoreTarget(

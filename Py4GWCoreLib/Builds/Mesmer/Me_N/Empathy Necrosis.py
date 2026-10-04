@@ -184,16 +184,20 @@ class Empathy_Necrosis(BuildMgr):
         )
 
     def _cast_necrosis(self):
-        """Necrosis only pays out on a hexed or conditioned foe."""
+        # Necrosis only pays out on a hexed or conditioned foe, so resolve
+        # a fresh target every tick: the old sticky _resolve_target handed
+        # back whatever the bar was chewing on (usually unhexed), and the
+        # old HexedOrEnchanted type never matched conditioned foes at all.
+        # Anchor the biggest cluster around a hexed or conditioned foe;
+        # hold on clean fields.
         if not self.CanCastSkillID(Necrosis_ID):
             return False
-        target_acquired, _ = self._resolve_target("EnemyHexedOrEnchantedClustered")
-        if not target_acquired:
-            return False
-        target_agent_id = self.current_target_id
-        if not (
-            Routines.Checks.Agents.IsHexed(target_agent_id) or Routines.Checks.Agents.IsConditioned(target_agent_id)
-        ):
+        target_agent_id = Routines.Targeting.PickClusteredTarget(
+            cluster_radius=Range.Nearby.value,
+            preferred_condition=lambda agent_id: Agent.IsHexed(agent_id) or Agent.IsConditioned(agent_id),
+            filter_radius=Range.Spellcast.value,
+        )
+        if not target_agent_id:
             return False
         return (
             yield from self.CastSkillIDAndRestoreTarget(

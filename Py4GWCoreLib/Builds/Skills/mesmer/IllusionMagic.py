@@ -16,6 +16,9 @@ __all__ = ["IllusionMagic"]
 class IllusionMagic:
     def __init__(self, build: BuildMgr) -> None:
         self.build: BuildMgr = build
+        # Last target Ineptitude resolved, set alongside every cast attempt
+        # so callers can chain follow-up hexes onto the same anchor.
+        self.last_ineptitude_target_id: int = 0
 
     #region A
     def Arcane_Conundrum(self) -> BuildCoroutine:
@@ -40,12 +43,15 @@ class IllusionMagic:
     def Ineptitude(self) -> BuildCoroutine:
         ineptitude_id: int = Skill.GetID("Ineptitude")
         if not self.build.IsSkillEquipped(ineptitude_id):
+            self.last_ineptitude_target_id = 0
             return False
 
         target_agent_id = TargetMeleeOrMartialClusterEnemy(ineptitude_id)
         if not target_agent_id:
+            self.last_ineptitude_target_id = 0
             return False
 
+        self.last_ineptitude_target_id = int(target_agent_id)
         return (yield from self.build.CastSkillIDAndRestoreTarget(
             skill_id=ineptitude_id,
             target_agent_id=target_agent_id,

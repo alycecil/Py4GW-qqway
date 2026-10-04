@@ -340,7 +340,10 @@ class NoAttribute:
             return False
         if not self.build.CanCastSkillID(ebon_battle_standard_of_wisdom_id):
             return False
-        if not self.build.IsInAggro():
+        # In-aggro upkeep, plus a pre-combat plant: IsCloseToAggro means the
+        # pull lands within seconds, so drop the ward on approach instead
+        # of casting it under opening fire.
+        if not self.build.IsInAggro() and not self.build.IsCloseToAggro():
             return False
 
         if Routines.Checks.Agents.HasEffect(player_agent_id, ebon_battle_standard_of_wisdom_id):

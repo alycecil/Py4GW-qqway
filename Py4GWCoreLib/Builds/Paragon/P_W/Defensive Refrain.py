@@ -375,6 +375,12 @@ class Paragon_Refrain(BuildMgr):
         if (yield from self._run_upkeep()):
             return True
 
+        # EBSoW plants on approach, ahead of the aggro gate: the helper
+        # fires pre-engagement via IsCloseToAggro so the ward is up at
+        # the opening.
+        if self.IsSkillEquipped(Ebon_Battle_Standard_of_Wisdom_ID) and (yield from self.skillbook.Any.NoAttribute.Ebon_Battle_Standard_of_Wisdom()):
+            return True
+
         if not self.IsInAggro():
             return False
 
